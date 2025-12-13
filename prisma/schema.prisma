@@ -1,0 +1,245 @@
+// Prisma Schema for Railroad Arcade
+// Using Neon Postgres with serverless driver
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================
+// NextAuth.js Required Models
+// ============================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================
+// User Model (Extended for Railroad Arcade)
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?   // For credentials auth
+
+  // Railroad Arcade specific
+  tokenBalance    Int       @default(0)
+  totalTokensUsed Int       @default(0)
+  totalSessions   Int       @default(0)
+  unlockedModules String[]  @default(["trains", "scenery"])
+
+  // Relations
+  accounts     Account[]
+  sessions     Session[]
+  playSessions PlaySession[]
+  transactions Transaction[]
+  snapshots    Snapshot[]
+  achievements Achievement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================
+// Railroad Arcade Models
+// ============================================
+
+model PlaySession {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startTime   DateTime @default(now())
+  endTime     DateTime?
+  duration    Int?     // Duration in seconds
+  tokensSpent Int      @default(0)
+  status      PlaySessionStatus @default(ACTIVE)
+
+  // Session stats
+  totalDistance    Float    @default(0) // km traveled
+  trainsOperated   String[] @default([])
+  modulesUsed      String[] @default([])
+
+  // Relations
+  events SessionEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum PlaySessionStatus {
+  ACTIVE
+  COMPLETED
+  INTERRUPTED
+  EMERGENCY_STOPPED
+}
+
+model SessionEvent {
+  id          String      @id @default(cuid())
+  sessionId   String
+  session     PlaySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  type        SessionEventType
+  description String
+  trainId     String?
+  level       Int?
+  metadata    Json?
+  timestamp   DateTime    @default(now())
+}
+
+enum SessionEventType {
+  TRAIN_START
+  TRAIN_STOP
+  JUNCTION_SWITCH
+  CROSSING_ACTIVATED
+  SNAPSHOT
+  ACHIEVEMENT
+  EMERGENCY
+  MODULE_UNLOCK
+  TOKEN_SPEND
+}
+
+model Transaction {
+  id       String            @id @default(cuid())
+  userId   String
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type     TransactionType
+  amount   Int               // Token amount (positive for purchase, negative for spend)
+  price    Float?            // USD amount if purchase
+  currency String?           // usd, btc, eth
+  provider PaymentProvider?
+  status   TransactionStatus @default(PENDING)
+
+  // Payment provider reference
+  externalId String? // Stripe payment intent, PayPal order ID, Coinbase charge ID
+  metadata   Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum TransactionType {
+  PURCHASE
+  SPEND
+  REFUND
+  BONUS
+}
+
+enum PaymentProvider {
+  STRIPE
+  PAYPAL
+  COINBASE
+  SYSTEM // For bonuses, refunds, etc.
+}
+
+enum TransactionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model Snapshot {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId String?
+
+  url       String
+  thumbnail String?
+  camera    String
+  trainId   String?
+  trainName String?
+  level     Int
+
+  liked       Boolean  @default(false)
+  tags        String[] @default([])
+  description String?
+
+  createdAt DateTime @default(now())
+}
+
+model Achievement {
+  id       String          @id @default(cuid())
+  userId   String
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type     AchievementType
+  earnedAt DateTime        @default(now())
+
+  @@unique([userId, type])
+}
+
+enum AchievementType {
+  FIRST_RUN
+  SPEED_DEMON
+  NIGHT_OWL
+  COLLECTOR
+  MARATHON
+  EXPLORER
+  PHOTOGRAPHER
+  CONDUCTOR
+  MASTER_ENGINEER
+  VETERAN
+}
+
+// ============================================
+// Queue Jobs (for tracking async operations)
+// ============================================
+
+model QueueJob {
+  id        String      @id @default(cuid())
+  type      String
+  payload   Json
+  status    JobStatus   @default(PENDING)
+  attempts  Int         @default(0)
+  error     String?
+  result    Json?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}

@@ -17,9 +17,12 @@ This is a Next.js 14 App Router application for controlling a 2-level HO scale m
 
 ### Key Directories
 
-- `app/` - Next.js App Router pages and global styles
+- `app/` - Next.js App Router pages, API routes, and global styles
+- `app/api/` - Backend API routes (auth, user, sessions, payments, queue)
 - `components/` - React components (all use 'use client' directive)
-- `lib/api.ts` - API client for Raspberry Pi control server
+- `components/auth/` - Authentication components (Login, Signup, UserMenu)
+- `lib/` - Server-side utilities and API clients
+- `prisma/` - Database schema and migrations
 
 ### Component Architecture
 
@@ -72,3 +75,49 @@ In `LiveTrackLayout.tsx`:
 - Level 1: Local Line (lower level) - 1 train
 - Fixed SVG dimensions: 700x450
 - Stations: Grand Central (L2), Valley Station (L1)
+
+## Backend Infrastructure
+
+### Database (Neon Postgres + Prisma)
+
+- `prisma/schema.prisma` - Database schema with models for users, sessions, transactions, achievements
+- `lib/db.ts` - Prisma client singleton configured for Neon serverless
+
+Key models:
+- `User` - Extended with tokenBalance, unlockedModules, achievements
+- `PlaySession` - Tracks arcade play sessions with events
+- `Transaction` - Token purchases and spending
+- `Snapshot` / `Achievement` - User content and rewards
+
+### Caching & Queues (Upstash)
+
+- `lib/redis.ts` - Redis client with rate limiters and cache helpers
+- `lib/queue.ts` - QStash client for background jobs
+- `app/api/queue/process/route.ts` - Queue job processor
+
+Rate limiters: `apiRateLimit`, `authRateLimit`, `paymentRateLimit`
+Cache helpers: `userCache`, `playSessionCache`, `statsCache`
+
+### Authentication (NextAuth.js v4)
+
+- `lib/auth.ts` - Auth configuration with credentials + OAuth providers
+- `app/api/auth/[...nextauth]/route.ts` - NextAuth API handler
+- `app/api/auth/signup/route.ts` - User registration endpoint
+
+### Payments
+
+Three payment providers configured:
+- `lib/stripe.ts` - Stripe checkout for card payments
+- `lib/paypal.ts` - PayPal REST API integration
+- `lib/coinbase.ts` - Coinbase Commerce for crypto
+
+API routes under `app/api/payments/{stripe,paypal,coinbase}/`
+
+### Database Commands
+
+```bash
+npx prisma generate    # Generate Prisma client
+npx prisma db push     # Push schema to database
+npx prisma studio      # Open Prisma Studio GUI
+npx prisma migrate dev # Create migration (development)
+```

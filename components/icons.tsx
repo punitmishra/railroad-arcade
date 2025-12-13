@@ -189,6 +189,20 @@ export const RotateIcon = ({ size = 24, ...p }: IconProps) => (
   <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><path d="M21 12a9 9 0 11-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
 );
 
+// === AUTH & USER ===
+export const UserIcon = ({ size = 24, ...p }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 00-16 0"/></svg>
+);
+export const MailIcon = ({ size = 24, ...p }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>
+);
+export const EyeOffIcon = ({ size = 24, ...p }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><path d="M1 1l22 22"/><path d="M8.71 8.71a4 4 0 105.66 5.66"/></svg>
+);
+export const LogoutIcon = ({ size = 24, ...p }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+);
+
 // === TOKENS & PAYMENT ===
 export const TokenIcon = ({ size = 24, ...p }: IconProps) => (
   <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><circle cx="12" cy="12" r="10"/><path d="M12 6v12M15 9.5c0-1.5-1.5-2.5-3-2.5s-3 1-3 2.5 1.5 2 3 2.5 3 1.5 3 3-1.5 2.5-3 2.5-3-1-3-2.5"/></svg>
