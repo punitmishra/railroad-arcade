@@ -243,7 +243,7 @@ export function StreamingPanel() {
                     <span className="font-bold text-amber-400">{donation.amount} tokens</span>
                   </div>
                   {donation.message && (
-                    <span className="text-sm text-gray-300 ml-2">"{donation.message}"</span>
+                    <span className="text-sm text-gray-300 ml-2">&quot;{donation.message}&quot;</span>
                   )}
                 </div>
               ))}
