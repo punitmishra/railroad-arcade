@@ -1,12 +1,16 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { 
-  TrainIcon, ActivityIcon, ArrowUpIcon, ArrowDownIcon, 
+import {
+  TrainIcon, ActivityIcon, ArrowUpIcon, ArrowDownIcon,
   PlayIcon, PauseIcon, AlertIcon, EyeIcon, BatteryIcon,
   SunIcon, MoonIcon, MapIcon, SettingsIcon, ClockIcon,
   ZapIcon, ChartIcon, BellIcon
 } from './icons';
+import { useHardwareAdapter } from '@/hooks/useHardwareAdapter';
+import { TokenConfirmDialog, useTokenConfirmation } from './TokenConfirmDialog';
+import { useGameMode } from '@/lib/contexts/ModeContext';
+import { getActionCost } from '@/lib/pricing';
 
 // ============================================
 // FIXED LAYOUT CONSTANTS
@@ -124,7 +128,42 @@ function getDistance(p1: { x: number; y: number }, p2: { x: number; y: number })
 // ============================================
 // MAIN COMPONENT
 // ============================================
-export function LiveTrackLayout() {
+
+interface LiveTrackLayoutProps {
+  mode?: 'demo' | 'live';
+  tokenBalance?: number;
+  onTokenBalanceChange?: (balance: number) => void;
+}
+
+export function LiveTrackLayout({
+  mode: propMode,
+  tokenBalance = 0,
+  onTokenBalanceChange,
+}: LiveTrackLayoutProps = {}) {
+  // Try to get mode from context, fall back to prop, then default to 'demo'
+  let contextMode: 'demo' | 'live' = 'demo';
+  try {
+    const gameModeContext = useGameMode();
+    contextMode = gameModeContext.mode;
+  } catch {
+    // Context not available, use prop or default
+  }
+  const mode = propMode ?? contextMode;
+
+  // Token confirmation dialog
+  const { requestConfirmation, dialogProps, Dialog } = useTokenConfirmation(tokenBalance);
+
+  // Hardware adapter integration
+  const {
+    state: adapterState,
+    actions: adapterActions,
+  } = useHardwareAdapter({
+    mode,
+    onTokenBalanceChange,
+    onError: (error) => console.error('Hardware error:', error),
+    onActionConfirmRequired: requestConfirmation,
+  });
+
   // View controls
   const [activeLevel, setActiveLevel] = useState<1 | 2 | 'both'>('both');
   const [showLabels, setShowLabels] = useState(true);
@@ -383,24 +422,54 @@ export function LiveTrackLayout() {
     };
   }, [animate]);
 
-  // Handlers
-  const toggleJunction = (id: string) => {
-    setJunctions(prev => prev.map(j => 
+  // Handlers - integrated with hardware adapter
+  const toggleJunction = async (id: string) => {
+    if (mode === 'live') {
+      // Use adapter action with token enforcement
+      const success = await adapterActions.toggleJunction(id);
+      if (!success) return;
+    }
+    // Update local state (demo mode or after successful live action)
+    setJunctions(prev => prev.map(j =>
       j.id === id ? { ...j, state: j.state === 'straight' ? 'diverge' : 'straight' } : j
     ));
   };
 
-  const toggleCrossing = (id: string) => {
-    setCrossings(prev => prev.map(c => 
+  const toggleCrossing = async (id: string) => {
+    if (mode === 'live') {
+      // Use adapter action with token enforcement
+      const success = await adapterActions.toggleCrossing(id);
+      if (!success) return;
+    }
+    // Update local state (demo mode or after successful live action)
+    setCrossings(prev => prev.map(c =>
       c.id === id ? { ...c, state: c.state === 'open' ? 'closed' : 'open' } : c
     ));
   };
 
-  const setTrainSpeed = (trainId: string, speed: number) => {
+  // Get token cost for display
+  const getTokenCostLabel = (action: string): string => {
+    if (mode === 'demo') return '';
+    const cost = getActionCost(action);
+    return cost > 0 ? ` (${cost}🪙)` : '';
+  };
+
+  const setTrainSpeed = async (trainId: string, speed: number) => {
+    // Find train to get trackId for live mode
+    const train = trains.find(t => t.id === trainId);
+    const isStarting = train && train.speed === 0 && speed > 0;
+
+    if (mode === 'live' && train) {
+      // Map trainId to trackId (T1->1, T2->2, T3->3)
+      const trackId = parseInt(trainId.replace('T', ''));
+      const success = await adapterActions.setTrainSpeed(trackId, speed);
+      if (!success && isStarting) return; // Only block if starting (costs tokens)
+    }
+
     setTrains(prev => prev.map(t => {
       if (t.id !== trainId) return t;
-      return { 
-        ...t, 
+      return {
+        ...t,
         speed: t.autopilot ? t.speed : speed,
         targetSpeed: speed,
         direction: speed > 0 ? (t.direction === 'stopped' ? 'forward' : t.direction) : 'stopped'
@@ -438,10 +507,15 @@ export function LiveTrackLayout() {
     ));
   };
 
-  const emergencyStop = () => {
-    setTrains(prev => prev.map(t => ({ 
-      ...t, 
-      speed: 0, 
+  const emergencyStop = async () => {
+    if (mode === 'live') {
+      // Emergency stop is free but still goes through adapter
+      await adapterActions.emergencyStop();
+    }
+
+    setTrains(prev => prev.map(t => ({
+      ...t,
+      speed: 0,
       targetSpeed: 0,
       direction: 'stopped' as const,
       autopilot: false
@@ -499,6 +573,23 @@ export function LiveTrackLayout() {
         </div>
         
         <div className="flex items-center gap-1.5">
+          {/* Mode Indicator */}
+          <div className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 ${
+            mode === 'live'
+              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+              : 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+          }`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${mode === 'live' ? 'bg-emerald-500 animate-pulse' : 'bg-purple-500'}`} />
+            {mode === 'live' ? 'LIVE' : 'DEMO'}
+          </div>
+
+          {/* Token Balance (Live mode only) */}
+          {mode === 'live' && (
+            <div className="px-2 py-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-bold flex items-center gap-1">
+              🪙 {tokenBalance}
+            </div>
+          )}
+
           {/* Emergency Stop */}
           <button onClick={emergencyStop} className="px-2.5 py-1.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 text-[10px] font-bold flex items-center gap-1">
             <AlertIcon size={12} /> E-STOP
@@ -947,8 +1038,8 @@ export function LiveTrackLayout() {
           <button onClick={() => setShowMinimap(!showMinimap)} className={showMinimap ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-300'}>
             <MapIcon size={11} />
           </button>
-          <span className={`font-mono ${isPaused ? 'text-amber-400' : 'text-emerald-400'}`}>
-            {isPaused ? '⏸ PAUSED' : '● LIVE'}
+          <span className={`font-mono ${isPaused ? 'text-amber-400' : mode === 'live' ? 'text-emerald-400' : 'text-purple-400'}`}>
+            {isPaused ? '⏸ PAUSED' : mode === 'live' ? '● LIVE' : '● DEMO'}
           </span>
         </div>
       </div>
@@ -957,6 +1048,9 @@ export function LiveTrackLayout() {
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: white; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
         input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: white; cursor: pointer; border: none; }
       `}</style>
+
+      {/* Token Confirmation Dialog */}
+      <Dialog {...dialogProps} />
     </div>
   );
 }
