@@ -148,9 +148,16 @@ export async function POST(request: NextRequest) {
     // Invalidate user cache
     await userCache.invalidateBalance(session.user.id);
 
+    // Get updated token balance
+    const updatedUser = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { tokenBalance: true },
+    });
+
     return NextResponse.json({
-      session: playSession,
+      sessionId: playSession.id,
       expiresAt: new Date(Date.now() + duration * 1000).toISOString(),
+      tokenBalance: updatedUser?.tokenBalance ?? 0,
     });
   } catch (error) {
     console.error('Start session error:', error);

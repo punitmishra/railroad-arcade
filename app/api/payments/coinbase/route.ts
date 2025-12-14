@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
         tokens: totalTokens.toString(),
         packageId,
       },
-      redirectUrl: `${baseUrl}/payment/success?transaction_id=${transaction.id}`,
-      cancelUrl: `${baseUrl}/payment/cancelled?transaction_id=${transaction.id}`,
+      redirectUrl: `${baseUrl}/payment/success?transaction_id=${transaction.id}&tokens=${totalTokens}`,
+      cancelUrl: `${baseUrl}/payment/cancel?transaction_id=${transaction.id}`,
     });
 
     // Update transaction with Coinbase charge ID

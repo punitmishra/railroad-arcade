@@ -75,6 +75,10 @@ model User {
   transactions Transaction[]
   snapshots    Snapshot[]
   achievements Achievement[]
+  liveQueues   LiveQueue[]
+  gameSessions GameSession[]
+  leaderboards Leaderboard[]
+  recordings   Recording[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -100,7 +104,9 @@ model PlaySession {
   modulesUsed      String[] @default([])
 
   // Relations
-  events SessionEvent[]
+  events       SessionEvent[]
+  tokenActions TokenAction[]
+  gameSession  GameSession?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -219,6 +225,124 @@ enum AchievementType {
   CONDUCTOR
   MASTER_ENGINEER
   VETERAN
+}
+
+// ============================================
+// Live Queue System (for fair hardware access)
+// ============================================
+
+model LiveQueue {
+  id             String      @id @default(cuid())
+  userId         String
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status         QueueStatus @default(WAITING)
+  joinedAt       DateTime    @default(now())
+  controlStarted DateTime?
+  controlEndsAt  DateTime?
+  tokensPaid     Int
+  position       Int?
+
+  @@index([status, joinedAt])
+}
+
+enum QueueStatus {
+  WAITING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  EXPIRED
+}
+
+// ============================================
+// Token Actions (per-action billing)
+// ============================================
+
+model TokenAction {
+  id          String      @id @default(cuid())
+  sessionId   String
+  session     PlaySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  actionType  ActionType
+  tokenCost   Int
+  timestamp   DateTime    @default(now())
+  metadata    Json?
+}
+
+enum ActionType {
+  TRAIN_START
+  TRAIN_STOP
+  JUNCTION_SWITCH
+  CROSSING_TOGGLE
+  SCENERY_CHANGE
+  TIME_EXTEND
+  CAMERA_SWITCH
+}
+
+// ============================================
+// Game Sessions & Leaderboards
+// ============================================
+
+model GameSession {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  playSessionId String?      @unique
+  playSession   PlaySession? @relation(fields: [playSessionId], references: [id])
+  gameMode      GameMode
+  startTime     DateTime     @default(now())
+  endTime       DateTime?
+  score         Int          @default(0)
+  isLive        Boolean      @default(false)
+  metadata      Json?
+
+  @@index([gameMode, score])
+}
+
+enum GameMode {
+  FREE_PLAY
+  DELIVERY_MISSION
+  SPEED_RUN
+  SURVIVAL
+  TIME_ATTACK
+}
+
+model Leaderboard {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameMode   GameMode
+  score      Int
+  isLive     Boolean
+  achievedAt DateTime @default(now())
+
+  @@unique([userId, gameMode, isLive])
+  @@index([gameMode, isLive, score])
+}
+
+// ============================================
+// Recording System
+// ============================================
+
+model Recording {
+  id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId String?
+  startTime DateTime
+  endTime   DateTime?
+  duration  Int?
+  url       String?
+  thumbnail String?
+  camera    String
+  status    RecordingStatus @default(RECORDING)
+
+  createdAt DateTime @default(now())
+}
+
+enum RecordingStatus {
+  RECORDING
+  PROCESSING
+  READY
+  FAILED
 }
 
 // ============================================

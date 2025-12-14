@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { AuthProvider } from '@/components/auth/AuthProvider';
+import { ModeProvider } from '@/lib/contexts/ModeContext';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -16,7 +17,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <ModeProvider>
+            {children}
+          </ModeProvider>
+        </AuthProvider>
       </body>
     </html>
   );

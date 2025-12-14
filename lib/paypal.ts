@@ -71,7 +71,7 @@ export async function createPayPalOrder({
         landing_page: 'NO_PREFERENCE',
         user_action: 'PAY_NOW',
         return_url: `${process.env.NEXTAUTH_URL}/api/payments/paypal/capture`,
-        cancel_url: `${process.env.NEXTAUTH_URL}/payment/cancelled`,
+        cancel_url: `${process.env.NEXTAUTH_URL}/payment/cancel`,
       },
     }),
   });

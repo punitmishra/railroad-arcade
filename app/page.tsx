@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { TokenDisplay, SessionTimer, ArcadeButton } from '@/components/ui';
 import {
   GamepadIcon, WalletIcon, TrophyIcon, SparklesIcon,
@@ -12,12 +14,12 @@ import {
 import { UserMenu } from '@/components/auth/UserMenu';
 import { TrainTrackingModule } from '@/components/TrainTrackingModule';
 import { PoliceStationModule } from '@/components/PoliceStationModule';
-import { 
-  FireStationModule, 
-  CafeModule, 
-  SmartHomeModule, 
-  ConstructionZoneModule, 
-  DiamondCrossingModule 
+import {
+  FireStationModule,
+  CafeModule,
+  SmartHomeModule,
+  ConstructionZoneModule,
+  DiamondCrossingModule
 } from '@/components/Modules';
 import { LiveTrackLayout } from '@/components/LiveTrackLayout';
 import { SceneryControl } from '@/components/SceneryControl';
@@ -28,24 +30,72 @@ import { SessionHistory } from '@/components/SessionHistory';
 import { StreamingPanel } from '@/components/StreamingPanel';
 import { ModeToggle, ViewOnlyBadge } from '@/components/ModeToggle';
 import { useGameMode } from '@/lib/contexts/ModeContext';
+import { useUser, useUnlockModule, useStartSession } from '@/hooks/useUser';
+import { MODULE_COSTS } from '@/lib/pricing';
 
 // ========================================
 // MAIN ARCADE PAGE
 // ========================================
-export default function RailroadArcade() {
+export default function RailroadArcadePage() {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <RailroadArcade />
+    </Suspense>
+  );
+}
+
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#050508]">
+      <div className="text-center">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 flex items-center justify-center animate-pulse">
+          <TrainIcon size={32} className="text-white" />
+        </div>
+        <p className="text-gray-400">Loading Railroad Arcade...</p>
+      </div>
+    </div>
+  );
+}
+
+// Handle search params in a separate component wrapped in Suspense
+function SearchParamsHandler({ onShowTokenStore }: { onShowTokenStore: () => void }) {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('showTokenStore') === 'true') {
+      onShowTokenStore();
+      // Clean up URL
+      window.history.replaceState({}, '', '/');
+    }
+  }, [searchParams, onShowTokenStore]);
+
+  return null;
+}
+
+function RailroadArcade() {
   const { mode, isTokenRequired } = useGameMode();
-  const [tokens, setTokens] = useState(250);
+  const {
+    user,
+    tokens,
+    unlockedModules,
+    isLoading,
+    isAuthenticated,
+    refetch,
+    updateTokens,
+    addUnlockedModule
+  } = useUser();
+  const { unlockModule: unlockModuleApi, isUnlocking } = useUnlockModule();
+  const { startSession: startSessionApi, isStarting } = useStartSession();
+
   const [sessionTime, setSessionTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showAddTokens, setShowAddTokens] = useState(false);
   const [showTokenStore, setShowTokenStore] = useState(false);
-  const [unlockedModules, setUnlockedModules] = useState<string[]>(['trains', 'scenery']);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'trains' | 'scenery' | 'buildings' | 'sensors' | 'camera' | 'streaming' | 'history' | 'gallery'>('overview');
 
   // Session timer countdown
   useEffect(() => {
-    if (isPlaying && sessionTime > 0) {
+    if (isPlaying && sessionTime > 0 && sessionTime !== Infinity) {
       const timer = setInterval(() => {
         setSessionTime(prev => {
           if (prev <= 1) {
@@ -59,38 +109,71 @@ export default function RailroadArcade() {
     }
   }, [isPlaying, sessionTime]);
 
-  const startSession = (duration: number, cost: number) => {
+  const startSession = async (duration: number, cost: number) => {
     // Demo mode: free unlimited play
     if (mode === 'demo') {
       setSessionTime(Infinity); // Unlimited in demo
       setIsPlaying(true);
       return;
     }
-    // Live mode: require tokens
-    if (tokens >= cost) {
-      setTokens(prev => prev - cost);
-      setSessionTime(duration);
-      setIsPlaying(true);
-    }
-  };
 
-  const unlockModule = (moduleId: string, cost: number) => {
-    // Demo mode: all modules free
-    if (mode === 'demo') {
-      if (!unlockedModules.includes(moduleId)) {
-        setUnlockedModules(prev => [...prev, moduleId]);
-      }
+    // Live mode: require authentication and tokens
+    if (!isAuthenticated) {
+      setShowTokenStore(true); // Will show login prompt
       return;
     }
-    // Live mode: require tokens
-    if (tokens >= cost && !unlockedModules.includes(moduleId)) {
-      setTokens(prev => prev - cost);
-      setUnlockedModules(prev => [...prev, moduleId]);
+
+    if (tokens < cost) {
+      setShowTokenStore(true);
+      return;
+    }
+
+    try {
+      await startSessionApi(duration, cost, (data) => {
+        updateTokens(data.tokenBalance);
+        setSessionTime(duration);
+        setIsPlaying(true);
+      });
+    } catch (err) {
+      console.error('Failed to start session:', err);
     }
   };
 
-  const handleTokenPurchase = (purchasedTokens: number) => {
-    setTokens(prev => prev + purchasedTokens);
+  const unlockModule = async (moduleId: string, cost: number) => {
+    // Demo mode: all modules free
+    if (mode === 'demo') {
+      addUnlockedModule(moduleId);
+      return;
+    }
+
+    // Live mode: require authentication and tokens
+    if (!isAuthenticated) {
+      setShowTokenStore(true);
+      return;
+    }
+
+    if (tokens < cost) {
+      setShowTokenStore(true);
+      return;
+    }
+
+    // Already unlocked
+    if (unlockedModules.includes(moduleId)) {
+      return;
+    }
+
+    try {
+      await unlockModuleApi(moduleId, cost, (data) => {
+        updateTokens(data.tokenBalance);
+        addUnlockedModule(moduleId);
+      });
+    } catch (err) {
+      console.error('Failed to unlock module:', err);
+    }
+  };
+
+  const handleTokenPurchaseComplete = () => {
+    refetch();
     setShowTokenStore(false);
   };
 
@@ -119,6 +202,11 @@ export default function RailroadArcade() {
 
   return (
     <div className="min-h-screen relative z-10">
+      {/* Search params handler for URL state */}
+      <Suspense fallback={null}>
+        <SearchParamsHandler onShowTokenStore={() => setShowTokenStore(true)} />
+      </Suspense>
+
       {/* Header */}
       <header className="sticky top-0 z-50 bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-3">
@@ -532,9 +620,9 @@ export default function RailroadArcade() {
 
       {/* Token Store Modal */}
       {showTokenStore && (
-        <TokenStore 
+        <TokenStore
           currentTokens={tokens}
-          onPurchase={handleTokenPurchase}
+          onPurchaseComplete={handleTokenPurchaseComplete}
           onClose={() => setShowTokenStore(false)}
         />
       )}

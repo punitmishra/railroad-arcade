@@ -46,12 +46,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Calculate total tokens
+    const totalTokens = pkg.tokens + pkg.bonus;
+
     // Create transaction record
     const transaction = await db.transaction.create({
       data: {
         userId: session.user.id,
         type: 'PURCHASE',
-        amount: pkg.tokens + pkg.bonus,
+        amount: totalTokens,
         price: pkg.price / 100, // Convert cents to dollars
         currency: 'usd',
         provider: 'STRIPE',
@@ -66,8 +69,8 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       userEmail: user.email,
       packageId,
-      successUrl: `${baseUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}&transaction_id=${transaction.id}`,
-      cancelUrl: `${baseUrl}/payment/cancelled?transaction_id=${transaction.id}`,
+      successUrl: `${baseUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}&transaction_id=${transaction.id}&tokens=${totalTokens}`,
+      cancelUrl: `${baseUrl}/payment/cancel?transaction_id=${transaction.id}`,
     });
 
     // Update transaction with Stripe session ID

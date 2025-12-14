@@ -23,7 +23,12 @@ export type {
   Transaction,
   Snapshot,
   Achievement,
-  QueueJob
+  QueueJob,
+  LiveQueue,
+  TokenAction,
+  GameSession,
+  Leaderboard,
+  Recording
 } from '@prisma/client';
 
 export {
@@ -33,5 +38,9 @@ export {
   PaymentProvider,
   TransactionStatus,
   AchievementType,
-  JobStatus
+  JobStatus,
+  QueueStatus,
+  ActionType,
+  GameMode,
+  RecordingStatus
 } from '@prisma/client';
