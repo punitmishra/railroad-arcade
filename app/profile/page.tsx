@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useUser } from '@/hooks/useUser';
 import {
   UserIcon, CoinsIcon, TrophyIcon, ClockIcon, TrainIcon,
@@ -80,9 +81,11 @@ export default function ProfilePage() {
             {/* Avatar */}
             <div className="relative flex-shrink-0">
               {session.user.image ? (
-                <img
+                <Image
                   src={session.user.image}
                   alt={session.user.name || 'User'}
+                  width={96}
+                  height={96}
                   className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl"
                 />
               ) : (

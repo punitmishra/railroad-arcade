@@ -3,6 +3,16 @@ const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
 
+  // Allow external images from OAuth providers
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+      { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
+      { protocol: 'https', hostname: 'cdn.discordapp.com' },
+      { protocol: 'https', hostname: '*.googleusercontent.com' },
+    ],
+  },
+
   // API rewrites for development - proxy to Raspberry Pi control server
   // IMPORTANT: Exclude Next.js API routes (auth, db-test, payments, etc.)
   async rewrites() {

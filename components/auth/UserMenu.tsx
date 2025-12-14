@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
+import Image from 'next/image';
 import { UserIcon, LogoutIcon, SettingsIcon, HistoryIcon, TrophyIcon, ChartIcon } from '../icons';
 
 export function UserMenu() {
@@ -53,9 +54,11 @@ export function UserMenu() {
         className="flex items-center gap-2 p-1 pr-3 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
       >
         {session.user.image ? (
-          <img
+          <Image
             src={session.user.image}
             alt={session.user.name || 'User'}
+            width={32}
+            height={32}
             className="w-8 h-8 rounded-full"
           />
         ) : (

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useLeaderboard, useAllLeaderboards, LeaderboardEntry } from '@/hooks/useLeaderboard';
 import { TrophyIcon, ArrowLeftIcon, TrainIcon, ClockIcon, SparklesIcon } from '@/components/icons';
 import { SkeletonRow } from '@/components/ui';
@@ -204,9 +205,11 @@ function LeaderboardRow({ entry, index }: { entry: LeaderboardEntry; index: numb
         {/* User */}
         <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
           {entry.user.image ? (
-            <img
+            <Image
               src={entry.user.image}
               alt={entry.user.name}
+              width={36}
+              height={36}
               className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex-shrink-0"
             />
           ) : (

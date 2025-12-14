@@ -1,7 +1,7 @@
 'use client';
 
-import { ReactNode, ButtonHTMLAttributes, useState } from 'react';
-import { ClockIcon, PlusIcon, LockIcon } from './icons';
+import { ReactNode, ButtonHTMLAttributes, useState, useEffect, createContext, useContext, useCallback } from 'react';
+import { ClockIcon, PlusIcon, LockIcon, CloseIcon } from './icons';
 
 // ========================================
 // ARCADE BUTTON
@@ -524,6 +524,278 @@ export function SkeletonRow({ className = '' }: SkeletonProps) {
       <div className="text-right space-y-2">
         <Skeleton className="h-5 w-16 ml-auto" />
         <Skeleton className="h-3 w-10 ml-auto" />
+      </div>
+    </div>
+  );
+}
+
+// ========================================
+// TOAST NOTIFICATION SYSTEM
+// ========================================
+export type ToastType = 'success' | 'error' | 'warning' | 'info';
+
+export interface Toast {
+  id: string;
+  type: ToastType;
+  message: string;
+  duration?: number;
+}
+
+interface ToastContextType {
+  toasts: Toast[];
+  addToast: (type: ToastType, message: string, duration?: number) => void;
+  removeToast: (id: string) => void;
+}
+
+const ToastContext = createContext<ToastContextType | undefined>(undefined);
+
+export function useToast() {
+  const context = useContext(ToastContext);
+  if (!context) {
+    throw new Error('useToast must be used within a ToastProvider');
+  }
+  return context;
+}
+
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const addToast = useCallback((type: ToastType, message: string, duration = 4000) => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts(prev => [...prev, { id, type, message, duration }]);
+  }, []);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  return (
+    <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
+      {children}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+    </ToastContext.Provider>
+  );
+}
+
+function ToastContainer({ toasts, removeToast }: { toasts: Toast[]; removeToast: (id: string) => void }) {
+  return (
+    <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none" aria-live="polite">
+      {toasts.map(toast => (
+        <ToastItem key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
+      ))}
+    </div>
+  );
+}
+
+function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
+  useEffect(() => {
+    if (toast.duration) {
+      const timer = setTimeout(onClose, toast.duration);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.duration, onClose]);
+
+  const styles = {
+    success: 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400',
+    error: 'bg-red-500/20 border-red-500/30 text-red-400',
+    warning: 'bg-amber-500/20 border-amber-500/30 text-amber-400',
+    info: 'bg-cyan-500/20 border-cyan-500/30 text-cyan-400',
+  };
+
+  const icons = {
+    success: '✓',
+    error: '✕',
+    warning: '⚠',
+    info: 'ℹ',
+  };
+
+  return (
+    <div
+      className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-xl shadow-lg animate-slide-in-right ${styles[toast.type]}`}
+      role="alert"
+    >
+      <span className="text-lg">{icons[toast.type]}</span>
+      <span className="text-sm font-medium flex-1">{toast.message}</span>
+      <button
+        onClick={onClose}
+        className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+        aria-label="Dismiss"
+      >
+        <CloseIcon size={14} />
+      </button>
+    </div>
+  );
+}
+
+// ========================================
+// KEYBOARD SHORTCUTS MODAL
+// ========================================
+interface KeyboardShortcut {
+  key: string;
+  description: string;
+}
+
+interface KeyboardShortcutsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const SHORTCUTS: KeyboardShortcut[] = [
+  { key: 'Space', description: 'Pause/Resume simulation' },
+  { key: '1', description: 'Toggle Junction 1' },
+  { key: '2', description: 'Toggle Junction 2' },
+  { key: '3', description: 'Toggle Junction 3' },
+  { key: 'N', description: 'Toggle night mode' },
+  { key: 'T', description: 'Toggle telemetry panel' },
+  { key: 'M', description: 'Toggle minimap' },
+  { key: 'L', description: 'Toggle labels' },
+  { key: 'Esc', description: 'Emergency stop' },
+  { key: '?', description: 'Show this help' },
+];
+
+export function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShortcutsModalProps) {
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) onClose();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className="relative bg-[#0c0c14] border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'Orbitron, sans-serif' }}>
+            Keyboard Shortcuts
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-white/10 text-gray-400 transition-colors"
+            aria-label="Close"
+          >
+            <CloseIcon size={18} />
+          </button>
+        </div>
+        <div className="space-y-2">
+          {SHORTCUTS.map(shortcut => (
+            <div key={shortcut.key} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+              <span className="text-sm text-gray-400">{shortcut.description}</span>
+              <kbd className="px-2.5 py-1 rounded-lg bg-white/10 border border-white/20 text-xs font-mono text-cyan-400">
+                {shortcut.key}
+              </kbd>
+            </div>
+          ))}
+        </div>
+        <p className="mt-4 text-xs text-gray-500 text-center">
+          Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-cyan-400">?</kbd> anytime to show this help
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ========================================
+// LOADING SPINNER
+// ========================================
+interface LoadingSpinnerProps {
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+export function LoadingSpinner({ size = 'md', className = '' }: LoadingSpinnerProps) {
+  const sizes = {
+    sm: 'w-4 h-4 border-2',
+    md: 'w-6 h-6 border-2',
+    lg: 'w-8 h-8 border-3',
+  };
+
+  return (
+    <div
+      className={`${sizes[size]} border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin ${className}`}
+      role="status"
+      aria-label="Loading"
+    />
+  );
+}
+
+// ========================================
+// CONFIRM DIALOG (Replaces browser confirm)
+// ========================================
+interface ConfirmDialogProps {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  variant?: 'danger' | 'warning' | 'info';
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+export function ConfirmDialog({
+  isOpen,
+  title,
+  message,
+  confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
+  variant = 'danger',
+  onConfirm,
+  onCancel,
+}: ConfirmDialogProps) {
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) onCancel();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onCancel]);
+
+  if (!isOpen) return null;
+
+  const variantStyles = {
+    danger: 'bg-red-500 hover:bg-red-600 text-white',
+    warning: 'bg-amber-500 hover:bg-amber-600 text-black',
+    info: 'bg-cyan-500 hover:bg-cyan-600 text-black',
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onCancel}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className="relative bg-[#0c0c14] border border-white/10 rounded-2xl p-6 max-w-sm w-full shadow-2xl"
+        onClick={e => e.stopPropagation()}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="confirm-title"
+        aria-describedby="confirm-message"
+      >
+        <h2 id="confirm-title" className="text-lg font-bold text-white mb-2" style={{ fontFamily: 'Orbitron, sans-serif' }}>
+          {title}
+        </h2>
+        <p id="confirm-message" className="text-sm text-gray-400 mb-6">
+          {message}
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 transition-colors text-sm font-medium"
+          >
+            {cancelLabel}
+          </button>
+          <button
+            onClick={onConfirm}
+            className={`flex-1 py-2.5 rounded-xl transition-colors text-sm font-medium ${variantStyles[variant]}`}
+          >
+            {confirmLabel}
+          </button>
+        </div>
       </div>
     </div>
   );

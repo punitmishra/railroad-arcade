@@ -1,12 +1,26 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { ModeProvider } from '@/lib/contexts/ModeContext';
+import { ToastProvider } from '@/components/ui';
 import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Railroad Arcade | Interactive Model Railroad Experience',
   description: 'Control a real 2-level model railroad with trains, buildings, and scenery. Insert tokens to play!',
   keywords: 'model railroad, arcade, interactive, trains, HO scale',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Railroad Arcade',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#050508',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
@@ -19,7 +33,9 @@ export default function RootLayout({
       <body className="antialiased">
         <AuthProvider>
           <ModeProvider>
-            {children}
+            <ToastProvider>
+              {children}
+            </ToastProvider>
           </ModeProvider>
         </AuthProvider>
       </body>

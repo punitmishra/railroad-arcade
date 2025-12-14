@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { TokenDisplay, SessionTimer, ArcadeButton } from '@/components/ui';
+import { TokenDisplay, SessionTimer, ArcadeButton, KeyboardShortcutsModal, ConfirmDialog, useToast } from '@/components/ui';
 import {
   GamepadIcon, WalletIcon, TrophyIcon, SparklesIcon,
   TrainIcon, EmergencyIcon, GearIcon, GridIcon, MenuIcon, CloseIcon,
@@ -93,6 +93,9 @@ function RailroadArcade() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'trains' | 'scenery' | 'buildings' | 'sensors' | 'camera' | 'streaming' | 'history' | 'gallery'>('overview');
   const [hasAutoStarted, setHasAutoStarted] = useState(false);
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+  const [showEmergencyConfirm, setShowEmergencyConfirm] = useState(false);
+  const { addToast } = useToast();
 
   // Auto-start in demo mode for seamless experience
   useEffect(() => {
@@ -118,6 +121,28 @@ function RailroadArcade() {
       return () => clearInterval(timer);
     }
   }, [isPlaying, sessionTime]);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      if (e.key === '?' || (e.key === '/' && e.shiftKey)) {
+        e.preventDefault();
+        setShowKeyboardShortcuts(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleEmergencyStop = () => {
+    window.dispatchEvent(new CustomEvent('railroad:emergencyStop'));
+    setShowEmergencyConfirm(false);
+    addToast('warning', 'Emergency stop activated - all trains halted');
+  };
 
   const startSession = async (duration: number, cost: number) => {
     // Demo mode: free unlimited play
@@ -663,12 +688,7 @@ function RailroadArcade() {
       {isPlaying && (
         <button
           className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 group"
-          onClick={() => {
-            if (confirm('Are you sure you want to trigger emergency stop? This will halt all trains immediately.')) {
-              // Dispatch custom event for emergency stop
-              window.dispatchEvent(new CustomEvent('railroad:emergencyStop'));
-            }
-          }}
+          onClick={() => setShowEmergencyConfirm(true)}
           aria-label="Emergency stop - halt all trains"
         >
           <div className="relative">
@@ -680,6 +700,23 @@ function RailroadArcade() {
           </div>
         </button>
       )}
+
+      {/* Emergency Stop Confirmation */}
+      <ConfirmDialog
+        isOpen={showEmergencyConfirm}
+        title="Emergency Stop"
+        message="This will halt all trains immediately. Are you sure?"
+        confirmLabel="Stop All Trains"
+        variant="danger"
+        onConfirm={handleEmergencyStop}
+        onCancel={() => setShowEmergencyConfirm(false)}
+      />
+
+      {/* Keyboard Shortcuts Modal */}
+      <KeyboardShortcutsModal
+        isOpen={showKeyboardShortcuts}
+        onClose={() => setShowKeyboardShortcuts(false)}
+      />
     </div>
   );
 }

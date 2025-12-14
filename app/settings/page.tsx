@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import {
   SettingsIcon, ArrowLeftIcon, BellIcon, SunIcon, MoonIcon,
   VolumeIcon, UserIcon, ShieldIcon, TrashIcon
@@ -86,9 +87,11 @@ export default function SettingsPage() {
           <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
             <div className="flex flex-col sm:flex-row items-center sm:items-center gap-3 sm:gap-4">
               {session.user.image ? (
-                <img
+                <Image
                   src={session.user.image}
                   alt={session.user.name || 'User'}
+                  width={56}
+                  height={56}
                   className="w-14 h-14 sm:w-12 sm:h-12 rounded-full flex-shrink-0"
                 />
               ) : (
