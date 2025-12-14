@@ -172,3 +172,5 @@ describe('Kiosk Page', () => {
     expect(html).toContain('PRESS START');
   });
 });
+
+export {};

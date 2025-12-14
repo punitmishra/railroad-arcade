@@ -270,3 +270,5 @@ describe('Page Routes', () => {
     });
   });
 });
+
+export {};

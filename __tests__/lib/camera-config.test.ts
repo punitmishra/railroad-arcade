@@ -156,10 +156,12 @@ describe('Camera Configuration', () => {
     });
 
     it('should return placeholder URL in development', () => {
-      process.env.NODE_ENV = 'development';
+      const originalEnv = process.env.NODE_ENV;
+      Object.defineProperty(process.env, 'NODE_ENV', { value: 'development', writable: true });
       const url = buildStreamUrl('overhead');
       expect(url).toContain('/api/camera/placeholder');
       expect(url).toContain('id=overhead');
+      Object.defineProperty(process.env, 'NODE_ENV', { value: originalEnv, writable: true });
     });
   });
 

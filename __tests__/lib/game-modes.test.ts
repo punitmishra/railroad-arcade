@@ -205,13 +205,15 @@ describe('GameModeEngine', () => {
     });
 
     it('should track top speed on train update', () => {
-      engine.onTrainUpdate({ id: 'train1', speed: 50, direction: 'forward', position: 0 });
+      const baseTrain = { trackId: 1, name: 'Train 1', direction: 'forward' as const, position: 0, level: 1, headlights: true, carts: 2, color: '#FF0000' };
+
+      engine.onTrainUpdate({ ...baseTrain, speed: 50 });
       expect(engine.getState().stats.topSpeed).toBe(50);
 
-      engine.onTrainUpdate({ id: 'train1', speed: 75, direction: 'forward', position: 0 });
+      engine.onTrainUpdate({ ...baseTrain, speed: 75 });
       expect(engine.getState().stats.topSpeed).toBe(75);
 
-      engine.onTrainUpdate({ id: 'train1', speed: 25, direction: 'forward', position: 0 });
+      engine.onTrainUpdate({ ...baseTrain, speed: 25 });
       expect(engine.getState().stats.topSpeed).toBe(75); // Should not decrease
     });
 

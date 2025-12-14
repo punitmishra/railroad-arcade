@@ -393,3 +393,5 @@ describe('Payment Page Routes', () => {
     });
   });
 });
+
+export {};
