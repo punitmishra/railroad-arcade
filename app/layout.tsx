@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { ModeProvider } from '@/lib/contexts/ModeContext';
 import { ToastProvider } from '@/components/ui';
+import { SoundProvider } from '@/hooks/useSounds';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -33,9 +34,11 @@ export default function RootLayout({
       <body className="antialiased">
         <AuthProvider>
           <ModeProvider>
-            <ToastProvider>
-              {children}
-            </ToastProvider>
+            <SoundProvider>
+              <ToastProvider>
+                {children}
+              </ToastProvider>
+            </SoundProvider>
           </ModeProvider>
         </AuthProvider>
       </body>

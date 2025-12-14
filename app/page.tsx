@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { TokenDisplay, SessionTimer, ArcadeButton, KeyboardShortcutsModal, ConfirmDialog, useToast } from '@/components/ui';
+import { useSounds } from '@/hooks/useSounds';
 import {
   GamepadIcon, WalletIcon, TrophyIcon, SparklesIcon,
   TrainIcon, EmergencyIcon, GearIcon, GridIcon, MenuIcon, CloseIcon,
@@ -96,6 +97,7 @@ function RailroadArcade() {
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const [showEmergencyConfirm, setShowEmergencyConfirm] = useState(false);
   const { addToast } = useToast();
+  const { play: playSound } = useSounds();
 
   // Auto-start in demo mode for seamless experience
   useEffect(() => {
@@ -139,6 +141,7 @@ function RailroadArcade() {
   }, []);
 
   const handleEmergencyStop = () => {
+    playSound('emergency');
     window.dispatchEvent(new CustomEvent('railroad:emergencyStop'));
     setShowEmergencyConfirm(false);
     addToast('warning', 'Emergency stop activated - all trains halted');
@@ -147,6 +150,7 @@ function RailroadArcade() {
   const startSession = async (duration: number, cost: number) => {
     // Demo mode: free unlimited play
     if (mode === 'demo') {
+      playSound('game_start');
       setSessionTime(Infinity); // Unlimited in demo
       setIsPlaying(true);
       return;
@@ -165,6 +169,7 @@ function RailroadArcade() {
 
     try {
       await startSessionApi(duration, cost, (data) => {
+        playSound('game_start');
         updateTokens(data.tokenBalance);
         setSessionTime(duration);
         setIsPlaying(true);
@@ -177,6 +182,7 @@ function RailroadArcade() {
   const unlockModule = async (moduleId: string, cost: number) => {
     // Demo mode: all modules free
     if (mode === 'demo') {
+      playSound('unlock');
       addUnlockedModule(moduleId);
       return;
     }
@@ -199,10 +205,12 @@ function RailroadArcade() {
 
     try {
       await unlockModuleApi(moduleId, cost, (data) => {
+        playSound('unlock');
         updateTokens(data.tokenBalance);
         addUnlockedModule(moduleId);
       });
     } catch (err) {
+      playSound('error');
       console.error('Failed to unlock module:', err);
     }
   };

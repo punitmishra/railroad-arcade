@@ -11,6 +11,7 @@ import { useHardwareAdapter } from '@/hooks/useHardwareAdapter';
 import { TokenConfirmDialog, useTokenConfirmation } from './TokenConfirmDialog';
 import { useGameMode } from '@/lib/contexts/ModeContext';
 import { getActionCost } from '@/lib/pricing';
+import { useSounds } from '@/hooks/useSounds';
 
 // ============================================
 // FIXED LAYOUT CONSTANTS
@@ -152,6 +153,9 @@ export function LiveTrackLayout({
 
   // Token confirmation dialog
   const { requestConfirmation, dialogProps, Dialog } = useTokenConfirmation(tokenBalance);
+
+  // Sound effects
+  const { play: playSound } = useSounds();
 
   // Hardware adapter integration
   const {
@@ -429,6 +433,7 @@ export function LiveTrackLayout({
       const success = await adapterActions.toggleJunction(id);
       if (!success) return;
     }
+    playSound('junction');
     // Update local state (demo mode or after successful live action)
     setJunctions(prev => prev.map(j =>
       j.id === id ? { ...j, state: j.state === 'straight' ? 'diverge' : 'straight' } : j
@@ -441,6 +446,7 @@ export function LiveTrackLayout({
       const success = await adapterActions.toggleCrossing(id);
       if (!success) return;
     }
+    playSound('crossing');
     // Update local state (demo mode or after successful live action)
     setCrossings(prev => prev.map(c =>
       c.id === id ? { ...c, state: c.state === 'open' ? 'closed' : 'open' } : c
@@ -458,12 +464,20 @@ export function LiveTrackLayout({
     // Find train to get trackId for live mode
     const train = trains.find(t => t.id === trainId);
     const isStarting = train && train.speed === 0 && speed > 0;
+    const isStopping = train && train.speed > 0 && speed === 0;
 
     if (mode === 'live' && train) {
       // Map trainId to trackId (T1->1, T2->2, T3->3)
       const trackId = parseInt(trainId.replace('T', ''));
       const success = await adapterActions.setTrainSpeed(trackId, speed);
       if (!success && isStarting) return; // Only block if starting (costs tokens)
+    }
+
+    // Play appropriate sound
+    if (isStarting) {
+      playSound('train_start');
+    } else if (isStopping) {
+      playSound('train_stop');
     }
 
     setTrains(prev => prev.map(t => {

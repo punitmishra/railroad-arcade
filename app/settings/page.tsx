@@ -8,13 +8,14 @@ import {
   SettingsIcon, ArrowLeftIcon, BellIcon, SunIcon, MoonIcon,
   VolumeIcon, UserIcon, ShieldIcon, TrashIcon
 } from '@/components/icons';
+import { useSounds } from '@/hooks/useSounds';
 
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { enabled: soundEnabled, volume, setEnabled: setSoundEnabled, setVolume, play: playSound } = useSounds();
   const [settings, setSettings] = useState({
     notifications: true,
-    soundEffects: true,
     darkMode: true,
     autoplay: false,
     showTutorials: true,
@@ -128,9 +129,24 @@ export default function SettingsPage() {
             label="Sound Effects"
             description="Play sounds for train movements and actions"
             icon={<VolumeIcon size={18} />}
-            enabled={settings.soundEffects}
-            onChange={() => handleToggle('soundEffects')}
+            enabled={soundEnabled}
+            onChange={() => {
+              setSoundEnabled(!soundEnabled);
+              if (!soundEnabled) {
+                // Play a test sound when enabling
+                setTimeout(() => playSound('click'), 100);
+              }
+            }}
           />
+          {soundEnabled && (
+            <VolumeSetting
+              volume={volume}
+              onChange={(v) => {
+                setVolume(v);
+                playSound('click');
+              }}
+            />
+          )}
           <ToggleSetting
             label="Auto-play Demo"
             description="Automatically start demo mode on page load"
@@ -313,6 +329,54 @@ function ToggleSetting({
           }`}
         />
       </button>
+    </div>
+  );
+}
+
+function VolumeSetting({
+  volume,
+  onChange,
+}: {
+  volume: number;
+  onChange: (volume: number) => void;
+}) {
+  const percentage = Math.round(volume * 100);
+
+  return (
+    <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+      <div className="flex items-center gap-3 mb-3">
+        <VolumeIcon size={18} className="text-gray-400" />
+        <div className="flex-1">
+          <div className="font-medium text-white text-sm sm:text-base">Volume</div>
+          <div className="text-xs sm:text-sm text-gray-500">Adjust sound effect volume</div>
+        </div>
+        <span className="text-sm font-medium text-cyan-400 tabular-nums">{percentage}%</span>
+      </div>
+      <input
+        type="range"
+        min="0"
+        max="100"
+        value={percentage}
+        onChange={(e) => onChange(parseInt(e.target.value) / 100)}
+        className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer
+          [&::-webkit-slider-thumb]:appearance-none
+          [&::-webkit-slider-thumb]:w-4
+          [&::-webkit-slider-thumb]:h-4
+          [&::-webkit-slider-thumb]:rounded-full
+          [&::-webkit-slider-thumb]:bg-cyan-400
+          [&::-webkit-slider-thumb]:shadow-lg
+          [&::-webkit-slider-thumb]:shadow-cyan-500/50
+          [&::-webkit-slider-thumb]:cursor-pointer
+          [&::-moz-range-thumb]:w-4
+          [&::-moz-range-thumb]:h-4
+          [&::-moz-range-thumb]:rounded-full
+          [&::-moz-range-thumb]:bg-cyan-400
+          [&::-moz-range-thumb]:border-0
+          [&::-moz-range-thumb]:cursor-pointer"
+        style={{
+          background: `linear-gradient(to right, rgb(34 211 238) 0%, rgb(34 211 238) ${percentage}%, rgb(255 255 255 / 0.1) ${percentage}%, rgb(255 255 255 / 0.1) 100%)`
+        }}
+      />
     </div>
   );
 }
