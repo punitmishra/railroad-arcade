@@ -2,122 +2,301 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Commands
+## Quick Reference
 
 ```bash
 npm run dev      # Start development server at localhost:3000
-npm run build    # Production build
+npm run build    # Production build (runs prisma generate first)
 npm run start    # Run production server
 npm run lint     # Run ESLint
 ```
 
+## Project Overview
+
+Railroad Arcade is a Next.js 14 App Router application for controlling a 2-level HO scale model railroad. It features:
+
+- **Dual-mode operation**: Demo (simulation) and Live (real hardware via Raspberry Pi)
+- **Token-based access**: Pay-to-play arcade model with multiple payment providers
+- **Game modes**: Free Play, Speed Run, Delivery Mission, Survival, Time Attack
+- **Kiosk mode**: Full-screen arcade cabinet support
+- **Leaderboards**: High scores by game mode
+
+**Live Site:** https://railroad-arcade-v5.vercel.app
+
 ## Architecture
 
-This is a Next.js 14 App Router application for controlling a 2-level HO scale model railroad. The frontend provides an arcade-style interface with token-based access to control trains, scenery, and interactive buildings remotely via a Raspberry Pi backend.
+### Directory Structure
 
-### Key Directories
+```
+app/                          # Next.js App Router
+├── api/                      # API routes (all server-side)
+│   ├── auth/                 # NextAuth endpoints
+│   ├── payments/             # Stripe, PayPal, Coinbase
+│   ├── leaderboards/         # Game leaderboards
+│   ├── queue/                # Live mode queue system
+│   └── user/                 # User data (stats, sessions, transactions)
+├── kiosk/page.tsx            # Arcade cabinet mode
+├── leaderboards/page.tsx     # Leaderboards UI
+├── settings/page.tsx         # User settings
+├── profile/page.tsx          # User profile
+└── page.tsx                  # Main arcade page
 
-- `app/` - Next.js App Router pages, API routes, and global styles
-- `app/api/` - Backend API routes (auth, user, sessions, payments, queue)
-- `components/` - React components (all use 'use client' directive)
-- `components/auth/` - Authentication components (Login, Signup, UserMenu)
-- `lib/` - Server-side utilities and API clients
-- `prisma/` - Database schema and migrations
+components/
+├── auth/                     # Login, Signup, UserMenu
+├── kiosk/                    # KioskTrainControl, KioskCameraView
+├── icons.tsx                 # 60+ custom SVG icons
+├── ui.tsx                    # Core UI: ArcadeButton, ModulePanel, Skeleton, etc.
+├── LiveTrackLayout.tsx       # Main track visualization (SVG-based)
+├── GameModeSelector.tsx      # Game mode selection UI
+├── GameHUD.tsx               # In-game heads-up display
+├── ModeToggle.tsx            # Demo/Live mode switcher
+└── TokenConfirmDialog.tsx    # Token spending confirmation
+
+hooks/
+├── useUser.ts                # User state, tokens, modules
+├── useLeaderboard.ts         # Leaderboard data fetching
+├── useHardwareAdapter.ts     # Hardware abstraction layer
+└── useArcadeInput.ts         # Keyboard/gamepad input
+
+lib/
+├── contexts/ModeContext.tsx  # Demo/Live mode context
+├── game-modes/               # Game mode engines
+│   └── GameModeEngine.ts     # Base engine + mode configs
+├── hardware/                 # Hardware adapters
+│   ├── HardwareAdapter.ts    # Interface definition
+│   ├── DemoAdapter.ts        # Simulation adapter
+│   └── LiveAdapter.ts        # Real hardware adapter
+├── api.ts                    # Raspberry Pi API client
+├── auth.ts                   # NextAuth configuration
+├── db.ts                     # Prisma client singleton
+├── redis.ts                  # Upstash Redis + rate limiters
+├── pricing.ts                # Token costs for actions
+└── kiosk-config.ts           # Arcade cabinet settings
+
+prisma/
+└── schema.prisma             # Database schema
+```
+
+### Key Patterns
+
+#### Demo/Live Mode System
+
+The app operates in two modes controlled by `ModeContext`:
+
+```tsx
+// lib/contexts/ModeContext.tsx
+const { mode, setMode, isTokenRequired } = useGameMode();
+// mode: 'demo' | 'live'
+```
+
+- **Demo mode**: Free simulation, no tokens required, all features unlocked
+- **Live mode**: Real hardware control, token-gated actions, queue system
+
+#### Hardware Abstraction
+
+```tsx
+// hooks/useHardwareAdapter.ts
+const { state, actions } = useHardwareAdapter({ mode, onTokenBalanceChange });
+
+// Actions work in both modes:
+await actions.setTrainSpeed(trackId, speed);  // Demo: local state, Live: API call
+await actions.toggleJunction(id);
+await actions.emergencyStop();
+```
+
+#### Game Mode Engine
+
+```tsx
+// lib/game-modes/GameModeEngine.ts
+const engine = createGameMode('SPEED_RUN');
+engine.start();
+engine.addScore('checkpoint', 'Checkpoint reached', 'train1');
+const state = engine.getState(); // { score, timeRemaining, isActive, etc. }
+```
+
+#### Token Confirmation Flow
+
+Live mode actions that cost tokens show a confirmation dialog:
+
+```tsx
+// components/TokenConfirmDialog.tsx
+const { requestConfirmation, Dialog } = useTokenConfirmation(tokenBalance);
+const confirmed = await requestConfirmation('TRAIN_START', 2);
+```
 
 ### Component Architecture
 
-**Page Structure** (`app/page.tsx`):
-- Main `RailroadArcade` component manages global state (tokens, session, unlocked modules)
+#### Main Page (`app/page.tsx`)
+
+- `RailroadArcade` component manages global state
 - Tab-based navigation: Overview, Trains, Scenery, Buildings, Sensors, Camera, Streaming, Gallery, History
-- Session system: users spend tokens to start timed sessions
+- Auto-starts in demo mode for seamless experience
 
-**UI Components** (`components/ui.tsx`):
-- `ArcadeButton` - Primary buttons with variants (primary, secondary, danger, ghost, success)
-- `ModulePanel` - Container for control modules with lock overlay
-- `ControlButton` - Toggle controls with color states
-- `TokenDisplay` / `SessionTimer` - Header status components
-- `VehicleCard` / `StatCard` - Building module cards
+#### LiveTrackLayout (`components/LiveTrackLayout.tsx`)
 
-**Feature Modules**:
-- `LiveTrackLayout.tsx` - Real-time SVG track visualization with train positions, signals, junctions
-- `SceneryControl.tsx` - Time of day, lighting zones, water features, boats, animated elements
-- `TrainTrackingModule.tsx` - Individual train speed/direction control
-- `Modules.tsx` - FireStation, Cafe, SmartHome, ConstructionZone, DiamondCrossing modules
-- `PoliceStationModule.tsx` - Police station with vehicle deployment
+- SVG-based track visualization (700x450 viewBox)
+- Real-time train animation with trails
+- Interactive junctions and crossings (clickable, keyboard accessible)
+- Telemetry panel with train stats
+- Listens for global `railroad:emergencyStop` events
 
-**Icons** (`components/icons.tsx`):
-- 60+ custom SVG icon components with consistent `IconProps` interface
-- Pattern: `({ size = 24, ...props }: IconProps) => <svg ...>`
+#### Kiosk Mode (`app/kiosk/page.tsx`)
 
-### API Integration
+- Full-screen arcade cabinet interface
+- Large touch targets
+- Token error messaging
+- Attract screen with auto-timeout
 
-The `lib/api.ts` module connects to a Raspberry Pi running a control server. Key endpoints:
-- `/api/status`, `/api/emergency-stop` - System control
-- `/api/tracks/:id/speed`, `/api/tracks/:id/forward|reverse|stop` - Track control
-- `/api/cpx/*` - CPX/CRICKIT hardware (servos, LEDs, sounds, gates)
-- `/api/scenery` - Scenery state (time of day, lights, water)
-- `/api/camera/*` - Camera streaming
-- `/api/distance/*` - Distance sensors
+### Database Schema (Prisma)
 
-Configure API URL via `NEXT_PUBLIC_API_URL` env variable (defaults to `http://localhost:5000`).
+Key models in `prisma/schema.prisma`:
 
-### Styling
+- `User` - tokenBalance, unlockedModules[], achievements
+- `PlaySession` - gameMode, score, duration, events
+- `Transaction` - token purchases and spending
+- `Leaderboard` - high scores per gameMode + isLive flag
+- `LiveQueue` - queue positions for live hardware access
+
+### API Routes
+
+#### Authentication
+- `POST /api/auth/signup` - User registration
+- `GET/POST /api/auth/[...nextauth]` - NextAuth handlers
+
+#### User Data
+- `GET /api/user` - Current user with tokens, modules
+- `POST /api/user/modules` - Unlock module
+- `GET /api/user/stats` - Play statistics
+- `GET /api/user/sessions` - Session history
+
+#### Game
+- `GET /api/leaderboards?gameMode=X&isLive=Y` - Fetch leaderboards
+- `POST /api/sessions` - Start/end play sessions
+
+#### Payments
+- `POST /api/payments/stripe` - Create Stripe checkout
+- `POST /api/payments/paypal` - Create PayPal order
+- `POST /api/payments/coinbase` - Create crypto charge
+
+### Styling Conventions
 
 - Tailwind CSS with custom dark theme
-- CSS variables in `app/globals.css` define color palette (cyan, purple, gold for tokens)
-- Fonts: Orbitron (display), Inter (body), JetBrains Mono (monospace)
-- Design uses neon accents, glassmorphism, and gradient effects
+- CSS variables in `app/globals.css`
+- Colors: cyan (`#00f0ff`), purple (`#a855f7`), amber for tokens
+- Fonts: Orbitron (display), Inter (body), JetBrains Mono (code)
+- Min touch targets: 44px height for accessibility
+- Focus states: cyan outline with box-shadow
 
-### Track Layout Constants
+### Accessibility
 
-In `LiveTrackLayout.tsx`:
-- Level 2: Express Line (upper level) - 2 trains
-- Level 1: Local Line (lower level) - 1 train
-- Fixed SVG dimensions: 700x450
-- Stations: Grand Central (L2), Valley Station (L1)
+Recent improvements include:
+- ARIA labels on all icon buttons
+- `aria-pressed` states for toggle buttons
+- Keyboard navigation for SVG elements (junctions, crossings)
+- Focus-visible styles with cyan outline
+- Skeleton loading states for perceived performance
+- Confirmation dialogs for destructive actions
 
-## Backend Infrastructure
+## Common Tasks
 
-### Database (Neon Postgres + Prisma)
+### Adding a New Game Mode
 
-- `prisma/schema.prisma` - Database schema with models for users, sessions, transactions, achievements
-- `lib/db.ts` - Prisma client singleton configured for Neon serverless
+1. Add mode to `GameMode` enum in `prisma/schema.prisma`
+2. Add config in `lib/game-modes/GameModeEngine.ts`:
+   ```tsx
+   export const GAME_MODE_CONFIGS: Record<GameModeId, GameModeConfig> = {
+     NEW_MODE: {
+       id: 'NEW_MODE',
+       name: 'New Mode',
+       description: '...',
+       tokenCost: 5,
+       duration: 180,
+       // ...
+     }
+   };
+   ```
+3. Update `GameModeSelector.tsx` if needed
+4. Run `npx prisma db push`
 
-Key models:
-- `User` - Extended with tokenBalance, unlockedModules, achievements
-- `PlaySession` - Tracks arcade play sessions with events
-- `Transaction` - Token purchases and spending
-- `Snapshot` / `Achievement` - User content and rewards
+### Adding a New Building Module
 
-### Caching & Queues (Upstash)
+1. Create component in `components/`:
+   ```tsx
+   export function NewModule({ locked, onUnlock }: ModuleProps) {
+     return (
+       <ModulePanel title="New Module" locked={locked} onUnlock={onUnlock}>
+         {/* Controls */}
+       </ModulePanel>
+     );
+   }
+   ```
+2. Add to `app/page.tsx` modules array and Buildings tab
+3. Add pricing in `lib/pricing.ts`
 
-- `lib/redis.ts` - Redis client with rate limiters and cache helpers
-- `lib/queue.ts` - QStash client for background jobs
-- `app/api/queue/process/route.ts` - Queue job processor
+### Adding Hardware Control
 
-Rate limiters: `apiRateLimit`, `authRateLimit`, `paymentRateLimit`
-Cache helpers: `userCache`, `playSessionCache`, `statsCache`
+1. Add method to `lib/hardware/HardwareAdapter.ts` interface
+2. Implement in `DemoAdapter.ts` (simulation)
+3. Implement in `LiveAdapter.ts` (API call)
+4. Add token cost in `lib/pricing.ts` if applicable
 
-### Authentication (NextAuth.js v4)
+## Environment Variables
 
-- `lib/auth.ts` - Auth configuration with credentials + OAuth providers
-- `app/api/auth/[...nextauth]/route.ts` - NextAuth API handler
-- `app/api/auth/signup/route.ts` - User registration endpoint
-
-### Payments
-
-Three payment providers configured:
-- `lib/stripe.ts` - Stripe checkout for card payments
-- `lib/paypal.ts` - PayPal REST API integration
-- `lib/coinbase.ts` - Coinbase Commerce for crypto
-
-API routes under `app/api/payments/{stripe,paypal,coinbase}/`
-
-### Database Commands
-
-```bash
-npx prisma generate    # Generate Prisma client
-npx prisma db push     # Push schema to database
-npx prisma studio      # Open Prisma Studio GUI
-npx prisma migrate dev # Create migration (development)
+Required:
 ```
+DATABASE_URL          # Neon PostgreSQL connection string
+NEXTAUTH_URL          # App URL (http://localhost:3000 for dev)
+NEXTAUTH_SECRET       # Random secret for NextAuth
+```
+
+Optional:
+```
+UPSTASH_REDIS_REST_URL    # Redis for caching/rate limiting
+UPSTASH_REDIS_REST_TOKEN
+NEXT_PUBLIC_API_URL       # Raspberry Pi API (for live mode)
+STRIPE_SECRET_KEY         # Payment providers
+PAYPAL_CLIENT_ID
+COINBASE_COMMERCE_API_KEY
+```
+
+## Next Steps / Roadmap
+
+### High Priority
+1. **Real Camera Integration** - Replace placeholder camera feeds with actual Raspberry Pi camera streams
+2. **WebSocket Real-time Updates** - Replace polling with WebSocket for train positions, queue status
+3. **Recording System** - Implement actual video recording and snapshot saving
+4. **Queue System Testing** - Full testing of live mode queue with multiple users
+
+### Medium Priority
+5. **Multi-camera Grid** - Implement PiP and split-view layouts for multiple cameras
+6. **Achievement System** - Implement achievement unlocking and display
+7. **Social Features** - Share scores, challenge friends
+8. **Sound Effects** - Add arcade-style audio feedback
+
+### Low Priority / Nice-to-Have
+9. **Mobile App** - React Native version for mobile control
+10. **Replay System** - Record and replay train sessions
+11. **Custom Track Layouts** - Allow users to design track configurations
+12. **Tournament Mode** - Scheduled competitive events
+
+### Technical Debt
+- Replace `<img>` with Next.js `<Image />` for optimization
+- Add comprehensive test coverage
+- Implement proper error boundaries
+- Add request/response logging for debugging
+
+## Troubleshooting
+
+### Build Errors
+- Run `npx prisma generate` before `npm run build`
+- Check DATABASE_URL is set correctly
+- API routes using `headers()` will show errors during static generation (expected)
+
+### Database Issues
+- Use `npx prisma studio` to inspect data
+- Reset with `npx prisma db push --force-reset` (WARNING: deletes data)
+
+### Live Mode Not Working
+- Verify NEXT_PUBLIC_API_URL points to Raspberry Pi
+- Check Pi server is running and accessible
+- Verify network connectivity between frontend and Pi

@@ -1,202 +1,236 @@
-# 🚂 Railroad Arcade
+# Railroad Arcade
 
-An elegant, interactive web application for controlling a 2-level HO scale model railroad with token-based access, real-time train tracking, and comprehensive scenery control.
+An interactive web application for controlling a 2-level HO scale model railroad with dual-mode operation (Demo/Live), token-based access, real-time train tracking, game modes, and comprehensive scenery control.
 
-![Railroad Arcade](https://via.placeholder.com/800x400/0a0a12/00f0ff?text=Railroad+Arcade)
+**Live Demo:** https://railroad-arcade-v5.vercel.app
 
-## ✨ Features
+## Features
 
-### 🎮 Interactive Control System
-- **Real-time Train Tracking** - Live SVG visualization of train positions with animated movement
-- **Multi-level Layout** - Control 3 trains across 2 levels with tunnels connecting them
-- **Junction Control** - Toggle 3 junctions (1 on Level 1, 2 on Level 2)
-- **Railroad Crossings** - Manage 5 crossings (1 on Level 1, 4 on Level 2)
+### Dual-Mode Operation
+- **Demo Mode** - Full simulation free for all users, no hardware required
+- **Live Mode** - Real Raspberry Pi hardware control with token-based access
 
-### 🎨 Scenery Control
-- **Time of Day** - Dawn, Day, Sunset, Night modes with ambient lighting
-- **Lighting Zones** - 11+ controllable zones (residential, commercial, entertainment, infrastructure)
-- **Water Features** - Waterfalls, lakes, fountains, rivers with speed control
-- **Boats** - 3 controllable boats with lights and movement
-- **Animated Scenery** - Windmill, smokestacks, flag poles, clock tower, church bells
+### Interactive Control System
+- **Real-time Train Tracking** - Live SVG visualization with 3 trains across 2 levels
+- **Junction & Crossing Control** - Toggle junctions and railroad crossings
+- **Autopilot Mode** - Automated train operation with station stops
+- **Emergency Stop** - Global emergency stop with confirmation
 
-### 🏢 Building Modules
-- **Police Station** - Light control, vehicle deployment
-- **Fire Station** - Emergency vehicles, bay doors
-- **Café** - Interior/exterior lights, drive-thru animation
-- **Smart Home** - Climate control, EV charging, room lights
-- **Construction Zone** - Heavy equipment, tower lights
-- **Diamond Crossing** - Signal control, train simulation
+### Game Modes
+- **Free Play** - Sandbox mode for exploration
+- **Speed Run** - Complete circuits as fast as possible
+- **Delivery Mission** - Transport cargo between stations
+- **Survival** - Avoid collisions and obstacles
+- **Time Attack** - Score points within time limit
 
-### 💰 Token System
-- Pay-to-play arcade model
-- Session-based access (timed gameplay)
-- Module unlock system
-- Crypto & PayPal payment options (demo)
+### Scenery Control
+- **Time of Day** - Dawn, Day, Sunset, Night with ambient lighting
+- **Lighting Zones** - 11+ controllable zones
+- **Water Features** - Waterfalls, lakes, fountains with speed control
+- **Animated Elements** - Windmill, smokestacks, boats
 
-### 📹 Camera Integration
-- Live camera feed support
-- Multiple camera angles
-- Recording & snapshot capabilities
+### Building Modules
+- Police Station, Fire Station, Cafe, Smart Home, Construction Zone, Diamond Crossing
 
-## 🛠️ Tech Stack
+### Additional Features
+- **Kiosk Mode** - Full-screen arcade cabinet support
+- **Leaderboards** - High scores by game mode
+- **Multi-camera Support** - Multiple camera angles with PiP
+- **Token System** - Stripe, PayPal, and crypto payments
 
-- **Framework**: Next.js 14 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS + Custom CSS
-- **Icons**: Custom SVG components (zero dependencies)
-- **Fonts**: Orbitron, Space Grotesk
+## Tech Stack
 
-## 📁 Project Structure
+- **Framework:** Next.js 14 (App Router)
+- **Language:** TypeScript
+- **Database:** PostgreSQL (Neon) with Prisma ORM
+- **Auth:** NextAuth.js v4
+- **Styling:** Tailwind CSS
+- **Caching:** Upstash Redis
+- **Payments:** Stripe, PayPal, Coinbase Commerce
+- **Deployment:** Vercel
 
-```
-railroad-arcade/
-├── app/
-│   ├── globals.css          # Global styles & theme
-│   ├── layout.tsx           # Root layout
-│   └── page.tsx             # Main arcade page
-├── components/
-│   ├── icons.tsx            # 60+ custom SVG icons
-│   ├── ui.tsx               # Core UI components
-│   ├── LiveTrackLayout.tsx  # Real-time track visualization
-│   ├── SceneryControl.tsx   # Comprehensive scenery panel
-│   ├── TrainTrackingModule.tsx
-│   ├── PoliceStationModule.tsx
-│   └── Modules.tsx          # Fire, Cafe, Home, Construction, Crossing
-├── lib/
-│   └── api.ts               # API client for Raspberry Pi
-├── package.json
-├── tsconfig.json
-├── tailwind.config.ts
-├── postcss.config.js
-└── next.config.js
-```
+## Prerequisites
 
-## 🚀 Getting Started
-
-### Prerequisites
 - Node.js 18+
 - npm or yarn
+- PostgreSQL database (Neon recommended)
+- Redis instance (Upstash recommended)
 
-### Installation
+## Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+# Database (Neon PostgreSQL)
+DATABASE_URL="postgresql://user:password@host/database?sslmode=require"
+
+# NextAuth
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-secret-key-generate-with-openssl-rand-base64-32"
+
+# Redis (Upstash)
+UPSTASH_REDIS_REST_URL="https://your-redis.upstash.io"
+UPSTASH_REDIS_REST_TOKEN="your-token"
+
+# Raspberry Pi API (optional, for live mode)
+NEXT_PUBLIC_API_URL="http://raspberry-pi-ip:5000"
+
+# Payments (optional)
+STRIPE_SECRET_KEY="sk_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_..."
+PAYPAL_CLIENT_ID="..."
+PAYPAL_CLIENT_SECRET="..."
+COINBASE_COMMERCE_API_KEY="..."
+COINBASE_WEBHOOK_SECRET="..."
+
+# OAuth Providers (optional)
+GOOGLE_CLIENT_ID="..."
+GOOGLE_CLIENT_SECRET="..."
+GITHUB_ID="..."
+GITHUB_SECRET="..."
+```
+
+## Installation
 
 ```bash
-# Clone or extract the project
+# Clone the repository
+git clone https://github.com/punitmishra/railroad-arcade.git
 cd railroad-arcade
 
 # Install dependencies
 npm install
 
+# Generate Prisma client
+npx prisma generate
+
+# Push database schema (creates tables)
+npx prisma db push
+
 # Start development server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the application.
+Open http://localhost:3000 to view the application.
 
-### Production Build
+## Build & Production
 
 ```bash
+# Build for production
 npm run build
+
+# Start production server
 npm start
 ```
 
-## 🔌 API Integration
+## Database Commands
 
-The app connects to a Raspberry Pi running the railroad control server. Configure the API URL in `.env.local`:
+```bash
+npx prisma generate      # Generate Prisma client
+npx prisma db push       # Push schema to database
+npx prisma studio        # Open Prisma Studio GUI
+npx prisma migrate dev   # Create migration (development)
+npx prisma migrate deploy # Apply migrations (production)
+```
+
+## Deployment (Vercel)
+
+1. Push code to GitHub
+2. Connect repository to Vercel
+3. Add environment variables in Vercel dashboard
+4. Deploy
+
+```bash
+# Deploy to production
+vercel --prod
+```
+
+## Project Structure
+
+```
+railroad-arcade/
+├── app/
+│   ├── api/                    # API routes
+│   │   ├── auth/               # NextAuth endpoints
+│   │   ├── payments/           # Stripe, PayPal, Coinbase
+│   │   ├── leaderboards/       # Game leaderboards
+│   │   ├── queue/              # Live queue system
+│   │   └── user/               # User data endpoints
+│   ├── kiosk/                  # Arcade cabinet mode
+│   ├── leaderboards/           # Leaderboards page
+│   ├── settings/               # User settings
+│   ├── profile/                # User profile
+│   ├── globals.css             # Global styles
+│   ├── layout.tsx              # Root layout
+│   └── page.tsx                # Main arcade page
+├── components/
+│   ├── auth/                   # Auth components
+│   ├── kiosk/                  # Kiosk-specific components
+│   ├── icons.tsx               # 60+ custom SVG icons
+│   ├── ui.tsx                  # Core UI components
+│   ├── LiveTrackLayout.tsx     # Real-time track visualization
+│   ├── SceneryControl.tsx      # Scenery control panel
+│   ├── GameModeSelector.tsx    # Game mode selection
+│   ├── GameHUD.tsx             # In-game HUD
+│   └── ...                     # Other modules
+├── hooks/
+│   ├── useUser.ts              # User state management
+│   ├── useLeaderboard.ts       # Leaderboard data
+│   ├── useHardwareAdapter.ts   # Hardware abstraction
+│   └── useArcadeInput.ts       # Arcade input handling
+├── lib/
+│   ├── contexts/               # React contexts
+│   │   └── ModeContext.tsx     # Demo/Live mode
+│   ├── game-modes/             # Game mode engines
+│   ├── hardware/               # Hardware adapters
+│   ├── api.ts                  # Raspberry Pi API client
+│   ├── auth.ts                 # NextAuth config
+│   ├── db.ts                   # Prisma client
+│   ├── redis.ts                # Redis/cache utilities
+│   └── pricing.ts              # Token pricing
+├── prisma/
+│   └── schema.prisma           # Database schema
+├── public/                     # Static assets
+├── CLAUDE.md                   # AI assistant guide
+└── README.md                   # This file
+```
+
+## API Integration (Raspberry Pi)
+
+For live hardware control, the app connects to a Raspberry Pi running a control server:
 
 ```env
 NEXT_PUBLIC_API_URL=http://raspberry-pi-ip:5000
 ```
 
-### API Endpoints
+### Hardware API Endpoints
 - `GET /api/status` - System status
 - `POST /api/emergency-stop` - Emergency stop all trains
-- `GET /api/tracks` - Track status
 - `POST /api/tracks/:id/speed` - Set track speed
 - `POST /api/cpx/gate/:position` - Control crossing gates
-- `GET /api/scenery` - Get scenery state
-- `POST /api/scenery` - Update scenery
+- `POST /api/scenery` - Update scenery state
 
-## 🎨 Design System
+## Design System
 
 ### Colors
-- **Neon Cyan**: `#00f0ff` - Primary accent
-- **Neon Pink**: `#ff2d95` - Highlights
-- **Token Gold**: `#ffd700` - Currency/rewards
-- **Background**: `#0a0a0f` - Dark base
+- **Neon Cyan:** `#00f0ff` - Primary accent
+- **Neon Purple:** `#a855f7` - Secondary accent
+- **Token Gold:** `#ffd700` - Currency/rewards
+- **Background:** `#0a0a0f` - Dark base
 
 ### Typography
-- **Display**: Orbitron (headers, titles)
-- **Body**: Space Grotesk (content)
+- **Display:** Orbitron (headers)
+- **Body:** Space Grotesk / Inter
+- **Mono:** JetBrains Mono
 
-### Components
-- `ArcadeButton` - Primary action buttons
-- `ModulePanel` - Container for control modules
-- `ControlButton` - Toggle/action controls
-- `TokenDisplay` - Currency display
-- `SessionTimer` - Countdown timer
+## Contributing
 
-## 📱 Responsive Design
+1. Fork the repository
+2. Create a feature branch
+3. Make changes
+4. Run `npm run build` to verify
+5. Submit a pull request
 
-- Mobile-first approach
-- Collapsible navigation
-- Touch-friendly controls
-- Optimized for tablets
+## License
 
-## 🔧 Customization
-
-### Adding New Icons
-Edit `components/icons.tsx`:
-
-```tsx
-export const NewIcon = ({ size = 24, ...p }: IconProps) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}>
-    {/* SVG paths */}
-  </svg>
-);
-```
-
-### Adding New Modules
-1. Create component in `components/`
-2. Import in `page.tsx`
-3. Add to modules array
-4. Render in appropriate tab
-
-### Theming
-Modify CSS variables in `globals.css`:
-
-```css
-:root {
-  --neon-blue: #00f0ff;
-  --neon-pink: #ff2d95;
-  /* Add custom colors */
-}
-```
-
-## 🚂 Hardware Integration
-
-### Raspberry Pi Setup
-The app expects a Rust/Python API server running on the Pi with:
-- GPIO control for tracks
-- CPX/CRICKIT integration
-- Camera streaming
-- Distance sensors
-
-### Track Configuration
-- **Level 1**: 1 train, 1 junction, 1 crossing
-- **Level 2**: 2 trains, 2 junctions, 4 crossings
-- **2 Stations**: Grand Central (L2), Valley Station (L1)
-- **2 Tunnels**: Connecting Level 1 and Level 2
-
-## 📝 License
-
-MIT License - feel free to use and modify for your own projects!
-
-## 🙏 Acknowledgments
-
-- Designed for HO scale model railroads
-- Inspired by arcade gaming aesthetics
-- Built with modern web technologies
-
----
-
-**Happy Railroading! 🚂✨**
+MIT License - feel free to use and modify for your own projects.
