@@ -269,13 +269,44 @@ npx prisma studio     # GUI
 
 ---
 
-## Remaining Work
+### Polish Features ✅
 
-### Polish & Enhancements
-- [ ] Add WebSocket/SSE for real-time updates
-- [ ] Recording system implementation
-- [ ] Achievement triggers
-- [ ] Leaderboard integration
+**Real-Time Updates (SSE):**
+- `lib/realtime.ts` - Event emitter with SSE stream
+- `app/api/realtime/route.ts` - SSE endpoint
+- `hooks/useRealtime.ts` - React hooks for events
+- Specialized: `useTrainUpdates`, `useQueueUpdates`, `useScoreUpdates`
+
+**Achievement System:**
+- `lib/achievements.ts` - 10 achievement types with triggers
+- `app/api/achievements/route.ts` - Fetch achievements
+- `hooks/useAchievements.ts` - React hook with notifications
+
+| Achievement | Description | Points |
+|-------------|-------------|--------|
+| FIRST_RUN | Complete first session | 10 |
+| SPEED_DEMON | Max speed for 60s | 25 |
+| NIGHT_OWL | 10 min night mode | 15 |
+| COLLECTOR | Unlock all modules | 50 |
+| MARATHON | 100 total laps | 30 |
+| EXPLORER | Use all cameras | 15 |
+| PHOTOGRAPHER | 10 snapshots | 20 |
+| CONDUCTOR | Operate 3 trains | 25 |
+| MASTER_ENGINEER | Score 10,000 pts | 100 |
+| VETERAN | 50 sessions | 75 |
+
+**Leaderboard Integration:**
+- `app/api/leaderboards/route.ts` - Score submission/retrieval
+- `hooks/useLeaderboard.ts` - React hooks for rankings
+- Real-time updates via SSE
+
+**Recording System:**
+- `app/api/recordings/route.ts` - Full CRUD operations
+- Start, stop, complete, delete recordings
+
+---
+
+## Remaining Work
 
 ### Production Deployment
 - [ ] Environment configuration
@@ -288,12 +319,12 @@ npx prisma studio     # GUI
 ## Git History (Recent)
 
 ```
+5daf058 Add real-time updates, achievements, leaderboards, and recordings
+ee981e1 Update development notes with Phase 6 completion
 40ee858 Implement Phase 6: Hardware adapter integration and token enforcement
 c895c6b Add comprehensive test suite for arcade features
 acb99d3 Add development notes documenting all completed phases
-2c5b2cf Add payment and module integration tests
 24dbc20 Add demo/live dual-mode arcade with game modes and kiosk support
-ae30f8e Add payment integration and fix interactive module persistence
 ```
 
 ---
