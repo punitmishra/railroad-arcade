@@ -92,6 +92,16 @@ function RailroadArcade() {
   const [showTokenStore, setShowTokenStore] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'trains' | 'scenery' | 'buildings' | 'sensors' | 'camera' | 'streaming' | 'history' | 'gallery'>('overview');
+  const [hasAutoStarted, setHasAutoStarted] = useState(false);
+
+  // Auto-start in demo mode for seamless experience
+  useEffect(() => {
+    if (mode === 'demo' && !isPlaying && !hasAutoStarted) {
+      setSessionTime(Infinity);
+      setIsPlaying(true);
+      setHasAutoStarted(true);
+    }
+  }, [mode, isPlaying, hasAutoStarted]);
 
   // Session timer countdown
   useEffect(() => {
@@ -253,9 +263,16 @@ function RailroadArcade() {
                 </div>
               </div>
 
-              {isPlaying && <SessionTimer seconds={sessionTime} />}
-              <TokenDisplay amount={tokens} onAddTokens={() => setShowTokenStore(true)} />
-              {!isPlaying ? (
+              {isPlaying && sessionTime !== Infinity && <SessionTimer seconds={sessionTime} />}
+              {mode === 'live' && (
+                <TokenDisplay amount={tokens} onAddTokens={() => setShowTokenStore(true)} />
+              )}
+              {mode === 'demo' ? (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-400 text-sm">
+                  <SparklesIcon size={14} />
+                  <span className="font-medium">Free Demo Mode</span>
+                </div>
+              ) : !isPlaying ? (
                 <ArcadeButton
                   variant="primary"
                   onClick={() => startSession(120, 10)}
@@ -290,10 +307,17 @@ function RailroadArcade() {
                 <ModeToggle />
               </div>
               <div className="flex items-center justify-between">
-                <TokenDisplay amount={tokens} onAddTokens={() => setShowTokenStore(true)} />
-                {isPlaying && <SessionTimer seconds={sessionTime} />}
+                {mode === 'live' && (
+                  <TokenDisplay amount={tokens} onAddTokens={() => setShowTokenStore(true)} />
+                )}
+                {isPlaying && sessionTime !== Infinity && <SessionTimer seconds={sessionTime} />}
               </div>
-              {!isPlaying ? (
+              {mode === 'demo' ? (
+                <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-400">
+                  <SparklesIcon size={18} />
+                  <span className="font-medium">Free Demo Mode - All Features Unlocked</span>
+                </div>
+              ) : !isPlaying ? (
                 <ArcadeButton
                   variant="primary"
                   className="w-full"
@@ -456,15 +480,16 @@ function RailroadArcade() {
                 {/* Quick Access Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {modules.slice(0, 4).map(mod => {
-                    const isUnlocked = unlockedModules.includes(mod.id);
+                    const isDemo = mode === 'demo';
+                    const isUnlocked = isDemo || unlockedModules.includes(mod.id);
                     return (
                       <button
                         key={mod.id}
                         onClick={() => !isUnlocked && unlockModule(mod.id, mod.cost)}
                         className={`
                           relative p-4 rounded-xl border transition-all text-left
-                          ${isUnlocked 
-                            ? 'bg-white/5 border-white/20 hover:bg-white/10' 
+                          ${isUnlocked
+                            ? 'bg-white/5 border-white/20 hover:bg-white/10'
                             : 'bg-white/5 border-white/10 opacity-60'
                           }
                         `}
@@ -472,7 +497,9 @@ function RailroadArcade() {
                       >
                         <div className="text-sm font-medium mb-1">{mod.name}</div>
                         <div className="text-xs text-gray-500">
-                          {isUnlocked ? 'Active' : `${mod.cost} tokens to unlock`}
+                          {isDemo ? (
+                            <span className="text-purple-400">Free in Demo</span>
+                          ) : isUnlocked ? 'Active' : `${mod.cost} tokens to unlock`}
                         </div>
                         {!isUnlocked && (
                           <div className="absolute top-2 right-2 text-lg">🔒</div>
@@ -489,25 +516,25 @@ function RailroadArcade() {
               <div className="space-y-6">
                 <LiveTrackLayout />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <TrainTrackingModule locked={!unlockedModules.includes('trains')} onUnlock={() => unlockModule('trains', 0)} />
-                  <DiamondCrossingModule locked={!unlockedModules.includes('crossing')} onUnlock={() => unlockModule('crossing', 20)} />
+                  <TrainTrackingModule locked={mode !== 'demo' && !unlockedModules.includes('trains')} onUnlock={() => unlockModule('trains', 0)} />
+                  <DiamondCrossingModule locked={mode !== 'demo' && !unlockedModules.includes('crossing')} onUnlock={() => unlockModule('crossing', 20)} />
                 </div>
               </div>
             )}
 
             {/* Scenery Tab */}
             {activeTab === 'scenery' && (
-              <SceneryControl locked={!unlockedModules.includes('scenery')} onUnlock={() => unlockModule('scenery', 0)} />
+              <SceneryControl locked={mode !== 'demo' && !unlockedModules.includes('scenery')} onUnlock={() => unlockModule('scenery', 0)} />
             )}
 
             {/* Buildings Tab */}
             {activeTab === 'buildings' && (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                <PoliceStationModule locked={!unlockedModules.includes('police')} onUnlock={() => unlockModule('police', 25)} />
-                <FireStationModule locked={!unlockedModules.includes('fire')} onUnlock={() => unlockModule('fire', 25)} />
-                <CafeModule locked={!unlockedModules.includes('cafe')} onUnlock={() => unlockModule('cafe', 15)} />
-                <SmartHomeModule locked={!unlockedModules.includes('home')} onUnlock={() => unlockModule('home', 20)} />
-                <ConstructionZoneModule locked={!unlockedModules.includes('construction')} onUnlock={() => unlockModule('construction', 30)} />
+                <PoliceStationModule locked={mode !== 'demo' && !unlockedModules.includes('police')} onUnlock={() => unlockModule('police', 25)} />
+                <FireStationModule locked={mode !== 'demo' && !unlockedModules.includes('fire')} onUnlock={() => unlockModule('fire', 25)} />
+                <CafeModule locked={mode !== 'demo' && !unlockedModules.includes('cafe')} onUnlock={() => unlockModule('cafe', 15)} />
+                <SmartHomeModule locked={mode !== 'demo' && !unlockedModules.includes('home')} onUnlock={() => unlockModule('home', 20)} />
+                <ConstructionZoneModule locked={mode !== 'demo' && !unlockedModules.includes('construction')} onUnlock={() => unlockModule('construction', 30)} />
               </div>
             )}
 
