@@ -12,19 +12,26 @@
  * For CI/CD, use the e2e test script instead.
  */
 
-const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000';
+import { isServerAvailable, BASE_URL } from '../helpers/server-check';
 
 // Use dynamic import for node-fetch in Jest
 let fetch: typeof globalThis.fetch;
+let serverRunning = false;
 
 beforeAll(async () => {
   const nodeFetch = await import('node-fetch');
   fetch = nodeFetch.default as unknown as typeof globalThis.fetch;
+  serverRunning = await isServerAvailable();
+  if (!serverRunning) {
+    console.log(`\n⚠️  Skipping Auth API tests - dev server not running at ${BASE_URL}`);
+  }
 });
 
 describe('Auth API Endpoints', () => {
   describe('Database Connection', () => {
     it('should connect to database successfully', async () => {
+      if (!serverRunning) return;
+
       const response = await fetch(`${BASE_URL}/api/db-test`);
       const data = await response.json();
 
@@ -39,6 +46,8 @@ describe('Auth API Endpoints', () => {
 
   describe('CSRF Token', () => {
     it('should return a valid CSRF token', async () => {
+      if (!serverRunning) return;
+
       const response = await fetch(`${BASE_URL}/api/auth/csrf`);
       const data = await response.json();
 
@@ -51,6 +60,8 @@ describe('Auth API Endpoints', () => {
 
   describe('Auth Providers', () => {
     it('should return available auth providers', async () => {
+      if (!serverRunning) return;
+
       const response = await fetch(`${BASE_URL}/api/auth/providers`);
       const data = await response.json();
 
@@ -68,6 +79,8 @@ describe('Auth API Endpoints', () => {
     const testName = 'Test User';
 
     it('should create a new user account', async () => {
+      if (!serverRunning) return;
+
       const response = await fetch(`${BASE_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -88,6 +101,8 @@ describe('Auth API Endpoints', () => {
     });
 
     it('should reject duplicate email', async () => {
+      if (!serverRunning) return;
+
       const response = await fetch(`${BASE_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -104,6 +119,8 @@ describe('Auth API Endpoints', () => {
     });
 
     it('should reject short passwords', async () => {
+      if (!serverRunning) return;
+
       const response = await fetch(`${BASE_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -120,6 +137,8 @@ describe('Auth API Endpoints', () => {
     });
 
     it('should reject missing email', async () => {
+      if (!serverRunning) return;
+
       const response = await fetch(`${BASE_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -141,6 +160,8 @@ describe('Auth API Endpoints', () => {
     let cookies: string = '';
 
     beforeAll(async () => {
+      if (!serverRunning) return;
+
       // Create a test user first
       await fetch(`${BASE_URL}/api/auth/signup`, {
         method: 'POST',
@@ -154,6 +175,8 @@ describe('Auth API Endpoints', () => {
     });
 
     it('should get CSRF token with session cookie', async () => {
+      if (!serverRunning) return;
+
       const response = await fetch(`${BASE_URL}/api/auth/csrf`);
       const data = await response.json();
 
@@ -168,6 +191,8 @@ describe('Auth API Endpoints', () => {
     });
 
     it('should authenticate with valid credentials', async () => {
+      if (!serverRunning) return;
+
       // Get fresh CSRF token
       const csrfResponse = await fetch(`${BASE_URL}/api/auth/csrf`);
       const { csrfToken } = await csrfResponse.json();
@@ -195,6 +220,8 @@ describe('Auth API Endpoints', () => {
     });
 
     it('should reject invalid credentials', async () => {
+      if (!serverRunning) return;
+
       const csrfResponse = await fetch(`${BASE_URL}/api/auth/csrf`);
       const { csrfToken } = await csrfResponse.json();
       const setCookie = csrfResponse.headers.get('set-cookie');
@@ -222,6 +249,8 @@ describe('Auth API Endpoints', () => {
 
   describe('Session', () => {
     it('should return empty session when not authenticated', async () => {
+      if (!serverRunning) return;
+
       const response = await fetch(`${BASE_URL}/api/auth/session`);
       const data = await response.json();
 
@@ -233,6 +262,8 @@ describe('Auth API Endpoints', () => {
 
   describe('Protected Routes', () => {
     it('should return 401 for /api/user without auth', async () => {
+      if (!serverRunning) return;
+
       const response = await fetch(`${BASE_URL}/api/user`);
       const data = await response.json();
 
@@ -245,6 +276,8 @@ describe('Auth API Endpoints', () => {
 describe('Page Routes', () => {
   describe('Login Page', () => {
     it('should render login page', async () => {
+      if (!serverRunning) return;
+
       const response = await fetch(`${BASE_URL}/login`);
 
       expect(response.status).toBe(200);
@@ -254,6 +287,8 @@ describe('Page Routes', () => {
 
   describe('Signup Page', () => {
     it('should render signup page', async () => {
+      if (!serverRunning) return;
+
       const response = await fetch(`${BASE_URL}/signup`);
 
       expect(response.status).toBe(200);
@@ -263,6 +298,8 @@ describe('Page Routes', () => {
 
   describe('Main Page', () => {
     it('should render main page', async () => {
+      if (!serverRunning) return;
+
       const response = await fetch(`${BASE_URL}/`);
 
       expect(response.status).toBe(200);
