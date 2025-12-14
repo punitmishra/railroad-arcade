@@ -62,24 +62,24 @@ export default function AchievementsPage() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-4xl mx-auto px-4 py-6 sm:py-8">
         {/* Progress Summary */}
         {stats && (
-          <div className="rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 p-6 mb-8">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-amber-500/20 flex items-center justify-center">
-                <TrophyIcon size={32} className="text-amber-400" />
+          <div className="rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 p-4 sm:p-6 mb-6 sm:mb-8">
+            <div className="flex flex-col sm:flex-row items-center sm:items-center gap-3 sm:gap-4">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                <TrophyIcon size={28} className="text-amber-400 sm:w-8 sm:h-8" />
               </div>
-              <div className="flex-1">
-                <h2 className="text-xl font-bold text-white mb-2">Achievement Progress</h2>
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 h-3 rounded-full bg-white/10 overflow-hidden">
+              <div className="flex-1 w-full">
+                <h2 className="text-lg sm:text-xl font-bold text-white mb-2 text-center sm:text-left">Achievement Progress</h2>
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="flex-1 h-2.5 sm:h-3 rounded-full bg-white/10 overflow-hidden">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all"
                       style={{ width: `${stats.progress}%` }}
                     />
                   </div>
-                  <span className="text-sm text-amber-400 font-medium">
+                  <span className="text-xs sm:text-sm text-amber-400 font-medium whitespace-nowrap">
                     {stats.earned} / {stats.total}
                   </span>
                 </div>
@@ -95,7 +95,7 @@ export default function AchievementsPage() {
         )}
 
         {/* Achievements Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           {allAchievements.map((achievement) => (
             <AchievementCard
               key={achievement.id}
@@ -148,30 +148,30 @@ function AchievementCard({
 }) {
   return (
     <div
-      className={`relative rounded-xl border p-4 transition-all ${
+      className={`relative rounded-xl border p-3 sm:p-4 transition-all ${
         earned
           ? 'bg-gradient-to-br from-amber-500/10 to-orange-500/5 border-amber-500/30'
           : 'bg-white/[0.02] border-white/10 opacity-60'
       }`}
     >
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-3 sm:gap-4">
         {/* Icon */}
         <div
-          className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl ${
+          className={`w-11 h-11 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center text-xl sm:text-2xl flex-shrink-0 ${
             earned ? 'bg-amber-500/20' : 'bg-white/5'
           }`}
         >
-          {earned ? icon : <LockIcon size={24} className="text-gray-500" />}
+          {earned ? icon : <LockIcon size={20} className="text-gray-500 sm:w-6 sm:h-6" />}
         </div>
 
         {/* Content */}
-        <div className="flex-1">
-          <div className="flex items-start justify-between">
-            <h3 className={`font-semibold ${earned ? 'text-white' : 'text-gray-400'}`}>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className={`font-semibold text-sm sm:text-base ${earned ? 'text-white' : 'text-gray-400'}`}>
               {name}
             </h3>
             <div
-              className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold whitespace-nowrap ${
                 earned
                   ? 'bg-amber-500/20 text-amber-400'
                   : 'bg-white/5 text-gray-500'
@@ -180,14 +180,14 @@ function AchievementCard({
               {points} pts
             </div>
           </div>
-          <p className="text-sm text-gray-500 mt-1">{description}</p>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1 line-clamp-2">{description}</p>
         </div>
       </div>
 
       {/* Earned Badge */}
       {earned && (
         <div className="absolute top-2 right-2">
-          <SparklesIcon size={16} className="text-amber-400" />
+          <SparklesIcon size={14} className="text-amber-400 sm:w-4 sm:h-4" />
         </div>
       )}
     </div>

@@ -101,9 +101,9 @@ export default function HistoryPage() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-4xl mx-auto px-4 py-6 sm:py-8">
         {/* Stats Summary */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-6 sm:mb-8">
           <StatCard
             icon={<PlayIcon size={18} />}
             label="Total Sessions"
@@ -131,12 +131,12 @@ export default function HistoryPage() {
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-4 sm:mb-6">
           {(['all', 'completed', 'active'] as const).map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all min-h-[40px] ${
                 filter === f
                   ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
                   : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'
@@ -193,10 +193,10 @@ function StatCard({ icon, label, value, color }: {
   };
 
   return (
-    <div className={`rounded-xl bg-gradient-to-br ${colors[color]} border p-4`}>
-      <div className={`${colors[color].split(' ').pop()} mb-2`}>{icon}</div>
-      <div className="text-xl font-bold text-white">{value}</div>
-      <div className="text-xs text-gray-500">{label}</div>
+    <div className={`rounded-xl bg-gradient-to-br ${colors[color]} border p-3 sm:p-4`}>
+      <div className={`${colors[color].split(' ').pop()} mb-1 sm:mb-2`}>{icon}</div>
+      <div className="text-base sm:text-xl font-bold text-white truncate">{value}</div>
+      <div className="text-[10px] sm:text-xs text-gray-500">{label}</div>
     </div>
   );
 }
@@ -210,21 +210,21 @@ function SessionCard({ session }: { session: SessionRecord }) {
   };
 
   return (
-    <div className="rounded-xl bg-[#0c0c14] border border-white/10 p-4 hover:border-white/20 transition-all">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-            <TrainIcon size={20} className="text-cyan-400" />
+    <div className="rounded-xl bg-[#0c0c14] border border-white/10 p-3 sm:p-4 hover:border-white/20 transition-all">
+      <div className="flex items-start justify-between mb-2 sm:mb-3 gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
+            <TrainIcon size={18} className="text-cyan-400 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <div className="font-medium text-white">
+          <div className="min-w-0">
+            <div className="font-medium text-white text-sm sm:text-base">
               {new Date(session.startTime).toLocaleDateString('en-US', {
                 weekday: 'short',
                 month: 'short',
                 day: 'numeric',
               })}
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-[10px] sm:text-xs text-gray-500">
               {new Date(session.startTime).toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -232,39 +232,39 @@ function SessionCard({ session }: { session: SessionRecord }) {
             </div>
           </div>
         </div>
-        <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${statusColors[session.status] || 'bg-white/5 text-gray-400'}`}>
+        <span className={`px-2 py-1 rounded-lg text-[10px] sm:text-xs font-medium border whitespace-nowrap ${statusColors[session.status] || 'bg-white/5 text-gray-400'}`}>
           {session.status}
         </span>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 text-sm">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 text-sm">
         <div>
-          <div className="text-gray-500 text-xs mb-1">Duration</div>
-          <div className="text-white font-medium">
+          <div className="text-gray-500 text-[10px] sm:text-xs mb-0.5 sm:mb-1">Duration</div>
+          <div className="text-white font-medium text-xs sm:text-sm">
             {session.duration ? formatDuration(session.duration) : '--'}
           </div>
         </div>
         <div>
-          <div className="text-gray-500 text-xs mb-1">Tokens</div>
-          <div className="text-amber-400 font-medium flex items-center gap-1">
-            <CoinsIcon size={14} />
+          <div className="text-gray-500 text-[10px] sm:text-xs mb-0.5 sm:mb-1">Tokens</div>
+          <div className="text-amber-400 font-medium flex items-center gap-1 text-xs sm:text-sm">
+            <CoinsIcon size={12} className="sm:w-3.5 sm:h-3.5" />
             {session.tokensSpent}
           </div>
         </div>
         <div>
-          <div className="text-gray-500 text-xs mb-1">Distance</div>
-          <div className="text-white font-medium">
+          <div className="text-gray-500 text-[10px] sm:text-xs mb-0.5 sm:mb-1">Distance</div>
+          <div className="text-white font-medium text-xs sm:text-sm">
             {(session.totalDistance / 100).toFixed(1)}m
           </div>
         </div>
       </div>
 
       {session.trainsOperated.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-white/5">
-          <div className="text-xs text-gray-500 mb-2">Trains Operated</div>
+        <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-white/5">
+          <div className="text-[10px] sm:text-xs text-gray-500 mb-1.5 sm:mb-2">Trains Operated</div>
           <div className="flex flex-wrap gap-1">
             {session.trainsOperated.map(train => (
-              <span key={train} className="px-2 py-0.5 rounded-full bg-white/5 text-gray-400 text-xs">
+              <span key={train} className="px-1.5 sm:px-2 py-0.5 rounded-full bg-white/5 text-gray-400 text-[10px] sm:text-xs">
                 {train}
               </span>
             ))}

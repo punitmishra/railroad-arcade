@@ -79,31 +79,31 @@ export default function SettingsPage() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-8">
+      <main className="max-w-2xl mx-auto px-4 py-6 sm:py-8">
         {/* Account Section */}
         <SettingsSection title="Account" icon={<UserIcon size={18} />}>
-          <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-            <div className="flex items-center gap-4">
+          <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+            <div className="flex flex-col sm:flex-row items-center sm:items-center gap-3 sm:gap-4">
               {session.user.image ? (
                 <img
                   src={session.user.image}
                   alt={session.user.name || 'User'}
-                  className="w-12 h-12 rounded-full"
+                  className="w-14 h-14 sm:w-12 sm:h-12 rounded-full flex-shrink-0"
                 />
               ) : (
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center">
+                <div className="w-14 h-14 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center flex-shrink-0">
                   <span className="text-lg font-bold text-white">
                     {session.user.name?.charAt(0) || session.user.email?.charAt(0) || '?'}
                   </span>
                 </div>
               )}
-              <div className="flex-1">
-                <div className="font-medium text-white">{session.user.name || 'User'}</div>
-                <div className="text-sm text-gray-500">{session.user.email}</div>
+              <div className="flex-1 min-w-0 text-center sm:text-left">
+                <div className="font-medium text-white truncate">{session.user.name || 'User'}</div>
+                <div className="text-sm text-gray-500 truncate">{session.user.email}</div>
               </div>
               <a
                 href="/profile"
-                className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-400 hover:bg-white/10 transition-all"
+                className="px-3 py-2 sm:py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-400 hover:bg-white/10 transition-all min-h-[44px] sm:min-h-0 flex items-center"
               >
                 Edit Profile
               </a>
@@ -184,16 +184,16 @@ export default function SettingsPage() {
         </SettingsSection>
 
         {/* Save Button */}
-        <div className="mt-8 flex items-center gap-4">
+        <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-medium hover:from-cyan-400 hover:to-purple-500 transition-all disabled:opacity-50"
+            className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-medium hover:from-cyan-400 hover:to-purple-500 transition-all disabled:opacity-50 min-h-[48px]"
           >
             {isSaving ? 'Saving...' : 'Save Changes'}
           </button>
           {saveMessage && (
-            <span className={`text-sm ${saveMessage.includes('Failed') ? 'text-red-400' : 'text-emerald-400'}`}>
+            <span className={`text-sm text-center sm:text-left ${saveMessage.includes('Failed') ? 'text-red-400' : 'text-emerald-400'}`}>
               {saveMessage}
             </span>
           )}
@@ -252,23 +252,24 @@ function ToggleSetting({
   onChange: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
-      <div className="flex items-center gap-3">
-        <div className="text-gray-400">{icon}</div>
-        <div>
-          <div className="font-medium text-white">{label}</div>
-          <div className="text-sm text-gray-500">{description}</div>
+    <div className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+        <div className="text-gray-400 flex-shrink-0">{icon}</div>
+        <div className="min-w-0">
+          <div className="font-medium text-white text-sm sm:text-base">{label}</div>
+          <div className="text-xs sm:text-sm text-gray-500 line-clamp-2">{description}</div>
         </div>
       </div>
       <button
         onClick={onChange}
-        className={`relative w-12 h-6 rounded-full transition-all ${
+        className={`relative w-11 sm:w-12 h-6 rounded-full transition-all flex-shrink-0 min-h-[44px] flex items-center ${
           enabled ? 'bg-cyan-500' : 'bg-white/10'
         }`}
+        aria-label={`Toggle ${label}`}
       >
         <div
-          className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${
-            enabled ? 'left-7' : 'left-1'
+          className={`absolute w-4 h-4 rounded-full bg-white transition-all ${
+            enabled ? 'left-6 sm:left-7' : 'left-1'
           }`}
         />
       </button>

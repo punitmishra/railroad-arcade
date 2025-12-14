@@ -552,29 +552,29 @@ export function LiveTrackLayout({
   return (
     <div className="bg-[#0a0a0f] rounded-2xl border border-white/10 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06] bg-gradient-to-r from-cyan-500/5 to-purple-500/5">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center border border-cyan-500/20">
-            <ActivityIcon size={20} className="text-cyan-400" />
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-3 sm:px-4 py-2 sm:py-3 gap-2 sm:gap-0 border-b border-white/[0.06] bg-gradient-to-r from-cyan-500/5 to-purple-500/5">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center border border-cyan-500/20">
+            <ActivityIcon size={16} className="text-cyan-400 sm:w-5 sm:h-5" />
           </div>
           <div>
-            <h3 className="font-semibold text-sm tracking-wide flex items-center gap-2" style={{ fontFamily: 'Orbitron, sans-serif' }}>
+            <h3 className="font-semibold text-xs sm:text-sm tracking-wide flex items-center gap-2" style={{ fontFamily: 'Orbitron, sans-serif' }}>
               Live Track Control
               {warnings.length > 0 && (
-                <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold animate-pulse">
+                <span className="px-1.5 sm:px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[9px] sm:text-[10px] font-bold animate-pulse">
                   ⚠ PROXIMITY
                 </span>
               )}
             </h3>
-            <p className="text-[11px] text-gray-500">
-              Session: {formatTime(sessionTime)} • {trains.filter(t => t.speed > 0).length} running • {totalLaps} laps
+            <p className="text-[10px] sm:text-[11px] text-gray-500">
+              {formatTime(sessionTime)} • {trains.filter(t => t.speed > 0).length} active • {totalLaps} laps
             </p>
           </div>
         </div>
         
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 w-full sm:w-auto">
           {/* Mode Indicator */}
-          <div className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 ${
+          <div className={`px-1.5 sm:px-2 py-1 rounded-lg text-[9px] sm:text-[10px] font-bold flex items-center gap-1 ${
             mode === 'live'
               ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
               : 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
@@ -585,18 +585,18 @@ export function LiveTrackLayout({
 
           {/* Token Balance (Live mode only) */}
           {mode === 'live' && (
-            <div className="px-2 py-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-bold flex items-center gap-1">
+            <div className="px-1.5 sm:px-2 py-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[9px] sm:text-[10px] font-bold flex items-center gap-1">
               🪙 {tokenBalance}
             </div>
           )}
 
           {/* Emergency Stop */}
-          <button onClick={emergencyStop} className="px-2.5 py-1.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 text-[10px] font-bold flex items-center gap-1">
-            <AlertIcon size={12} /> E-STOP
+          <button onClick={emergencyStop} className="px-2 sm:px-2.5 py-1.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 text-[9px] sm:text-[10px] font-bold flex items-center gap-1 min-h-[32px]">
+            <AlertIcon size={12} /> <span className="hidden xs:inline">E-</span>STOP
           </button>
-          
-          {/* Time Scale */}
-          <div className="flex rounded-lg overflow-hidden border border-white/10">
+
+          {/* Time Scale - hidden on very small screens */}
+          <div className="hidden sm:flex rounded-lg overflow-hidden border border-white/10">
             {[1, 2, 4].map(scale => (
               <button
                 key={scale}
@@ -607,43 +607,45 @@ export function LiveTrackLayout({
               </button>
             ))}
           </div>
-          
+
           {/* Play/Pause */}
-          <button onClick={() => setIsPaused(!isPaused)} className={`p-1.5 rounded-lg ${isPaused ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'}`}>
+          <button onClick={() => setIsPaused(!isPaused)} className={`p-1.5 rounded-lg min-h-[32px] min-w-[32px] flex items-center justify-center ${isPaused ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'}`}>
             {isPaused ? <PlayIcon size={14} /> : <PauseIcon size={14} />}
           </button>
-          
+
           {/* Night Mode */}
-          <button onClick={() => setNightMode(!nightMode)} className={`p-1.5 rounded-lg ${nightMode ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'}`}>
+          <button onClick={() => setNightMode(!nightMode)} className={`p-1.5 rounded-lg min-h-[32px] min-w-[32px] flex items-center justify-center ${nightMode ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'}`}>
             {nightMode ? <MoonIcon size={14} /> : <SunIcon size={14} />}
           </button>
-          
+
           {/* Level Selector */}
           <div className="flex rounded-lg overflow-hidden border border-white/10">
             {(['both', 2, 1] as const).map(level => (
-              <button key={level} onClick={() => setActiveLevel(level)} className={`px-2 py-1.5 text-[10px] font-medium ${activeLevel === level ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+              <button key={level} onClick={() => setActiveLevel(level)} className={`px-1.5 sm:px-2 py-1.5 text-[9px] sm:text-[10px] font-medium min-h-[32px] ${activeLevel === level ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
                 {level === 'both' ? 'All' : `L${level}`}
               </button>
             ))}
           </div>
-          
-          {/* Toggle buttons */}
-          <button onClick={() => setShowTrails(!showTrails)} className={`p-1.5 rounded-lg text-[10px] ${showTrails ? 'bg-cyan-500/20 text-cyan-400' : 'bg-white/5 text-gray-500'}`} title="Show Trails">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10"/><circle cx="12" cy="12" r="3"/></svg>
-          </button>
-          <button onClick={() => setShowSpeedZones(!showSpeedZones)} className={`p-1.5 rounded-lg ${showSpeedZones ? 'bg-amber-500/20 text-amber-400' : 'bg-white/5 text-gray-500'}`} title="Speed Zones">
-            <ZapIcon size={14} />
-          </button>
-          <button onClick={() => setShowLabels(!showLabels)} className={`p-1.5 rounded-lg ${showLabels ? 'bg-white/10 text-white' : 'bg-white/5 text-gray-500'}`}>
-            <EyeIcon size={14} />
-          </button>
+
+          {/* Toggle buttons - hidden on mobile */}
+          <div className="hidden md:flex items-center gap-1">
+            <button onClick={() => setShowTrails(!showTrails)} className={`p-1.5 rounded-lg text-[10px] ${showTrails ? 'bg-cyan-500/20 text-cyan-400' : 'bg-white/5 text-gray-500'}`} title="Show Trails">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <button onClick={() => setShowSpeedZones(!showSpeedZones)} className={`p-1.5 rounded-lg ${showSpeedZones ? 'bg-amber-500/20 text-amber-400' : 'bg-white/5 text-gray-500'}`} title="Speed Zones">
+              <ZapIcon size={14} />
+            </button>
+            <button onClick={() => setShowLabels(!showLabels)} className={`p-1.5 rounded-lg ${showLabels ? 'bg-white/10 text-white' : 'bg-white/5 text-gray-500'}`}>
+              <EyeIcon size={14} />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="flex">
+      <div className="flex flex-col lg:flex-row">
         {/* Main SVG */}
-        <div className="flex-1 relative">
-          <svg viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`} className="w-full" style={{ backgroundColor: nightMode ? '#050508' : '#08080c', minHeight: '380px' }}>
+        <div className="flex-1 relative min-h-[250px] sm:min-h-[300px] md:min-h-[350px]">
+          <svg viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`} className="w-full h-full" preserveAspectRatio="xMidYMid meet" style={{ backgroundColor: nightMode ? '#050508' : '#08080c' }}>
             <defs>
               <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
                 <feGaussianBlur stdDeviation="3" result="blur" />
@@ -877,7 +879,7 @@ export function LiveTrackLayout({
 
         {/* Telemetry Panel */}
         {showTelemetry && (
-          <div className="w-64 border-l border-white/[0.06] bg-[#08080c]/70 overflow-y-auto max-h-[400px]">
+          <div className="w-full lg:w-64 border-t lg:border-t-0 lg:border-l border-white/[0.06] bg-[#08080c]/70 overflow-y-auto max-h-[300px] lg:max-h-[400px]">
             <div className="p-3 border-b border-white/[0.06]">
               <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
                 <ChartIcon size={12} /> Train Telemetry
@@ -955,28 +957,28 @@ export function LiveTrackLayout({
       </div>
 
       {/* Train Controls */}
-      <div className="border-t border-white/[0.06] p-3 bg-[#08080c]/50">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="border-t border-white/[0.06] p-2 sm:p-3 bg-[#08080c]/50">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
           {trains.map(train => {
             const isSelected = selectedTrain === train.id;
             const speedLimit = getSpeedLimit(train);
             
             return (
-              <div key={train.id} className={`p-3 rounded-xl border transition-all ${isSelected ? 'bg-white/[0.06] border-white/20' : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]'}`}>
+              <div key={train.id} className={`p-2 sm:p-3 rounded-lg sm:rounded-xl border transition-all ${isSelected ? 'bg-white/[0.06] border-white/20' : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]'}`}>
                 {/* Header */}
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${train.color}20` }}>
-                      <TrainIcon size={16} style={{ color: train.color }} />
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${train.color}20` }}>
+                      <TrainIcon size={14} className="sm:w-4 sm:h-4" style={{ color: train.color }} />
                     </div>
                     <div>
-                      <div className="font-medium text-sm" style={{ color: train.color }}>{train.name}</div>
-                      <div className="text-[9px] text-gray-500">L{train.level} • {train.carts} cars</div>
+                      <div className="font-medium text-xs sm:text-sm" style={{ color: train.color }}>{train.name}</div>
+                      <div className="text-[8px] sm:text-[9px] text-gray-500">L{train.level} • {train.carts} cars</div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-bold font-mono" style={{ color: train.speed > 0 ? train.color : '#666' }}>{train.speed.toFixed(0)}</div>
-                    <div className="text-[8px] text-gray-500">/{speedLimit} km/h</div>
+                    <div className="text-base sm:text-lg font-bold font-mono" style={{ color: train.speed > 0 ? train.color : '#666' }}>{train.speed.toFixed(0)}</div>
+                    <div className="text-[7px] sm:text-[8px] text-gray-500">/{speedLimit} km/h</div>
                   </div>
                 </div>
 
@@ -990,27 +992,27 @@ export function LiveTrackLayout({
                   />
                 </div>
 
-                {/* Carts control */}
-                <div className="flex items-center justify-between mb-2 text-[10px]">
+                {/* Carts control - hidden on very small screens */}
+                <div className="hidden xs:flex items-center justify-between mb-2 text-[9px] sm:text-[10px]">
                   <span className="text-gray-500">Cars: {train.carts}</span>
                   <div className="flex gap-1">
-                    <button onClick={() => removeCart(train.id)} className="w-6 h-6 rounded bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10">−</button>
-                    <button onClick={() => addCart(train.id)} className="w-6 h-6 rounded bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10">+</button>
+                    <button onClick={() => removeCart(train.id)} className="w-6 h-6 rounded bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 min-h-[24px]">−</button>
+                    <button onClick={() => addCart(train.id)} className="w-6 h-6 rounded bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 min-h-[24px]">+</button>
                   </div>
                 </div>
 
                 {/* Control buttons */}
-                <div className="grid grid-cols-4 gap-1.5">
-                  <button onClick={() => toggleDirection(train.id)} disabled={train.speed === 0} className="py-1.5 rounded-lg bg-white/5 border border-white/10 text-[10px] text-gray-300 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-0.5">
-                    {train.direction === 'forward' ? <ArrowDownIcon size={10} /> : <ArrowUpIcon size={10} />} Dir
+                <div className="grid grid-cols-4 gap-1 sm:gap-1.5">
+                  <button onClick={() => toggleDirection(train.id)} disabled={train.speed === 0} className="py-1.5 rounded-lg bg-white/5 border border-white/10 text-[9px] sm:text-[10px] text-gray-300 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-0.5 min-h-[32px]">
+                    {train.direction === 'forward' ? <ArrowDownIcon size={10} /> : <ArrowUpIcon size={10} />} <span className="hidden xs:inline">Dir</span>
                   </button>
-                  <button onClick={() => toggleHeadlights(train.id)} className={`py-1.5 rounded-lg border text-[10px] flex items-center justify-center ${train.headlights ? 'bg-amber-500/20 border-amber-500/30 text-amber-400' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}>
+                  <button onClick={() => toggleHeadlights(train.id)} className={`py-1.5 rounded-lg border text-[10px] flex items-center justify-center min-h-[32px] ${train.headlights ? 'bg-amber-500/20 border-amber-500/30 text-amber-400' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}>
                     💡
                   </button>
-                  <button onClick={() => toggleAutopilot(train.id)} className={`py-1.5 rounded-lg border text-[10px] font-bold flex items-center justify-center ${train.autopilot ? 'bg-purple-500/20 border-purple-500/30 text-purple-400' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}>
+                  <button onClick={() => toggleAutopilot(train.id)} className={`py-1.5 rounded-lg border text-[8px] sm:text-[10px] font-bold flex items-center justify-center min-h-[32px] ${train.autopilot ? 'bg-purple-500/20 border-purple-500/30 text-purple-400' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}>
                     AUTO
                   </button>
-                  <button onClick={() => setTrainSpeed(train.id, 0)} className="py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-[10px] font-bold hover:bg-red-500/30">
+                  <button onClick={() => setTrainSpeed(train.id, 0)} className="py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-[8px] sm:text-[10px] font-bold hover:bg-red-500/30 min-h-[32px]">
                     STOP
                   </button>
                 </div>

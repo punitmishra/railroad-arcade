@@ -219,7 +219,7 @@ function RailroadArcade() {
 
       {/* Header */}
       <header className="sticky top-0 z-50 bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 py-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2 sm:py-3">
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center gap-3">
@@ -350,15 +350,15 @@ function RailroadArcade() {
             <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
           </div>
           
-          <div className="max-w-7xl mx-auto px-4 py-12 relative z-10">
-            <div className="flex flex-col lg:flex-row items-center gap-8">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-8 sm:py-10 lg:py-12 relative z-10">
+            <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-8">
               <div className="flex-1 text-center lg:text-left">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-sm mb-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs sm:text-sm mb-3 sm:mb-4">
                   <SparklesIcon size={14} />
                   <span>Now Live & Interactive</span>
                 </div>
-                <h2 
-                  className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-purple-200"
+                <h2
+                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-3 sm:mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-purple-200"
                   style={{ fontFamily: 'Orbitron, sans-serif', lineHeight: 1.1 }}
                 >
                   Control a Real<br />
@@ -366,7 +366,7 @@ function RailroadArcade() {
                     Model Railroad
                   </span>
                 </h2>
-                <p className="text-gray-400 mb-6 max-w-xl text-lg leading-relaxed">
+                <p className="text-gray-400 mb-4 sm:mb-6 max-w-xl text-sm sm:text-base lg:text-lg leading-relaxed">
                   Experience the magic of a 2-level HO scale railroad with 3 trains, 
                   interactive buildings, stunning scenery, and real-time control from anywhere in the world.
                 </p>
@@ -429,23 +429,26 @@ function RailroadArcade() {
 
       {/* Tab Navigation (when playing) */}
       {isPlaying && (
-        <div className="sticky top-[73px] z-40 bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-white/10">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="flex items-center gap-1 py-2 overflow-x-auto">
+        <div className="sticky top-[57px] sm:top-[65px] md:top-[73px] z-40 bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-white/10">
+          <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
+            <div className="flex items-center gap-0.5 sm:gap-1 py-1.5 sm:py-2 overflow-x-auto scrollbar-hide">
               {tabs.map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`
-                    flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all
-                    ${activeTab === tab.id 
-                      ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-white border border-white/20' 
+                    relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all min-h-[44px]
+                    ${activeTab === tab.id
+                      ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-white border border-white/20'
                       : 'text-gray-400 hover:text-white hover:bg-white/5'
                     }
                   `}
                 >
                   <span className={activeTab === tab.id ? 'text-cyan-400' : ''}>{tab.icon}</span>
-                  {tab.label}
+                  <span className="hidden xs:inline sm:inline">{tab.label}</span>
+                  {activeTab === tab.id && (
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-cyan-400 rounded-full sm:hidden" />
+                  )}
                 </button>
               ))}
               
@@ -468,17 +471,17 @@ function RailroadArcade() {
       )}
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
         {isPlaying ? (
           <div>
             {/* Overview Tab */}
             {activeTab === 'overview' && (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Live Track Layout */}
                 <LiveTrackLayout />
-                
+
                 {/* Quick Access Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
                   {modules.slice(0, 4).map(mod => {
                     const isDemo = mode === 'demo';
                     const isUnlocked = isDemo || unlockedModules.includes(mod.id);
@@ -487,7 +490,7 @@ function RailroadArcade() {
                         key={mod.id}
                         onClick={() => !isUnlocked && unlockModule(mod.id, mod.cost)}
                         className={`
-                          relative p-4 rounded-xl border transition-all text-left
+                          relative p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all text-left min-h-[70px]
                           ${isUnlocked
                             ? 'bg-white/5 border-white/20 hover:bg-white/10'
                             : 'bg-white/5 border-white/10 opacity-60'
@@ -495,8 +498,8 @@ function RailroadArcade() {
                         `}
                         style={{ borderLeftColor: mod.color, borderLeftWidth: 3 }}
                       >
-                        <div className="text-sm font-medium mb-1">{mod.name}</div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs sm:text-sm font-medium mb-1 line-clamp-1">{mod.name}</div>
+                        <div className="text-[10px] sm:text-xs text-gray-500">
                           {isDemo ? (
                             <span className="text-purple-400">Free in Demo</span>
                           ) : isUnlocked ? 'Active' : `${mod.cost} tokens to unlock`}
@@ -619,18 +622,18 @@ function RailroadArcade() {
         ) : (
           /* Station Selection Grid (when not playing) */
           <div>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center">
-                <GridIcon size={20} className="text-cyan-400" />
+            <div className="flex items-center gap-3 mb-4 sm:mb-6">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center">
+                <GridIcon size={18} className="text-cyan-400 sm:w-5 sm:h-5" />
               </div>
               <div>
-                <h2 className="text-xl font-bold" style={{ fontFamily: 'Orbitron, sans-serif' }}>
+                <h2 className="text-lg sm:text-xl font-bold" style={{ fontFamily: 'Orbitron, sans-serif' }}>
                   Interactive Modules
                 </h2>
-                <p className="text-sm text-gray-500">Unlock and control different areas</p>
+                <p className="text-xs sm:text-sm text-gray-500">Unlock and control different areas</p>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
               {modules.map(mod => (
                 <StationCard 
                   key={mod.id}
@@ -680,48 +683,48 @@ function RailroadArcade() {
 // ========================================
 // STATION CARD COMPONENT
 // ========================================
-function StationCard({ 
-  name, 
-  cost, 
-  color, 
-  unlocked 
-}: { 
-  name: string; 
-  cost: number; 
-  color: string; 
+function StationCard({
+  name,
+  cost,
+  color,
+  unlocked
+}: {
+  name: string;
+  cost: number;
+  color: string;
   unlocked: boolean;
 }) {
   return (
-    <div 
-      className="group relative rounded-2xl overflow-hidden bg-[#1a1a24] border-2 border-white/10 hover:border-opacity-50 transition-all duration-300 cursor-pointer hover:-translate-y-1"
-      style={{ 
+    <div
+      className="group relative rounded-xl sm:rounded-2xl overflow-hidden bg-[#1a1a24] border border-white/10 hover:border-opacity-50 transition-all duration-300 cursor-pointer hover:-translate-y-1 active:scale-[0.98]"
+      style={{
         '--station-color': color,
         borderColor: `${color}30`,
       } as React.CSSProperties}
     >
       {/* Preview area */}
-      <div className="h-36 bg-gradient-to-b from-sky-100 to-sky-200 relative overflow-hidden">
+      <div className="h-24 sm:h-32 md:h-36 bg-gradient-to-b from-sky-100 to-sky-200 relative overflow-hidden">
         {/* Placeholder illustration */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div 
-            className="w-16 h-16 rounded-xl opacity-50"
+          <div
+            className="w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-lg sm:rounded-xl opacity-50"
             style={{ backgroundColor: color }}
           />
         </div>
-        
+
         {/* Locked overlay */}
         {!unlocked && (
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <span className="text-3xl">🔒</span>
+            <span className="text-2xl sm:text-3xl">🔒</span>
           </div>
         )}
       </div>
-      
+
       {/* Info */}
-      <div className="p-4" style={{ borderTop: `3px solid ${color}` }}>
-        <h3 className="font-semibold text-sm mb-1">{name}</h3>
+      <div className="p-2.5 sm:p-3 md:p-4" style={{ borderTop: `3px solid ${color}` }}>
+        <h3 className="font-semibold text-xs sm:text-sm mb-0.5 sm:mb-1 line-clamp-1">{name}</h3>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1 text-amber-400 text-sm font-medium">
+          <div className="flex items-center gap-1 text-amber-400 text-xs sm:text-sm font-medium">
             {cost === 0 ? (
               <span className="text-emerald-400">FREE</span>
             ) : (
@@ -732,7 +735,7 @@ function StationCard({
             )}
           </div>
           {unlocked && (
-            <span className="text-xs text-emerald-400 font-medium">UNLOCKED</span>
+            <span className="text-[10px] sm:text-xs text-emerald-400 font-medium">UNLOCKED</span>
           )}
         </div>
       </div>
