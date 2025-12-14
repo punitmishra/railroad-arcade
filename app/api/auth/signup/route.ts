@@ -1,19 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { hashPassword } from '@/lib/auth';
-import { authRateLimit } from '@/lib/redis';
 
 export async function POST(request: NextRequest) {
   try {
-    // Rate limiting
-    const ip = request.headers.get('x-forwarded-for') ?? 'anonymous';
-    const { success } = await authRateLimit.limit(ip);
+    // Rate limiting (only if Redis is configured)
+    if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+      try {
+        const { authRateLimit } = await import('@/lib/redis');
+        const ip = request.headers.get('x-forwarded-for') ?? 'anonymous';
+        const { success } = await authRateLimit.limit(ip);
 
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Too many requests. Please try again later.' },
-        { status: 429 }
-      );
+        if (!success) {
+          return NextResponse.json(
+            { error: 'Too many requests. Please try again later.' },
+            { status: 429 }
+          );
+        }
+      } catch (rateLimitError) {
+        console.warn('Rate limiting skipped:', rateLimitError);
+      }
     }
 
     const body = await request.json();

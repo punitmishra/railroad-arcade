@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { TokenDisplay, SessionTimer, ArcadeButton } from '@/components/ui';
-import { 
-  GamepadIcon, WalletIcon, TrophyIcon, SparklesIcon, 
+import {
+  GamepadIcon, WalletIcon, TrophyIcon, SparklesIcon,
   TrainIcon, EmergencyIcon, GearIcon, GridIcon, MenuIcon, CloseIcon,
   MapIcon, LayersIcon, TreeIcon, SunIcon, CameraIcon, CalendarIcon,
   ActivityIcon, PowerIcon, WifiIcon, BatteryIcon, SensorIcon, CoinsIcon,
   HistoryIcon, ImageIcon
 } from '@/components/icons';
+import { UserMenu } from '@/components/auth/UserMenu';
 import { TrainTrackingModule } from '@/components/TrainTrackingModule';
 import { PoliceStationModule } from '@/components/PoliceStationModule';
 import { 
@@ -25,11 +26,14 @@ import { TokenStore } from '@/components/TokenStore';
 import { SnapshotGallery } from '@/components/SnapshotGallery';
 import { SessionHistory } from '@/components/SessionHistory';
 import { StreamingPanel } from '@/components/StreamingPanel';
+import { ModeToggle, ViewOnlyBadge } from '@/components/ModeToggle';
+import { useGameMode } from '@/lib/contexts/ModeContext';
 
 // ========================================
 // MAIN ARCADE PAGE
 // ========================================
 export default function RailroadArcade() {
+  const { mode, isTokenRequired } = useGameMode();
   const [tokens, setTokens] = useState(250);
   const [sessionTime, setSessionTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -56,6 +60,13 @@ export default function RailroadArcade() {
   }, [isPlaying, sessionTime]);
 
   const startSession = (duration: number, cost: number) => {
+    // Demo mode: free unlimited play
+    if (mode === 'demo') {
+      setSessionTime(Infinity); // Unlimited in demo
+      setIsPlaying(true);
+      return;
+    }
+    // Live mode: require tokens
     if (tokens >= cost) {
       setTokens(prev => prev - cost);
       setSessionTime(duration);
@@ -64,6 +75,14 @@ export default function RailroadArcade() {
   };
 
   const unlockModule = (moduleId: string, cost: number) => {
+    // Demo mode: all modules free
+    if (mode === 'demo') {
+      if (!unlockedModules.includes(moduleId)) {
+        setUnlockedModules(prev => [...prev, moduleId]);
+      }
+      return;
+    }
+    // Live mode: require tokens
     if (tokens >= cost && !unlockedModules.includes(moduleId)) {
       setTokens(prev => prev - cost);
       setUnlockedModules(prev => [...prev, moduleId]);
@@ -130,6 +149,9 @@ export default function RailroadArcade() {
 
             {/* Desktop Controls */}
             <div className="hidden md:flex items-center gap-4">
+              {/* Mode Toggle */}
+              <ModeToggle />
+
               {/* Status indicators */}
               <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
                 <div className="flex items-center gap-1.5 text-emerald-400">
@@ -142,12 +164,12 @@ export default function RailroadArcade() {
                   <span className="text-xs">98%</span>
                 </div>
               </div>
-              
+
               {isPlaying && <SessionTimer seconds={sessionTime} />}
               <TokenDisplay amount={tokens} onAddTokens={() => setShowTokenStore(true)} />
               {!isPlaying ? (
-                <ArcadeButton 
-                  variant="primary" 
+                <ArcadeButton
+                  variant="primary"
                   onClick={() => startSession(120, 10)}
                   disabled={tokens < 10}
                 >
@@ -160,6 +182,7 @@ export default function RailroadArcade() {
                   STOP
                 </ArcadeButton>
               )}
+              <UserMenu />
             </div>
 
             {/* Mobile Menu Button */}
@@ -174,13 +197,17 @@ export default function RailroadArcade() {
           {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 pb-2 border-t border-white/10 pt-4 space-y-3">
+              {/* Mode Toggle */}
+              <div className="flex justify-center pb-3 border-b border-white/10">
+                <ModeToggle />
+              </div>
               <div className="flex items-center justify-between">
                 <TokenDisplay amount={tokens} onAddTokens={() => setShowTokenStore(true)} />
                 {isPlaying && <SessionTimer seconds={sessionTime} />}
               </div>
               {!isPlaying ? (
-                <ArcadeButton 
-                  variant="primary" 
+                <ArcadeButton
+                  variant="primary"
                   className="w-full"
                   onClick={() => { startSession(120, 10); setMobileMenuOpen(false); }}
                   disabled={tokens < 10}
@@ -194,6 +221,9 @@ export default function RailroadArcade() {
                   EMERGENCY STOP
                 </ArcadeButton>
               )}
+              <div className="pt-2 border-t border-white/10">
+                <UserMenu />
+              </div>
             </div>
           )}
         </div>
