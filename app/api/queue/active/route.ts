@@ -24,13 +24,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Require authentication
+    // Check authentication - return hasActiveSession: false for unauthenticated users
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
+      return NextResponse.json({
+        success: true,
+        hasActiveSession: false,
+        data: {
+          hasControl: false,
+          remainingSeconds: 0,
+        },
+      });
     }
 
     const isActive = await hasActiveControl(session.user.id);
@@ -40,6 +44,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      hasActiveSession: isActive,
       data: {
         hasControl: isActive,
         remainingSeconds: remainingTime,
