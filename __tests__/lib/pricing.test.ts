@@ -4,15 +4,24 @@
 
 import {
   QUEUE_TIME_PACKAGES,
+  EXTEND_TIME_PACKAGES,
   ACTION_PRICING,
+  ACTION_DESCRIPTIONS,
+  GAME_MODE_PRICING,
   MODULE_COSTS,
   TOKEN_PACKAGES,
-  calculateActionCost,
-  calculateTimePackageCost,
-  formatTokenAmount,
-  formatDuration,
-  getPopularPackage,
-  getBestValuePackage,
+  CRYPTO_PACKAGES,
+  DEFAULT_UNLOCKED_MODULES,
+  WELCOME_BONUS_TOKENS,
+  getTimePricingById,
+  getActionCost,
+  getGameModeCost,
+  calculateSessionCost,
+  getTokenPackageById,
+  getTotalTokens,
+  formatPrice,
+  getModuleCost,
+  isModuleFree,
 } from '@/lib/pricing';
 
 describe('Pricing Configuration', () => {
@@ -47,6 +56,18 @@ describe('Pricing Configuration', () => {
     });
   });
 
+  describe('EXTEND_TIME_PACKAGES', () => {
+    it('should have extension packages', () => {
+      expect(EXTEND_TIME_PACKAGES.length).toBeGreaterThan(0);
+    });
+
+    it('should have unique IDs', () => {
+      const ids = EXTEND_TIME_PACKAGES.map(p => p.id);
+      const uniqueIds = new Set(ids);
+      expect(uniqueIds.size).toBe(ids.length);
+    });
+  });
+
   describe('ACTION_PRICING', () => {
     it('should have train start cost', () => {
       expect(ACTION_PRICING.TRAIN_START).toBeDefined();
@@ -67,17 +88,55 @@ describe('Pricing Configuration', () => {
     });
   });
 
+  describe('ACTION_DESCRIPTIONS', () => {
+    it('should have descriptions for actions', () => {
+      expect(ACTION_DESCRIPTIONS.length).toBeGreaterThan(0);
+    });
+
+    it('should have required properties', () => {
+      ACTION_DESCRIPTIONS.forEach(desc => {
+        expect(desc).toHaveProperty('action');
+        expect(desc).toHaveProperty('name');
+        expect(desc).toHaveProperty('tokens');
+        expect(desc).toHaveProperty('description');
+      });
+    });
+  });
+
+  describe('GAME_MODE_PRICING', () => {
+    it('should have pricing for all game modes', () => {
+      expect(GAME_MODE_PRICING.length).toBeGreaterThan(0);
+    });
+
+    it('should have FREE_PLAY as free', () => {
+      const freePlay = GAME_MODE_PRICING.find(p => p.mode === 'FREE_PLAY');
+      expect(freePlay).toBeDefined();
+      expect(freePlay?.tokens).toBe(0);
+    });
+  });
+
   describe('MODULE_COSTS', () => {
-    it('should have costs for all modules', () => {
-      expect(MODULE_COSTS.TRAIN_TRACKING).toBeDefined();
-      expect(MODULE_COSTS.POLICE_STATION).toBeDefined();
-      expect(MODULE_COSTS.FIRE_STATION).toBeDefined();
+    it('should have costs for modules', () => {
+      expect(MODULE_COSTS.trains).toBeDefined();
+      expect(MODULE_COSTS.police).toBeDefined();
+      expect(MODULE_COSTS.fire).toBeDefined();
     });
 
     it('should have non-negative costs', () => {
       Object.values(MODULE_COSTS).forEach(cost => {
         expect(cost).toBeGreaterThanOrEqual(0);
       });
+    });
+
+    it('should have trains as free', () => {
+      expect(MODULE_COSTS.trains).toBe(0);
+    });
+  });
+
+  describe('DEFAULT_UNLOCKED_MODULES', () => {
+    it('should include trains and scenery', () => {
+      expect(DEFAULT_UNLOCKED_MODULES).toContain('trains');
+      expect(DEFAULT_UNLOCKED_MODULES).toContain('scenery');
     });
   });
 
@@ -111,79 +170,140 @@ describe('Pricing Configuration', () => {
     });
   });
 
-  describe('calculateActionCost', () => {
+  describe('CRYPTO_PACKAGES', () => {
+    it('should have crypto-specific packages', () => {
+      expect(CRYPTO_PACKAGES.length).toBeGreaterThan(0);
+    });
+
+    it('should have unique IDs different from regular packages', () => {
+      const regularIds = TOKEN_PACKAGES.map(p => p.id);
+      CRYPTO_PACKAGES.forEach(pkg => {
+        expect(regularIds).not.toContain(pkg.id);
+      });
+    });
+  });
+
+  describe('getTimePricingById', () => {
+    it('should return package for valid ID', () => {
+      const pkg = getTimePricingById('standard');
+      expect(pkg).toBeDefined();
+      expect(pkg?.id).toBe('standard');
+    });
+
+    it('should return extend package', () => {
+      const pkg = getTimePricingById('extend_5');
+      expect(pkg).toBeDefined();
+      expect(pkg?.id).toBe('extend_5');
+    });
+
+    it('should return undefined for invalid ID', () => {
+      const pkg = getTimePricingById('invalid');
+      expect(pkg).toBeUndefined();
+    });
+  });
+
+  describe('getActionCost', () => {
     it('should return correct cost for known actions', () => {
-      expect(calculateActionCost('TRAIN_START')).toBe(ACTION_PRICING.TRAIN_START);
-      expect(calculateActionCost('TRAIN_STOP')).toBe(0);
+      expect(getActionCost('TRAIN_START')).toBe(ACTION_PRICING.TRAIN_START);
+      expect(getActionCost('TRAIN_STOP')).toBe(0);
     });
 
     it('should return 0 for unknown actions', () => {
-      expect(calculateActionCost('UNKNOWN_ACTION')).toBe(0);
+      expect(getActionCost('UNKNOWN_ACTION')).toBe(0);
     });
   });
 
-  describe('calculateTimePackageCost', () => {
-    it('should return correct cost for valid package ID', () => {
-      const pkg = QUEUE_TIME_PACKAGES[0];
-      expect(calculateTimePackageCost(pkg.id)).toBe(pkg.tokens);
+  describe('getGameModeCost', () => {
+    it('should return correct cost for game modes', () => {
+      expect(getGameModeCost('FREE_PLAY')).toBe(0);
+      expect(getGameModeCost('SPEED_RUN')).toBeGreaterThan(0);
     });
 
-    it('should return 0 for invalid package ID', () => {
-      expect(calculateTimePackageCost('invalid')).toBe(0);
-    });
-  });
-
-  describe('formatTokenAmount', () => {
-    it('should format token amounts correctly', () => {
-      expect(formatTokenAmount(1)).toBe('1 token');
-      expect(formatTokenAmount(5)).toBe('5 tokens');
-      expect(formatTokenAmount(0)).toBe('0 tokens');
-    });
-
-    it('should handle singular/plural correctly', () => {
-      expect(formatTokenAmount(1)).toContain('token');
-      expect(formatTokenAmount(1)).not.toContain('tokens');
-      expect(formatTokenAmount(2)).toContain('tokens');
+    it('should return 0 for unknown modes', () => {
+      expect(getGameModeCost('UNKNOWN_MODE')).toBe(0);
     });
   });
 
-  describe('formatDuration', () => {
-    it('should format seconds correctly', () => {
-      expect(formatDuration(60)).toBe('1:00');
-      expect(formatDuration(120)).toBe('2:00');
-      expect(formatDuration(90)).toBe('1:30');
-      expect(formatDuration(300)).toBe('5:00');
+  describe('calculateSessionCost', () => {
+    it('should calculate time and action costs', () => {
+      const result = calculateSessionCost(5, ['TRAIN_START', 'JUNCTION_SWITCH']);
+
+      expect(result).toHaveProperty('timeCost');
+      expect(result).toHaveProperty('actionCost');
+      expect(result).toHaveProperty('total');
+      expect(result.total).toBe(result.timeCost + result.actionCost);
     });
 
-    it('should handle single digit seconds', () => {
-      expect(formatDuration(65)).toBe('1:05');
-      expect(formatDuration(61)).toBe('1:01');
-    });
-  });
-
-  describe('getPopularPackage', () => {
-    it('should return the popular time package', () => {
-      const popular = getPopularPackage();
-      expect(popular).toBeDefined();
-      expect(popular?.popular).toBe(true);
+    it('should handle empty actions', () => {
+      const result = calculateSessionCost(5, []);
+      expect(result.actionCost).toBe(0);
     });
   });
 
-  describe('getBestValuePackage', () => {
-    it('should return the best value token package', () => {
-      const bestValue = getBestValuePackage();
-      expect(bestValue).toBeDefined();
+  describe('getTokenPackageById', () => {
+    it('should return regular package', () => {
+      const pkg = getTokenPackageById('starter');
+      expect(pkg).toBeDefined();
+      expect(pkg?.id).toBe('starter');
     });
 
-    it('should return package with highest tokens per dollar', () => {
-      const bestValue = getBestValuePackage();
-      if (bestValue) {
-        const bestRatio = (bestValue.tokens + (bestValue.bonus || 0)) / bestValue.price;
-        TOKEN_PACKAGES.forEach(pkg => {
-          const ratio = (pkg.tokens + (pkg.bonus || 0)) / pkg.price;
-          expect(ratio).toBeLessThanOrEqual(bestRatio + 0.001); // Allow small floating point variance
-        });
-      }
+    it('should return crypto package', () => {
+      const pkg = getTokenPackageById('crypto-starter');
+      expect(pkg).toBeDefined();
+      expect(pkg?.id).toBe('crypto-starter');
+    });
+
+    it('should return undefined for invalid ID', () => {
+      const pkg = getTokenPackageById('invalid');
+      expect(pkg).toBeUndefined();
+    });
+  });
+
+  describe('getTotalTokens', () => {
+    it('should add tokens and bonus', () => {
+      const pkg = { id: 'test', name: 'Test', tokens: 100, bonus: 20, price: 199 };
+      expect(getTotalTokens(pkg)).toBe(120);
+    });
+  });
+
+  describe('formatPrice', () => {
+    it('should format cents to dollars', () => {
+      expect(formatPrice(99)).toBe('$0.99');
+      expect(formatPrice(199)).toBe('$1.99');
+      expect(formatPrice(1000)).toBe('$10.00');
+    });
+  });
+
+  describe('getModuleCost', () => {
+    it('should return correct module costs', () => {
+      expect(getModuleCost('trains')).toBe(0);
+      expect(getModuleCost('police')).toBeGreaterThan(0);
+    });
+
+    it('should return 0 for unknown modules', () => {
+      expect(getModuleCost('unknown')).toBe(0);
+    });
+  });
+
+  describe('isModuleFree', () => {
+    it('should return true for free modules', () => {
+      expect(isModuleFree('trains')).toBe(true);
+      expect(isModuleFree('scenery')).toBe(true);
+    });
+
+    it('should return false for paid modules', () => {
+      expect(isModuleFree('police')).toBe(false);
+      expect(isModuleFree('fire')).toBe(false);
+    });
+  });
+
+  describe('WELCOME_BONUS_TOKENS', () => {
+    it('should be a positive number', () => {
+      expect(WELCOME_BONUS_TOKENS).toBeGreaterThan(0);
+    });
+
+    it('should be 100', () => {
+      expect(WELCOME_BONUS_TOKENS).toBe(100);
     });
   });
 });
