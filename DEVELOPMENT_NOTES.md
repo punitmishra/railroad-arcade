@@ -351,25 +351,65 @@ npx prisma studio     # GUI
 
 ---
 
+## Production Deployment ✅
+
+### Live URLs
+| Resource | URL |
+|----------|-----|
+| **Production** | https://railroad-arcade-v5.vercel.app |
+| **GitHub** | https://github.com/punitmishra/railroad-arcade |
+
+### Infrastructure
+- **Hosting**: Vercel (serverless)
+- **Database**: Vercel Postgres (Neon)
+- **Region**: US East (iad1)
+
+### Environment Variables (Vercel)
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | Postgres connection (pooled) |
+| `DIRECT_URL` | Postgres connection (direct) |
+| `NEXTAUTH_URL` | Production URL |
+| `NEXTAUTH_SECRET` | Auth secret |
+| `POSTGRES_*` | Auto-configured by Vercel Postgres |
+
+### Deployment Commands
+```bash
+# Deploy to preview
+vercel
+
+# Deploy to production
+vercel --prod
+
+# View logs
+vercel logs
+
+# Pull env vars
+vercel env pull
+```
+
+---
+
 ## Remaining Work
 
-### Production Deployment
-- [ ] Environment configuration
+### Future Enhancements
 - [ ] CDN for camera streams
-- [ ] Redis for queue management
-- [ ] Monitoring and logging
+- [ ] Redis for queue management (currently in-memory)
+- [ ] Monitoring and logging (Vercel Analytics)
+- [ ] Custom domain configuration
 
 ---
 
 ## Git History (Recent)
 
 ```
+7e20302 Fix Vercel deployment with Prisma generate
+00aed80 Add Vercel deployment configuration
+10f6e3f Fix TypeScript errors in test files
 ebd08e0 Fix failing integration tests
 52eed83 Add missing pages and smooth demo mode experience
 0f04068 Update development notes with polish features
 5daf058 Add real-time updates, achievements, leaderboards, and recordings
-ee981e1 Update development notes with Phase 6 completion
-40ee858 Implement Phase 6: Hardware adapter integration and token enforcement
 ```
 
 ---
@@ -393,4 +433,4 @@ ee981e1 Update development notes with Phase 6 completion
 
 ---
 
-*Last Updated: December 2024*
+*Last Updated: December 14, 2024*
