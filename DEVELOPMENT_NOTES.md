@@ -220,6 +220,17 @@ Railroad Arcade is a demo/live dual-mode arcade experience where users can:
 - `POST /api/payments/paypal` - PayPal order
 - `POST /api/payments/coinbase` - Coinbase Commerce
 
+### User
+- `GET /api/user` - Get user profile
+- `GET /api/user/stats` - Get user statistics
+- `GET /api/user/sessions` - Get session history
+- `GET /api/user/transactions` - Get transaction history
+- `GET /api/user/modules` - Get unlocked modules
+- `POST /api/user/modules` - Unlock a module
+
+### Admin
+- `POST /api/admin/grant-tokens` - Grant tokens to users
+
 ---
 
 ## Commands
@@ -306,6 +317,40 @@ npx prisma studio     # GUI
 
 ---
 
+### User Pages & Demo Mode ✅
+
+**New Pages:**
+| Page | Path | Description |
+|------|------|-------------|
+| Profile | `/profile` | User stats, token balance, unlocked modules |
+| Achievements | `/achievements` | Achievement progress with earned/locked badges |
+| History | `/history` | Session history with stats and filtering |
+| Settings | `/settings` | User preferences (dark mode, sounds, notifications) |
+
+**Files Created:**
+- `app/profile/page.tsx` - User profile with stats display
+- `app/achievements/page.tsx` - Achievement grid with progress bar
+- `app/history/page.tsx` - Session history list with filters
+- `app/settings/page.tsx` - Preference toggles and account management
+- `app/api/user/stats/route.ts` - User statistics endpoint
+- `app/api/user/sessions/route.ts` - Session history endpoint
+- `app/api/admin/grant-tokens/route.ts` - Admin token management
+
+**Demo Mode Improvements:**
+- Auto-start playing when page loads (no "Start Session" button needed)
+- All modules unlocked and free in demo mode
+- Clear "Free Demo Mode" badge in header
+- Token display hidden in demo mode
+- Infinite session timer hidden
+- Modules show "Free in Demo" label
+
+**Navigation:**
+- UserMenu dropdown links to all user pages
+- Back navigation from each page to home
+- Consistent header styling across pages
+
+---
+
 ## Remaining Work
 
 ### Production Deployment
@@ -319,12 +364,12 @@ npx prisma studio     # GUI
 ## Git History (Recent)
 
 ```
+ebd08e0 Fix failing integration tests
+52eed83 Add missing pages and smooth demo mode experience
+0f04068 Update development notes with polish features
 5daf058 Add real-time updates, achievements, leaderboards, and recordings
 ee981e1 Update development notes with Phase 6 completion
 40ee858 Implement Phase 6: Hardware adapter integration and token enforcement
-c895c6b Add comprehensive test suite for arcade features
-acb99d3 Add development notes documenting all completed phases
-24dbc20 Add demo/live dual-mode arcade with game modes and kiosk support
 ```
 
 ---
@@ -340,7 +385,11 @@ acb99d3 Add development notes documenting all completed phases
 | arcade-input.test.ts | Input handling |
 | hardware-adapters.test.ts | DemoAdapter control |
 | token-guard.test.ts | Token enforcement |
-| **Total** | **191 passing** |
+| auth.test.ts | Authentication flows |
+| payments.test.ts | Payment system integration |
+| queue.test.ts | Queue API |
+| kiosk.test.ts | Kiosk/coin API |
+| **Total** | **251 passing** |
 
 ---
 
