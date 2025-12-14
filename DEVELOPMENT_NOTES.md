@@ -242,14 +242,40 @@ npx prisma studio     # GUI
 
 ---
 
-## Remaining Work (Phase 6)
+### Phase 6: Integration & Token Enforcement ✅
+**Files Created:**
+- `lib/token-guard.ts` - Token verification, deduction, refund logic
+- `hooks/useHardwareAdapter.ts` - React hook for hardware adapter integration
+- `components/TokenConfirmDialog.tsx` - Confirmation dialog with cost display
 
-### Integration & Polish
-- [ ] Integrate hardware adapters into LiveTrackLayout
+**Files Modified:**
+- `components/LiveTrackLayout.tsx` - Mode awareness and token integration
+
+**Features:**
+- Hardware adapter automatically selected based on mode (demo/live)
+- Token balance verification before paid actions
+- Confirmation dialogs showing cost breakdown
+- Real-time balance updates after actions
+- Mode indicator in UI (DEMO/LIVE)
+- Free actions remain free (emergency stop, train stop)
+
+**Integration Details:**
+| Component | Integration |
+|-----------|-------------|
+| LiveTrackLayout | Uses useHardwareAdapter for unified control |
+| Junction/Crossing | Token enforcement via adapterActions |
+| Train Control | Start costs tokens, stop is free |
+| Emergency Stop | Always free, goes through adapter |
+
+---
+
+## Remaining Work
+
+### Polish & Enhancements
 - [ ] Add WebSocket/SSE for real-time updates
-- [ ] Token enforcement with confirmation dialogs
 - [ ] Recording system implementation
 - [ ] Achievement triggers
+- [ ] Leaderboard integration
 
 ### Production Deployment
 - [ ] Environment configuration
@@ -262,13 +288,28 @@ npx prisma studio     # GUI
 ## Git History (Recent)
 
 ```
+40ee858 Implement Phase 6: Hardware adapter integration and token enforcement
 c895c6b Add comprehensive test suite for arcade features
+acb99d3 Add development notes documenting all completed phases
 2c5b2cf Add payment and module integration tests
 24dbc20 Add demo/live dual-mode arcade with game modes and kiosk support
 ae30f8e Add payment integration and fix interactive module persistence
-49bf737 Add auth flow fixes, tests, and documentation
-397a25b Add full backend infrastructure with auth and payments
 ```
+
+---
+
+## Test Summary
+
+| Test Suite | Tests |
+|------------|-------|
+| game-modes.test.ts | GameModeEngine scoring |
+| camera-config.test.ts | Camera configurations |
+| kiosk-config.test.ts | Kiosk settings |
+| pricing.test.ts | Token/action pricing |
+| arcade-input.test.ts | Input handling |
+| hardware-adapters.test.ts | DemoAdapter control |
+| token-guard.test.ts | Token enforcement |
+| **Total** | **191 passing** |
 
 ---
 
