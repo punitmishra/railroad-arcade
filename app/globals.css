@@ -669,12 +669,39 @@ input[type="range"]::-webkit-slider-thumb:active {
   color: #fff;
 }
 
-/* Focus states */
+/* Focus states - Enhanced for accessibility */
 button:focus-visible,
 input:focus-visible,
-[tabindex]:focus-visible {
-  outline: 2px solid var(--neon-cyan);
+a:focus-visible,
+[tabindex]:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--cyan);
   outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.2);
+}
+
+/* Focus ring utility class */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.2);
+}
+
+/* Skip link for keyboard users */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  padding: 1rem;
+  background: var(--bg-elevated);
+  color: var(--cyan);
+  z-index: 9999;
+  transition: top 0.2s;
+}
+
+.skip-link:focus {
+  top: 0;
 }
 
 /* Disabled state */

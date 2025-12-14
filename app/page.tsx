@@ -291,9 +291,11 @@ function RailroadArcade() {
             </div>
 
             {/* Mobile Menu Button */}
-            <button 
-              className="md:hidden p-2 rounded-lg hover:bg-white/10 text-gray-400"
+            <button
+              className="md:hidden p-2 rounded-lg hover:bg-white/10 text-gray-400 min-h-[44px] min-w-[44px] flex items-center justify-center"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? <CloseIcon size={24} /> : <MenuIcon size={24} />}
             </button>
@@ -659,13 +661,15 @@ function RailroadArcade() {
 
       {/* Emergency Stop Button (fixed) */}
       {isPlaying && (
-        <button 
+        <button
           className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 group"
           onClick={() => {
-            if (confirm('Are you sure you want to trigger emergency stop?')) {
-              // Emergency stop logic
+            if (confirm('Are you sure you want to trigger emergency stop? This will halt all trains immediately.')) {
+              // Dispatch custom event for emergency stop
+              window.dispatchEvent(new CustomEvent('railroad:emergencyStop'));
             }
           }}
+          aria-label="Emergency stop - halt all trains"
         >
           <div className="relative">
             <div className="absolute inset-0 bg-red-500 rounded-full blur-xl opacity-50 group-hover:opacity-75 transition-opacity" />

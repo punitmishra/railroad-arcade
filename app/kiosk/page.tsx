@@ -30,6 +30,7 @@ export default function KioskPage() {
   const [train1Dir, setTrain1Dir] = useState<'forward' | 'reverse'>('forward');
   const [train2Speed, setTrain2Speed] = useState(0);
   const [train2Dir, setTrain2Dir] = useState<'forward' | 'reverse'>('forward');
+  const [tokenError, setTokenError] = useState<string | null>(null);
 
   // Junction state
   const [junctions, setJunctions] = useState<Record<string, 'left' | 'right' | 'straight'>>({
@@ -128,7 +129,8 @@ export default function KioskPage() {
 
     // Check if we need tokens (only in live mode)
     if (mode === 'live' && config.tokenCost > tokens) {
-      // Not enough tokens - could show error
+      setTokenError(`Not enough tokens! Need ${config.tokenCost}, have ${tokens}. Insert more coins to play.`);
+      setTimeout(() => setTokenError(null), 4000);
       return;
     }
 
@@ -184,10 +186,17 @@ export default function KioskPage() {
       {kioskState === 'mode-select' && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-40">
           <div className="w-full max-w-2xl mx-4">
+            {/* Token Error Toast */}
+            {tokenError && (
+              <div className="mb-4 p-4 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 text-center animate-pulse">
+                <p className="font-medium">{tokenError}</p>
+              </div>
+            )}
             <GameModeSelector onSelectMode={handleStartGame} />
             <button
               onClick={() => setKioskState('attract')}
-              className="w-full mt-4 py-3 rounded-lg bg-white/10 text-gray-300 hover:bg-white/20 transition-colors"
+              className="w-full mt-4 py-3 rounded-lg bg-white/10 text-gray-300 hover:bg-white/20 transition-colors min-h-[48px]"
+              aria-label="Go back to attract screen"
             >
               Back
             </button>

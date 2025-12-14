@@ -460,11 +460,70 @@ export function StatCard({ label, value, icon, color = '#00f0ff' }: StatCardProp
         <span className="text-[11px] font-medium uppercase tracking-wider text-gray-500">{label}</span>
         {icon && <span style={{ color }}>{icon}</span>}
       </div>
-      <div 
+      <div
         className="text-2xl font-semibold"
         style={{ fontFamily: 'JetBrains Mono, monospace', color }}
       >
         {value}
+      </div>
+    </div>
+  );
+}
+
+// ========================================
+// SKELETON LOADERS
+// ========================================
+interface SkeletonProps {
+  className?: string;
+}
+
+export function Skeleton({ className = '' }: SkeletonProps) {
+  return (
+    <div
+      className={`animate-pulse bg-white/10 rounded ${className}`}
+      aria-hidden="true"
+    />
+  );
+}
+
+export function SkeletonCard({ className = '' }: SkeletonProps) {
+  return (
+    <div
+      className={`rounded-xl bg-[#0c0c14] border border-white/10 p-4 ${className}`}
+      aria-hidden="true"
+    >
+      <div className="flex items-center gap-3 mb-4">
+        <Skeleton className="w-10 h-10 rounded-lg" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-4 w-1/2" />
+          <Skeleton className="h-3 w-1/3" />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+      </div>
+    </div>
+  );
+}
+
+export function SkeletonRow({ className = '' }: SkeletonProps) {
+  return (
+    <div
+      className={`rounded-xl bg-[#0c0c14] border border-white/10 p-4 flex items-center gap-4 ${className}`}
+      aria-hidden="true"
+    >
+      <Skeleton className="w-10 h-10 rounded-lg flex-shrink-0" />
+      <div className="flex items-center gap-3 flex-1">
+        <Skeleton className="w-9 h-9 rounded-full flex-shrink-0" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-3 w-16" />
+        </div>
+      </div>
+      <div className="text-right space-y-2">
+        <Skeleton className="h-5 w-16 ml-auto" />
+        <Skeleton className="h-3 w-10 ml-auto" />
       </div>
     </div>
   );

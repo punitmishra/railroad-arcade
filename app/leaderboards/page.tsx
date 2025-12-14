@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLeaderboard, useAllLeaderboards, LeaderboardEntry } from '@/hooks/useLeaderboard';
 import { TrophyIcon, ArrowLeftIcon, TrainIcon, ClockIcon, SparklesIcon } from '@/components/icons';
+import { SkeletonRow } from '@/components/ui';
 
 const GAME_MODES = [
   { id: 'FREE_PLAY', name: 'Free Play', color: 'cyan', description: 'Sandbox mode' },
@@ -128,13 +129,12 @@ export default function LeaderboardsPage() {
           </div>
         )}
 
-        {/* Loading State */}
+        {/* Loading State with Skeletons */}
         {isLoading && (
-          <div className="text-center py-12">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-amber-500/20 flex items-center justify-center animate-pulse">
-              <TrophyIcon size={24} className="text-amber-400" />
-            </div>
-            <p className="text-gray-400">Loading leaderboard...</p>
+          <div className="space-y-3" aria-label="Loading leaderboard">
+            {[1, 2, 3, 4, 5].map(i => (
+              <SkeletonRow key={i} />
+            ))}
           </div>
         )}
 

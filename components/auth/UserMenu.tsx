@@ -2,11 +2,12 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { UserIcon, LogoutIcon, SettingsIcon, HistoryIcon, TrophyIcon } from '../icons';
+import { UserIcon, LogoutIcon, SettingsIcon, HistoryIcon, TrophyIcon, ChartIcon } from '../icons';
 
 export function UserMenu() {
   const { data: session, status } = useSession();
   const [isOpen, setIsOpen] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close menu when clicking outside
@@ -107,6 +108,13 @@ export function UserMenu() {
               Achievements
             </a>
             <a
+              href="/leaderboards"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-white/10 transition-all"
+            >
+              <ChartIcon size={16} />
+              Leaderboards
+            </a>
+            <a
               href="/history"
               className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-white/10 transition-all"
             >
@@ -125,12 +133,41 @@ export function UserMenu() {
           {/* Sign Out */}
           <div className="p-2 border-t border-white/10">
             <button
-              onClick={() => signOut({ callbackUrl: '/' })}
+              onClick={() => setShowSignOutConfirm(true)}
               className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-red-400 hover:bg-red-500/10 transition-all"
             >
               <LogoutIcon size={16} />
               Sign Out
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Sign Out Confirmation Dialog */}
+      {showSignOutConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-[#12121c] rounded-xl border border-white/10 p-6 max-w-sm w-full text-center">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
+              <LogoutIcon size={24} className="text-red-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">Sign Out?</h3>
+            <p className="text-sm text-gray-400 mb-6">
+              Are you sure you want to sign out of your account?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSignOutConfirm(false)}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-white/10 text-gray-300 hover:bg-white/20 transition-colors min-h-[44px]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => signOut({ callbackUrl: '/' })}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors min-h-[44px]"
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
         </div>
       )}

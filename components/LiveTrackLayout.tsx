@@ -507,7 +507,7 @@ export function LiveTrackLayout({
     ));
   };
 
-  const emergencyStop = async () => {
+  const emergencyStop = useCallback(async () => {
     if (mode === 'live') {
       // Emergency stop is free but still goes through adapter
       await adapterActions.emergencyStop();
@@ -520,7 +520,18 @@ export function LiveTrackLayout({
       direction: 'stopped' as const,
       autopilot: false
     })));
-  };
+  }, [mode, adapterActions]);
+
+  // Listen for global emergency stop events
+  useEffect(() => {
+    const handleGlobalEmergencyStop = () => {
+      emergencyStop();
+    };
+    window.addEventListener('railroad:emergencyStop', handleGlobalEmergencyStop);
+    return () => {
+      window.removeEventListener('railroad:emergencyStop', handleGlobalEmergencyStop);
+    };
+  }, [emergencyStop]);
 
   const isLevelVisible = (level: 1 | 2) => activeLevel === 'both' || activeLevel === level;
 
@@ -591,17 +602,19 @@ export function LiveTrackLayout({
           )}
 
           {/* Emergency Stop */}
-          <button onClick={emergencyStop} className="px-2 sm:px-2.5 py-1.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 text-[9px] sm:text-[10px] font-bold flex items-center gap-1 min-h-[32px]">
+          <button onClick={emergencyStop} className="px-2 sm:px-2.5 py-1.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 text-[9px] sm:text-[10px] font-bold flex items-center gap-1 min-h-[32px]" aria-label="Emergency stop all trains">
             <AlertIcon size={12} /> <span className="hidden xs:inline">E-</span>STOP
           </button>
 
           {/* Time Scale - hidden on very small screens */}
-          <div className="hidden sm:flex rounded-lg overflow-hidden border border-white/10">
+          <div className="hidden sm:flex rounded-lg overflow-hidden border border-white/10" role="group" aria-label="Simulation speed">
             {[1, 2, 4].map(scale => (
               <button
                 key={scale}
                 onClick={() => setTimeScale(scale)}
                 className={`px-2 py-1.5 text-[10px] font-medium ${timeScale === scale ? 'bg-purple-500/30 text-purple-300' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                aria-label={`Set speed to ${scale}x`}
+                aria-pressed={timeScale === scale}
               >
                 {scale}x
               </button>
@@ -609,19 +622,19 @@ export function LiveTrackLayout({
           </div>
 
           {/* Play/Pause */}
-          <button onClick={() => setIsPaused(!isPaused)} className={`p-1.5 rounded-lg min-h-[32px] min-w-[32px] flex items-center justify-center ${isPaused ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'}`}>
+          <button onClick={() => setIsPaused(!isPaused)} className={`p-1.5 rounded-lg min-h-[32px] min-w-[32px] flex items-center justify-center ${isPaused ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'}`} aria-label={isPaused ? 'Resume simulation' : 'Pause simulation'}>
             {isPaused ? <PlayIcon size={14} /> : <PauseIcon size={14} />}
           </button>
 
           {/* Night Mode */}
-          <button onClick={() => setNightMode(!nightMode)} className={`p-1.5 rounded-lg min-h-[32px] min-w-[32px] flex items-center justify-center ${nightMode ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'}`}>
+          <button onClick={() => setNightMode(!nightMode)} className={`p-1.5 rounded-lg min-h-[32px] min-w-[32px] flex items-center justify-center ${nightMode ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'}`} aria-label={nightMode ? 'Switch to day mode' : 'Switch to night mode'}>
             {nightMode ? <MoonIcon size={14} /> : <SunIcon size={14} />}
           </button>
 
           {/* Level Selector */}
-          <div className="flex rounded-lg overflow-hidden border border-white/10">
+          <div className="flex rounded-lg overflow-hidden border border-white/10" role="group" aria-label="Track level filter">
             {(['both', 2, 1] as const).map(level => (
-              <button key={level} onClick={() => setActiveLevel(level)} className={`px-1.5 sm:px-2 py-1.5 text-[9px] sm:text-[10px] font-medium min-h-[32px] ${activeLevel === level ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+              <button key={level} onClick={() => setActiveLevel(level)} className={`px-1.5 sm:px-2 py-1.5 text-[9px] sm:text-[10px] font-medium min-h-[32px] ${activeLevel === level ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`} aria-label={level === 'both' ? 'Show all levels' : `Show level ${level} only`} aria-pressed={activeLevel === level}>
                 {level === 'both' ? 'All' : `L${level}`}
               </button>
             ))}
@@ -629,13 +642,13 @@ export function LiveTrackLayout({
 
           {/* Toggle buttons - hidden on mobile */}
           <div className="hidden md:flex items-center gap-1">
-            <button onClick={() => setShowTrails(!showTrails)} className={`p-1.5 rounded-lg text-[10px] ${showTrails ? 'bg-cyan-500/20 text-cyan-400' : 'bg-white/5 text-gray-500'}`} title="Show Trails">
+            <button onClick={() => setShowTrails(!showTrails)} className={`p-1.5 rounded-lg text-[10px] ${showTrails ? 'bg-cyan-500/20 text-cyan-400' : 'bg-white/5 text-gray-500'}`} aria-label={showTrails ? 'Hide train trails' : 'Show train trails'} aria-pressed={showTrails}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
-            <button onClick={() => setShowSpeedZones(!showSpeedZones)} className={`p-1.5 rounded-lg ${showSpeedZones ? 'bg-amber-500/20 text-amber-400' : 'bg-white/5 text-gray-500'}`} title="Speed Zones">
+            <button onClick={() => setShowSpeedZones(!showSpeedZones)} className={`p-1.5 rounded-lg ${showSpeedZones ? 'bg-amber-500/20 text-amber-400' : 'bg-white/5 text-gray-500'}`} aria-label={showSpeedZones ? 'Hide speed zones' : 'Show speed zones'} aria-pressed={showSpeedZones}>
               <ZapIcon size={14} />
             </button>
-            <button onClick={() => setShowLabels(!showLabels)} className={`p-1.5 rounded-lg ${showLabels ? 'bg-white/10 text-white' : 'bg-white/5 text-gray-500'}`}>
+            <button onClick={() => setShowLabels(!showLabels)} className={`p-1.5 rounded-lg ${showLabels ? 'bg-white/10 text-white' : 'bg-white/5 text-gray-500'}`} aria-label={showLabels ? 'Hide labels' : 'Show labels'} aria-pressed={showLabels}>
               <EyeIcon size={14} />
             </button>
           </div>
@@ -746,7 +759,7 @@ export function LiveTrackLayout({
 
             {/* Junctions */}
             {junctions.filter(j => isLevelVisible(j.level)).map(junction => (
-              <g key={junction.id} transform={`translate(${junction.x}, ${junction.y})`} onClick={() => toggleJunction(junction.id)} className="cursor-pointer">
+              <g key={junction.id} transform={`translate(${junction.x}, ${junction.y})`} onClick={() => toggleJunction(junction.id)} className="cursor-pointer" role="button" tabIndex={0} aria-label={`${junction.name}: ${junction.state === 'straight' ? 'straight' : 'diverge'}. Click to toggle`} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleJunction(junction.id); }}>
                 <circle r="16" fill="#0c0c14" stroke={junction.level === 1 ? LEVEL1.color : LEVEL2.color} strokeWidth="2" />
                 <circle r="10" fill={junction.state === 'straight' ? '#22c55e' : '#f59e0b'} />
                 <path d={junction.state === 'straight' ? 'M-5 0 L5 0' : 'M-5 0 Q 0 0 4 -5'} stroke="white" strokeWidth="2.5" strokeLinecap="round" fill="none" />
@@ -756,7 +769,7 @@ export function LiveTrackLayout({
 
             {/* Crossings */}
             {crossings.filter(c => isLevelVisible(c.level)).map(crossing => (
-              <g key={crossing.id} transform={`translate(${crossing.x}, ${crossing.y})`} onClick={() => toggleCrossing(crossing.id)} className="cursor-pointer">
+              <g key={crossing.id} transform={`translate(${crossing.x}, ${crossing.y})`} onClick={() => toggleCrossing(crossing.id)} className="cursor-pointer" role="button" tabIndex={0} aria-label={`${crossing.name} crossing: ${crossing.state}. Click to toggle`} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleCrossing(crossing.id); }}>
                 <rect x="-12" y="-12" width="24" height="24" rx="4" fill="#0c0c14" stroke={crossing.state === 'closed' ? '#ef4444' : '#22c55e'} strokeWidth="2" />
                 {crossing.state === 'closed' ? (
                   <><path d="M-6 -6 L6 6 M-6 6 L6 -6" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" /><circle r="3" fill="#ef4444" className="animate-pulse" /></>
@@ -996,23 +1009,23 @@ export function LiveTrackLayout({
                 <div className="hidden xs:flex items-center justify-between mb-2 text-[9px] sm:text-[10px]">
                   <span className="text-gray-500">Cars: {train.carts}</span>
                   <div className="flex gap-1">
-                    <button onClick={() => removeCart(train.id)} className="w-6 h-6 rounded bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 min-h-[24px]">−</button>
-                    <button onClick={() => addCart(train.id)} className="w-6 h-6 rounded bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 min-h-[24px]">+</button>
+                    <button onClick={() => removeCart(train.id)} className="w-6 h-6 rounded bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 min-h-[24px]" aria-label={`Remove car from ${train.name}`}>−</button>
+                    <button onClick={() => addCart(train.id)} className="w-6 h-6 rounded bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 min-h-[24px]" aria-label={`Add car to ${train.name}`}>+</button>
                   </div>
                 </div>
 
                 {/* Control buttons */}
                 <div className="grid grid-cols-4 gap-1 sm:gap-1.5">
-                  <button onClick={() => toggleDirection(train.id)} disabled={train.speed === 0} className="py-1.5 rounded-lg bg-white/5 border border-white/10 text-[9px] sm:text-[10px] text-gray-300 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-0.5 min-h-[32px]">
+                  <button onClick={() => toggleDirection(train.id)} disabled={train.speed === 0} className="py-1.5 rounded-lg bg-white/5 border border-white/10 text-[9px] sm:text-[10px] text-gray-300 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-0.5 min-h-[32px]" aria-label={`Toggle ${train.name} direction`}>
                     {train.direction === 'forward' ? <ArrowDownIcon size={10} /> : <ArrowUpIcon size={10} />} <span className="hidden xs:inline">Dir</span>
                   </button>
-                  <button onClick={() => toggleHeadlights(train.id)} className={`py-1.5 rounded-lg border text-[10px] flex items-center justify-center min-h-[32px] ${train.headlights ? 'bg-amber-500/20 border-amber-500/30 text-amber-400' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}>
+                  <button onClick={() => toggleHeadlights(train.id)} className={`py-1.5 rounded-lg border text-[10px] flex items-center justify-center min-h-[32px] ${train.headlights ? 'bg-amber-500/20 border-amber-500/30 text-amber-400' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`} aria-label={train.headlights ? `Turn off ${train.name} headlights` : `Turn on ${train.name} headlights`} aria-pressed={train.headlights}>
                     💡
                   </button>
-                  <button onClick={() => toggleAutopilot(train.id)} className={`py-1.5 rounded-lg border text-[8px] sm:text-[10px] font-bold flex items-center justify-center min-h-[32px] ${train.autopilot ? 'bg-purple-500/20 border-purple-500/30 text-purple-400' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}>
+                  <button onClick={() => toggleAutopilot(train.id)} className={`py-1.5 rounded-lg border text-[8px] sm:text-[10px] font-bold flex items-center justify-center min-h-[32px] ${train.autopilot ? 'bg-purple-500/20 border-purple-500/30 text-purple-400' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`} aria-label={train.autopilot ? `Disable ${train.name} autopilot` : `Enable ${train.name} autopilot`} aria-pressed={train.autopilot}>
                     AUTO
                   </button>
-                  <button onClick={() => setTrainSpeed(train.id, 0)} className="py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-[8px] sm:text-[10px] font-bold hover:bg-red-500/30 min-h-[32px]">
+                  <button onClick={() => setTrainSpeed(train.id, 0)} className="py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-[8px] sm:text-[10px] font-bold hover:bg-red-500/30 min-h-[32px]" aria-label={`Stop ${train.name}`}>
                     STOP
                   </button>
                 </div>
@@ -1034,10 +1047,10 @@ export function LiveTrackLayout({
           <span>Speed: {timeScale}x</span>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setShowTelemetry(!showTelemetry)} className={showTelemetry ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-300'}>
+          <button onClick={() => setShowTelemetry(!showTelemetry)} className={showTelemetry ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-300'} aria-label={showTelemetry ? 'Hide telemetry panel' : 'Show telemetry panel'} aria-pressed={showTelemetry}>
             <ChartIcon size={11} />
           </button>
-          <button onClick={() => setShowMinimap(!showMinimap)} className={showMinimap ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-300'}>
+          <button onClick={() => setShowMinimap(!showMinimap)} className={showMinimap ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-300'} aria-label={showMinimap ? 'Hide minimap' : 'Show minimap'} aria-pressed={showMinimap}>
             <MapIcon size={11} />
           </button>
           <span className={`font-mono ${isPaused ? 'text-amber-400' : mode === 'live' ? 'text-emerald-400' : 'text-purple-400'}`}>
