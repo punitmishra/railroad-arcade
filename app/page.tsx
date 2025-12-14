@@ -5,6 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { TokenDisplay, SessionTimer, ArcadeButton, KeyboardShortcutsModal, ConfirmDialog, useToast } from '@/components/ui';
 import { useSounds } from '@/hooks/useSounds';
+import { useGameSession } from '@/hooks/useGameSession';
+import { GameHUD, GameOverScreen } from '@/components/GameHUD';
+import { GameModeSelector } from '@/components/GameModeSelector';
+import { GameModeId, GAME_MODE_CONFIGS } from '@/lib/game-modes/GameModeEngine';
 import {
   GamepadIcon, WalletIcon, TrophyIcon, SparklesIcon,
   TrainIcon, EmergencyIcon, GearIcon, GridIcon, MenuIcon, CloseIcon,
@@ -96,8 +100,28 @@ function RailroadArcade() {
   const [hasAutoStarted, setHasAutoStarted] = useState(false);
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const [showEmergencyConfirm, setShowEmergencyConfirm] = useState(false);
+  const [showGameModeSelector, setShowGameModeSelector] = useState(false);
+  const [showGameOver, setShowGameOver] = useState(false);
+  const [gameOverResult, setGameOverResult] = useState<{
+    isNewHighScore: boolean;
+    previousHighScore: number;
+    rank: number;
+  } | null>(null);
   const { addToast } = useToast();
   const { play: playSound } = useSounds();
+
+  // Game session hook
+  const {
+    gameState,
+    isGameActive,
+    currentMode,
+    startGame,
+    endGame,
+    pauseGame,
+    resumeGame,
+    onJunctionSwitch,
+    onLapComplete,
+  } = useGameSession();
 
   // Auto-start in demo mode for seamless experience
   useEffect(() => {
@@ -140,6 +164,34 @@ function RailroadArcade() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Listen for track events to update game scoring
+  useEffect(() => {
+    if (!isGameActive) return;
+
+    const handleLapComplete = (e: CustomEvent) => {
+      onLapComplete(e.detail.trainId);
+    };
+
+    const handleJunctionSwitch = (e: CustomEvent) => {
+      onJunctionSwitch(e.detail.junctionId, e.detail.junctionName);
+    };
+
+    const handleNearMiss = (e: CustomEvent) => {
+      // Near misses add to score but don't interrupt gameplay
+      addToast('success', `Near miss! +50 points`);
+    };
+
+    window.addEventListener('railroad:lapComplete', handleLapComplete as EventListener);
+    window.addEventListener('railroad:junctionSwitch', handleJunctionSwitch as EventListener);
+    window.addEventListener('railroad:nearMiss', handleNearMiss as EventListener);
+
+    return () => {
+      window.removeEventListener('railroad:lapComplete', handleLapComplete as EventListener);
+      window.removeEventListener('railroad:junctionSwitch', handleJunctionSwitch as EventListener);
+      window.removeEventListener('railroad:nearMiss', handleNearMiss as EventListener);
+    };
+  }, [isGameActive, onLapComplete, onJunctionSwitch, addToast]);
+
   const handleEmergencyStop = () => {
     playSound('emergency');
     window.dispatchEvent(new CustomEvent('railroad:emergencyStop'));
@@ -147,36 +199,94 @@ function RailroadArcade() {
     addToast('warning', 'Emergency stop activated - all trains halted');
   };
 
-  const startSession = async (duration: number, cost: number) => {
-    // Demo mode: free unlimited play
-    if (mode === 'demo') {
-      playSound('game_start');
-      setSessionTime(Infinity); // Unlimited in demo
+  // Handle game mode selection
+  const handleSelectGameMode = async (modeId: GameModeId) => {
+    setShowGameModeSelector(false);
+
+    const config = GAME_MODE_CONFIGS[modeId];
+    const cost = mode === 'live' ? config.tokenCost : 0;
+    const duration = config.duration || 600; // Default 10 min for unlimited modes
+
+    // Start the play session for token tracking
+    if (mode === 'live' && cost > 0) {
+      if (!isAuthenticated) {
+        setShowTokenStore(true);
+        return;
+      }
+      if (tokens < cost) {
+        setShowTokenStore(true);
+        return;
+      }
+
+      try {
+        await startSessionApi(duration, cost, (data) => {
+          updateTokens(data.tokenBalance);
+        });
+      } catch (err) {
+        console.error('Failed to start session:', err);
+        return;
+      }
+    }
+
+    // Start the game with selected mode
+    const success = await startGame(modeId);
+    if (success) {
+      setSessionTime(config.duration || Infinity);
       setIsPlaying(true);
-      return;
+      setShowGameOver(false);
+      setGameOverResult(null);
+    }
+  };
+
+  // Handle game end
+  const handleGameEnd = async () => {
+    if (gameState) {
+      // Submit score and get result
+      try {
+        const response = await fetch('/api/leaderboards', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gameMode: currentMode,
+            score: gameState.score,
+            isLive: mode === 'live',
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setGameOverResult({
+              isNewHighScore: data.data.newHighScore,
+              previousHighScore: data.data.currentHighScore || 0,
+              rank: data.data.rank || 0,
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to submit score:', err);
+      }
     }
 
-    // Live mode: require authentication and tokens
-    if (!isAuthenticated) {
-      setShowTokenStore(true); // Will show login prompt
-      return;
-    }
+    await endGame();
+    setShowGameOver(true);
+    setIsPlaying(false);
+  };
 
-    if (tokens < cost) {
-      setShowTokenStore(true);
-      return;
+  // Handle play again
+  const handlePlayAgain = () => {
+    setShowGameOver(false);
+    setGameOverResult(null);
+    if (currentMode) {
+      handleSelectGameMode(currentMode);
+    } else {
+      setShowGameModeSelector(true);
     }
+  };
 
-    try {
-      await startSessionApi(duration, cost, (data) => {
-        playSound('game_start');
-        updateTokens(data.tokenBalance);
-        setSessionTime(duration);
-        setIsPlaying(true);
-      });
-    } catch (err) {
-      console.error('Failed to start session:', err);
-    }
+  const startSession = async (duration: number, cost: number) => {
+    // Show game mode selector instead of starting directly
+    setShowGameModeSelector(true);
   };
 
   const unlockModule = async (moduleId: string, cost: number) => {
@@ -315,11 +425,18 @@ function RailroadArcade() {
                   Start Session
                 </ArcadeButton>
               ) : (
-                <ArcadeButton variant="danger">
+                <ArcadeButton variant="danger" onClick={() => setShowEmergencyConfirm(true)}>
                   <EmergencyIcon size={18} />
                   STOP
                 </ArcadeButton>
               )}
+              <a
+                href="/leaderboards"
+                className="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-amber-400 transition-colors"
+                title="Leaderboards"
+              >
+                <TrophyIcon size={20} />
+              </a>
               <UserMenu />
             </div>
 
@@ -725,6 +842,57 @@ function RailroadArcade() {
         isOpen={showKeyboardShortcuts}
         onClose={() => setShowKeyboardShortcuts(false)}
       />
+
+      {/* Game HUD */}
+      {isGameActive && gameState && (
+        <GameHUD
+          gameState={gameState}
+          onPause={pauseGame}
+          onResume={resumeGame}
+          onEnd={handleGameEnd}
+        />
+      )}
+
+      {/* Game Mode Selector Modal */}
+      {showGameModeSelector && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <GameModeSelector
+              onSelectMode={handleSelectGameMode}
+              currentMode={currentMode}
+            />
+            <button
+              onClick={() => setShowGameModeSelector(false)}
+              className="mt-4 w-full py-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Game Over Screen */}
+      {showGameOver && gameState && (
+        <GameOverScreen
+          gameState={gameState}
+          isNewHighScore={gameOverResult?.isNewHighScore}
+          previousHighScore={gameOverResult?.previousHighScore}
+          rank={gameOverResult?.rank}
+          onPlayAgain={handlePlayAgain}
+          onChangeMode={() => {
+            setShowGameOver(false);
+            setShowGameModeSelector(true);
+          }}
+          onViewLeaderboard={() => {
+            setShowGameOver(false);
+            window.location.href = '/leaderboards';
+          }}
+          onExit={() => {
+            setShowGameOver(false);
+            setIsPlaying(false);
+          }}
+        />
+      )}
     </div>
   );
 }

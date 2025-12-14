@@ -187,16 +187,51 @@ function ScorePopup({ event }: { event: ScoringEvent }) {
 
 interface GameOverProps {
   gameState: GameState;
+  isNewHighScore?: boolean;
+  previousHighScore?: number;
+  rank?: number;
   onPlayAgain: () => void;
+  onChangeMode?: () => void;
+  onViewLeaderboard?: () => void;
   onExit: () => void;
 }
 
-export function GameOverScreen({ gameState, onPlayAgain, onExit }: GameOverProps) {
+export function GameOverScreen({
+  gameState,
+  isNewHighScore = false,
+  previousHighScore = 0,
+  rank,
+  onPlayAgain,
+  onChangeMode,
+  onViewLeaderboard,
+  onExit,
+}: GameOverProps) {
+  const [showConfetti, setShowConfetti] = useState(isNewHighScore);
+
+  useEffect(() => {
+    if (isNewHighScore) {
+      const timer = setTimeout(() => setShowConfetti(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isNewHighScore]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="bg-[#12121c] rounded-xl sm:rounded-2xl border border-white/10 p-5 sm:p-8 max-w-md w-full text-center max-h-[90vh] overflow-y-auto">
+      {/* Confetti Effect */}
+      {showConfetti && <ConfettiEffect />}
+
+      <div className="bg-[#12121c] rounded-xl sm:rounded-2xl border border-white/10 p-5 sm:p-8 max-w-md w-full text-center max-h-[90vh] overflow-y-auto relative">
+        {/* High Score Badge */}
+        {isNewHighScore && (
+          <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+            <div className="px-4 py-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-sm shadow-lg shadow-amber-500/30 animate-bounce">
+              NEW HIGH SCORE!
+            </div>
+          </div>
+        )}
+
         <h2
-          className="text-2xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 mb-1 sm:mb-2"
+          className="text-2xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 mb-1 sm:mb-2 mt-2"
           style={{ fontFamily: 'Orbitron, sans-serif' }}
         >
           GAME OVER
@@ -205,10 +240,30 @@ export function GameOverScreen({ gameState, onPlayAgain, onExit }: GameOverProps
 
         {/* Final Score */}
         <div className="mb-6 sm:mb-8">
-          <div className="text-4xl sm:text-6xl font-bold text-white font-mono mb-1 sm:mb-2">
+          <div className={`text-4xl sm:text-6xl font-bold font-mono mb-1 sm:mb-2 ${
+            isNewHighScore
+              ? 'text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400 animate-pulse'
+              : 'text-white'
+          }`}>
             {gameState.score.toLocaleString()}
           </div>
           <div className="text-gray-500 text-xs sm:text-sm">FINAL SCORE</div>
+
+          {/* Previous High Score */}
+          {isNewHighScore && previousHighScore > 0 && (
+            <div className="mt-2 text-xs text-gray-500">
+              Previous best: <span className="text-gray-400">{previousHighScore.toLocaleString()}</span>
+              <span className="text-emerald-400 ml-2">+{(gameState.score - previousHighScore).toLocaleString()}</span>
+            </div>
+          )}
+
+          {/* Rank Badge */}
+          {rank && rank <= 10 && (
+            <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/30">
+              <span className="text-2xl">{rank === 1 ? '1' : rank === 2 ? '2' : rank === 3 ? '3' : ''}</span>
+              <span className="text-amber-400 font-medium">#{rank} on Leaderboard</span>
+            </div>
+          )}
         </div>
 
         {/* Stats Grid */}
@@ -258,21 +313,93 @@ export function GameOverScreen({ gameState, onPlayAgain, onExit }: GameOverProps
         )}
 
         {/* Actions */}
-        <div className="flex gap-2 sm:gap-3">
-          <button
-            onClick={onExit}
-            className="flex-1 px-3 sm:px-4 py-3 rounded-lg bg-white/10 text-gray-300 hover:bg-white/20 transition-colors min-h-[48px] text-sm sm:text-base"
-          >
-            Exit
-          </button>
-          <button
-            onClick={onPlayAgain}
-            className="flex-1 px-3 sm:px-4 py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-medium hover:opacity-90 transition-opacity min-h-[48px] text-sm sm:text-base"
-          >
-            Play Again
-          </button>
+        <div className="space-y-2">
+          <div className="flex gap-2 sm:gap-3">
+            <button
+              onClick={onPlayAgain}
+              className="flex-1 px-3 sm:px-4 py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-medium hover:opacity-90 transition-opacity min-h-[48px] text-sm sm:text-base"
+            >
+              Play Again
+            </button>
+            {onChangeMode && (
+              <button
+                onClick={onChangeMode}
+                className="flex-1 px-3 sm:px-4 py-3 rounded-lg bg-white/10 text-gray-300 hover:bg-white/20 transition-colors min-h-[48px] text-sm sm:text-base"
+              >
+                Change Mode
+              </button>
+            )}
+          </div>
+          <div className="flex gap-2 sm:gap-3">
+            {onViewLeaderboard && (
+              <button
+                onClick={onViewLeaderboard}
+                className="flex-1 px-3 sm:px-4 py-2.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-400 hover:bg-amber-500/30 transition-colors min-h-[44px] text-sm"
+              >
+                View Leaderboard
+              </button>
+            )}
+            <button
+              onClick={onExit}
+              className="flex-1 px-3 sm:px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 transition-colors min-h-[44px] text-sm"
+            >
+              Exit
+            </button>
+          </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ============================================
+// Confetti Effect
+// ============================================
+
+function ConfettiEffect() {
+  const colors = ['#00f0ff', '#a855f7', '#f59e0b', '#22c55e', '#ec4899'];
+  const particles = Array.from({ length: 50 }, (_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    delay: Math.random() * 2,
+    duration: 2 + Math.random() * 2,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    size: 4 + Math.random() * 6,
+  }));
+
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden">
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          className="absolute animate-confetti"
+          style={{
+            left: `${p.x}%`,
+            top: '-20px',
+            width: p.size,
+            height: p.size,
+            backgroundColor: p.color,
+            borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.duration}s`,
+          }}
+        />
+      ))}
+      <style jsx>{`
+        @keyframes confetti {
+          0% {
+            transform: translateY(0) rotate(0deg);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(100vh) rotate(720deg);
+            opacity: 0;
+          }
+        }
+        .animate-confetti {
+          animation: confetti linear forwards;
+        }
+      `}</style>
     </div>
   );
 }

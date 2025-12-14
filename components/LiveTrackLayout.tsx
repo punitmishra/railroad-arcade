@@ -324,11 +324,19 @@ export function LiveTrackLayout({
             newPosition -= 1;
             newLaps++;
             setTotalLaps(prev => prev + 1);
+            // Dispatch lap complete event for scoring
+            window.dispatchEvent(new CustomEvent('railroad:lapComplete', {
+              detail: { trainId: train.id, trainName: train.name, totalLaps: newLaps }
+            }));
           }
           if (newPosition < 0) {
             newPosition += 1;
             newLaps++;
             setTotalLaps(prev => prev + 1);
+            // Dispatch lap complete event for scoring
+            window.dispatchEvent(new CustomEvent('railroad:lapComplete', {
+              detail: { trainId: train.id, trainName: train.name, totalLaps: newLaps }
+            }));
           }
 
           // Update distance
@@ -387,6 +395,12 @@ export function LiveTrackLayout({
               const dist = getDistance(pos1, pos2);
               if (dist < 60) {
                 newWarnings.push({ train1: newTrains[i].id, train2: newTrains[j].id, distance: dist });
+                // Dispatch near miss event for scoring (only for very close encounters)
+                if (dist < 40) {
+                  window.dispatchEvent(new CustomEvent('railroad:nearMiss', {
+                    detail: { train1Id: newTrains[i].id, train2Id: newTrains[j].id, distance: dist }
+                  }));
+                }
               }
             }
           }
@@ -435,9 +449,14 @@ export function LiveTrackLayout({
     }
     playSound('junction');
     // Update local state (demo mode or after successful live action)
+    const junction = junctions.find(j => j.id === id);
     setJunctions(prev => prev.map(j =>
       j.id === id ? { ...j, state: j.state === 'straight' ? 'diverge' : 'straight' } : j
     ));
+    // Dispatch event for scoring
+    window.dispatchEvent(new CustomEvent('railroad:junctionSwitch', {
+      detail: { junctionId: id, junctionName: junction?.name || id }
+    }));
   };
 
   const toggleCrossing = async (id: string) => {
@@ -448,9 +467,14 @@ export function LiveTrackLayout({
     }
     playSound('crossing');
     // Update local state (demo mode or after successful live action)
+    const crossing = crossings.find(c => c.id === id);
     setCrossings(prev => prev.map(c =>
       c.id === id ? { ...c, state: c.state === 'open' ? 'closed' : 'open' } : c
     ));
+    // Dispatch event for scoring
+    window.dispatchEvent(new CustomEvent('railroad:crossingToggle', {
+      detail: { crossingId: id, crossingName: crossing?.name || id }
+    }));
   };
 
   // Get token cost for display
