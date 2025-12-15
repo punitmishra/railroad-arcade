@@ -1152,12 +1152,12 @@ export function LiveTrackLayout({
                     </div>
                     <div>
                       <div className="font-medium text-xs sm:text-sm" style={{ color: train.color }}>{train.name}</div>
-                      <div className="text-[8px] sm:text-[9px] text-gray-500">L{train.level} • {train.carts} cars</div>
+                      <div className="text-[8px] sm:text-[9px] text-gray-400">L{train.level} • {train.carts} cars</div>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-base sm:text-lg font-bold font-mono" style={{ color: train.speed > 0 ? train.color : '#666' }}>{train.speed.toFixed(0)}</div>
-                    <div className="text-[7px] sm:text-[8px] text-gray-500">/{speedLimit} km/h</div>
+                    <div className="text-[7px] sm:text-[8px] text-gray-400">/{speedLimit} km/h</div>
                   </div>
                 </div>
 
@@ -1177,7 +1177,7 @@ export function LiveTrackLayout({
 
                 {/* Carts control - hidden on very small screens */}
                 <div className="hidden xs:flex items-center justify-between mb-2 text-[9px] sm:text-[10px]">
-                  <span className="text-gray-500">Cars: {train.carts}</span>
+                  <span className="text-gray-400">Cars: {train.carts}</span>
                   <div className="flex gap-1">
                     <button onClick={() => removeCart(train.id)} className="w-6 h-6 rounded bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 min-h-[24px]" aria-label={`Remove car from ${train.name}`}>−</button>
                     <button onClick={() => addCart(train.id)} className="w-6 h-6 rounded bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 min-h-[24px]" aria-label={`Add car to ${train.name}`}>+</button>
@@ -1227,7 +1227,7 @@ export function LiveTrackLayout({
 
       {/* Status bar */}
       <div className="flex items-center justify-between px-3 py-1.5 bg-black/30 border-t border-white/[0.04] text-[9px]">
-        <div className="flex items-center gap-2 text-gray-500">
+        <div className="flex items-center gap-2 text-gray-400">
           <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Online</span>
           <span>•</span>
           <span>{trains.filter(t => t.speed > 0).length} running</span>

@@ -650,7 +650,7 @@ function RailroadArcade() {
                         style={{ borderLeftColor: mod.color, borderLeftWidth: 3 }}
                       >
                         <div className="text-xs sm:text-sm font-medium mb-1 line-clamp-1">{mod.name}</div>
-                        <div className="text-[10px] sm:text-xs text-gray-500">
+                        <div className="text-[10px] sm:text-xs text-gray-400">
                           {isDemo ? (
                             <span className="text-purple-400">Free in Demo</span>
                           ) : isUnlocked ? 'Active' : `${mod.cost} tokens to unlock`}
