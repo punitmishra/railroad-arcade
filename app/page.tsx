@@ -3,7 +3,9 @@
 import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { TokenDisplay, SessionTimer, ArcadeButton, KeyboardShortcutsModal, ConfirmDialog, useToast } from '@/components/ui';
+import { TokenDisplay, SessionTimer, ArcadeButton, KeyboardShortcutsModal, ConfirmDialog, useToast, SkeletonTrackLayout, SkeletonTelemetry } from '@/components/ui';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ConnectionStatus } from '@/components/ConnectionStatus';
 import { useSounds } from '@/hooks/useSounds';
 import { useGameSession } from '@/hooks/useGameSession';
 import { GameHUD, GameOverScreen } from '@/components/GameHUD';
@@ -393,18 +395,8 @@ function RailroadArcade() {
               {/* Mode Toggle */}
               <ModeToggle />
 
-              {/* Status indicators */}
-              <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
-                <div className="flex items-center gap-1.5 text-emerald-400">
-                  <WifiIcon size={14} />
-                  <span className="text-xs">Online</span>
-                </div>
-                <div className="w-px h-4 bg-white/10" />
-                <div className="flex items-center gap-1.5 text-amber-400">
-                  <BatteryIcon size={14} />
-                  <span className="text-xs">98%</span>
-                </div>
-              </div>
+              {/* Connection Status */}
+              <ConnectionStatus mode={mode} compact />
 
               {isPlaying && sessionTime !== Infinity && <SessionTimer seconds={sessionTime} />}
               {mode === 'live' && (
@@ -628,9 +620,13 @@ function RailroadArcade() {
           <div>
             {/* Overview Tab */}
             {activeTab === 'overview' && (
-              <div className="space-y-4 sm:space-y-6">
-                {/* Live Track Layout */}
-                <LiveTrackLayout />
+              <div className="space-y-4 sm:space-y-6 animate-[tab-enter_0.3s_ease-out]">
+                {/* Live Track Layout with Error Boundary */}
+                <ErrorBoundary variant="full">
+                  <Suspense fallback={<SkeletonTrackLayout />}>
+                    <LiveTrackLayout />
+                  </Suspense>
+                </ErrorBoundary>
 
                 {/* Quick Access Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
@@ -668,34 +664,56 @@ function RailroadArcade() {
 
             {/* Trains Tab */}
             {activeTab === 'trains' && (
-              <div className="space-y-6">
-                <LiveTrackLayout />
+              <div className="space-y-6 animate-[tab-enter_0.3s_ease-out]">
+                <ErrorBoundary variant="full">
+                  <Suspense fallback={<SkeletonTrackLayout />}>
+                    <LiveTrackLayout />
+                  </Suspense>
+                </ErrorBoundary>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <TrainTrackingModule locked={mode !== 'demo' && !unlockedModules.includes('trains')} onUnlock={() => unlockModule('trains', 0)} />
-                  <DiamondCrossingModule locked={mode !== 'demo' && !unlockedModules.includes('crossing')} onUnlock={() => unlockModule('crossing', 20)} />
+                  <ErrorBoundary variant="inline">
+                    <TrainTrackingModule locked={mode !== 'demo' && !unlockedModules.includes('trains')} onUnlock={() => unlockModule('trains', 0)} />
+                  </ErrorBoundary>
+                  <ErrorBoundary variant="inline">
+                    <DiamondCrossingModule locked={mode !== 'demo' && !unlockedModules.includes('crossing')} onUnlock={() => unlockModule('crossing', 20)} />
+                  </ErrorBoundary>
                 </div>
               </div>
             )}
 
             {/* Scenery Tab */}
             {activeTab === 'scenery' && (
-              <SceneryControl locked={mode !== 'demo' && !unlockedModules.includes('scenery')} onUnlock={() => unlockModule('scenery', 0)} />
+              <div className="animate-[tab-enter_0.3s_ease-out]">
+                <ErrorBoundary variant="full">
+                  <SceneryControl locked={mode !== 'demo' && !unlockedModules.includes('scenery')} onUnlock={() => unlockModule('scenery', 0)} />
+                </ErrorBoundary>
+              </div>
             )}
 
             {/* Buildings Tab */}
             {activeTab === 'buildings' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                <PoliceStationModule locked={mode !== 'demo' && !unlockedModules.includes('police')} onUnlock={() => unlockModule('police', 25)} />
-                <FireStationModule locked={mode !== 'demo' && !unlockedModules.includes('fire')} onUnlock={() => unlockModule('fire', 25)} />
-                <CafeModule locked={mode !== 'demo' && !unlockedModules.includes('cafe')} onUnlock={() => unlockModule('cafe', 15)} />
-                <SmartHomeModule locked={mode !== 'demo' && !unlockedModules.includes('home')} onUnlock={() => unlockModule('home', 20)} />
-                <ConstructionZoneModule locked={mode !== 'demo' && !unlockedModules.includes('construction')} onUnlock={() => unlockModule('construction', 30)} />
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 animate-[tab-enter_0.3s_ease-out]">
+                <ErrorBoundary variant="inline">
+                  <PoliceStationModule locked={mode !== 'demo' && !unlockedModules.includes('police')} onUnlock={() => unlockModule('police', 25)} />
+                </ErrorBoundary>
+                <ErrorBoundary variant="inline">
+                  <FireStationModule locked={mode !== 'demo' && !unlockedModules.includes('fire')} onUnlock={() => unlockModule('fire', 25)} />
+                </ErrorBoundary>
+                <ErrorBoundary variant="inline">
+                  <CafeModule locked={mode !== 'demo' && !unlockedModules.includes('cafe')} onUnlock={() => unlockModule('cafe', 15)} />
+                </ErrorBoundary>
+                <ErrorBoundary variant="inline">
+                  <SmartHomeModule locked={mode !== 'demo' && !unlockedModules.includes('home')} onUnlock={() => unlockModule('home', 20)} />
+                </ErrorBoundary>
+                <ErrorBoundary variant="inline">
+                  <ConstructionZoneModule locked={mode !== 'demo' && !unlockedModules.includes('construction')} onUnlock={() => unlockModule('construction', 30)} />
+                </ErrorBoundary>
               </div>
             )}
 
             {/* Camera Tab */}
             {activeTab === 'camera' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-[tab-enter_0.3s_ease-out]">
                 {/* Main Camera Feed */}
                 <div className="rounded-2xl border border-white/10 bg-[#0c0c14] overflow-hidden lg:col-span-2">
                   <div className="p-4 border-b border-white/10 flex items-center justify-between">
@@ -753,22 +771,38 @@ function RailroadArcade() {
 
             {/* Sensors Tab */}
             {activeTab === 'sensors' && (
-              <SensorManagement />
+              <div className="animate-[tab-enter_0.3s_ease-out]">
+                <ErrorBoundary variant="full">
+                  <SensorManagement />
+                </ErrorBoundary>
+              </div>
             )}
 
             {/* Streaming Tab */}
             {activeTab === 'streaming' && (
-              <StreamingPanel />
+              <div className="animate-[tab-enter_0.3s_ease-out]">
+                <ErrorBoundary variant="full">
+                  <StreamingPanel />
+                </ErrorBoundary>
+              </div>
             )}
 
             {/* Gallery Tab */}
             {activeTab === 'gallery' && (
-              <SnapshotGallery />
+              <div className="animate-[tab-enter_0.3s_ease-out]">
+                <ErrorBoundary variant="full">
+                  <SnapshotGallery />
+                </ErrorBoundary>
+              </div>
             )}
 
             {/* History Tab */}
             {activeTab === 'history' && (
-              <SessionHistory />
+              <div className="animate-[tab-enter_0.3s_ease-out]">
+                <ErrorBoundary variant="full">
+                  <SessionHistory />
+                </ErrorBoundary>
+              </div>
             )}
           </div>
         ) : (

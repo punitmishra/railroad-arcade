@@ -277,6 +277,223 @@ body::after {
 }
 
 /* ================================
+   LIVE VIEW ANIMATIONS
+   ================================ */
+
+/* Train glow pulsing effect */
+@keyframes train-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px var(--train-color, #00f0ff));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px var(--train-color, #00f0ff)) drop-shadow(0 0 20px var(--train-color, #00f0ff));
+  }
+}
+
+.animate-train-glow {
+  animation: train-glow 1.5s ease-in-out infinite;
+}
+
+/* Trail fade animation */
+@keyframes trail-fade {
+  from {
+    stroke-opacity: 0.6;
+    stroke-width: 4;
+  }
+  to {
+    stroke-opacity: 0;
+    stroke-width: 1;
+  }
+}
+
+.animate-trail-fade {
+  animation: trail-fade 2s linear forwards;
+}
+
+/* Camera transition with fade and scale */
+@keyframes camera-transition {
+  from {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-camera-transition {
+  animation: camera-transition 0.4s var(--ease-smooth) forwards;
+}
+
+/* Tab content entrance */
+@keyframes tab-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-tab-enter {
+  animation: tab-enter 0.25s var(--ease-smooth) forwards;
+}
+
+/* Button ripple effect */
+@keyframes ripple {
+  to {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-ripple::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 1;
+  pointer-events: none;
+}
+
+.btn-ripple:active::after {
+  animation: ripple 0.5s ease-out;
+}
+
+/* Number count up animation */
+@keyframes count-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-count-up {
+  animation: count-up 0.4s var(--ease-out) forwards;
+}
+
+/* Headlight beam animation */
+@keyframes headlight-beam {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-headlight {
+  animation: headlight-beam 2s ease-in-out infinite;
+}
+
+/* Station glow animation */
+@keyframes station-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(255, 200, 100, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(255, 200, 100, 0.8));
+  }
+}
+
+.animate-station-glow {
+  animation: station-glow 3s ease-in-out infinite;
+}
+
+/* Bottom sheet slide up */
+@keyframes bottom-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-bottom-sheet-up {
+  animation: bottom-sheet-up 0.3s var(--ease-out) forwards;
+}
+
+/* Backdrop fade in */
+@keyframes backdrop-fade {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+}
+
+.animate-backdrop {
+  animation: backdrop-fade 0.2s ease-out forwards;
+}
+
+/* Connection pulse */
+@keyframes connection-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.animate-connection-pulse {
+  animation: connection-pulse 1.5s ease-out infinite;
+}
+
+/* Speed zone indicator */
+@keyframes speed-zone-pulse {
+  0%, 100% {
+    stroke-opacity: 0.3;
+  }
+  50% {
+    stroke-opacity: 0.6;
+  }
+}
+
+.animate-speed-zone {
+  animation: speed-zone-pulse 2s ease-in-out infinite;
+}
+
+/* Celebration confetti burst */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100%) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.animate-confetti {
+  animation: confetti-fall 3s ease-in forwards;
+}
+
+/* ================================
    GLOW EFFECTS
    ================================ */
 .glow-cyan {

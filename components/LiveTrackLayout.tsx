@@ -640,8 +640,8 @@ export function LiveTrackLayout({
           )}
 
           {/* Emergency Stop */}
-          <button onClick={emergencyStop} className="px-2 sm:px-2.5 py-1.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 text-[9px] sm:text-[10px] font-bold flex items-center gap-1 min-h-[32px]" aria-label="Emergency stop all trains">
-            <AlertIcon size={12} /> <span className="hidden xs:inline">E-</span>STOP
+          <button onClick={emergencyStop} className="px-3 sm:px-4 min-h-[44px] rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 active:scale-95 text-[10px] sm:text-[11px] font-bold flex items-center gap-1.5 touch-manipulation transition-transform" aria-label="Emergency stop all trains">
+            <AlertIcon size={14} /> <span className="hidden xs:inline">E-</span>STOP
           </button>
 
           {/* Time Scale - hidden on very small screens */}
@@ -650,7 +650,7 @@ export function LiveTrackLayout({
               <button
                 key={scale}
                 onClick={() => setTimeScale(scale)}
-                className={`px-2 py-1.5 text-[10px] font-medium ${timeScale === scale ? 'bg-purple-500/30 text-purple-300' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                className={`px-3 min-h-[44px] text-[11px] font-medium active:scale-95 touch-manipulation transition-transform ${timeScale === scale ? 'bg-purple-500/30 text-purple-300' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
                 aria-label={`Set speed to ${scale}x`}
                 aria-pressed={timeScale === scale}
               >
@@ -660,19 +660,19 @@ export function LiveTrackLayout({
           </div>
 
           {/* Play/Pause */}
-          <button onClick={() => setIsPaused(!isPaused)} className={`p-1.5 rounded-lg min-h-[32px] min-w-[32px] flex items-center justify-center ${isPaused ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'}`} aria-label={isPaused ? 'Resume simulation' : 'Pause simulation'}>
-            {isPaused ? <PlayIcon size={14} /> : <PauseIcon size={14} />}
+          <button onClick={() => setIsPaused(!isPaused)} className={`min-h-[44px] min-w-[44px] rounded-lg flex items-center justify-center active:scale-95 touch-manipulation transition-transform ${isPaused ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'}`} aria-label={isPaused ? 'Resume simulation' : 'Pause simulation'}>
+            {isPaused ? <PlayIcon size={18} /> : <PauseIcon size={18} />}
           </button>
 
           {/* Night Mode */}
-          <button onClick={() => setNightMode(!nightMode)} className={`p-1.5 rounded-lg min-h-[32px] min-w-[32px] flex items-center justify-center ${nightMode ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'}`} aria-label={nightMode ? 'Switch to day mode' : 'Switch to night mode'}>
-            {nightMode ? <MoonIcon size={14} /> : <SunIcon size={14} />}
+          <button onClick={() => setNightMode(!nightMode)} className={`min-h-[44px] min-w-[44px] rounded-lg flex items-center justify-center active:scale-95 touch-manipulation transition-transform ${nightMode ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'}`} aria-label={nightMode ? 'Switch to day mode' : 'Switch to night mode'}>
+            {nightMode ? <MoonIcon size={18} /> : <SunIcon size={18} />}
           </button>
 
           {/* Level Selector */}
           <div className="flex rounded-lg overflow-hidden border border-white/10" role="group" aria-label="Track level filter">
             {(['both', 2, 1] as const).map(level => (
-              <button key={level} onClick={() => setActiveLevel(level)} className={`px-1.5 sm:px-2 py-1.5 text-[9px] sm:text-[10px] font-medium min-h-[32px] ${activeLevel === level ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`} aria-label={level === 'both' ? 'Show all levels' : `Show level ${level} only`} aria-pressed={activeLevel === level}>
+              <button key={level} onClick={() => setActiveLevel(level)} className={`px-3 sm:px-4 min-h-[44px] text-[10px] sm:text-[11px] font-medium active:scale-95 touch-manipulation transition-transform ${activeLevel === level ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`} aria-label={level === 'both' ? 'Show all levels' : `Show level ${level} only`} aria-pressed={activeLevel === level}>
                 {level === 'both' ? 'All' : `L${level}`}
               </button>
             ))}
@@ -702,6 +702,14 @@ export function LiveTrackLayout({
                 <feGaussianBlur stdDeviation="3" result="blur" />
                 <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
               </filter>
+              <filter id="trainGlow" x="-100%" y="-100%" width="300%" height="300%">
+                <feGaussianBlur stdDeviation="6" result="blur" />
+                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+              </filter>
+              <filter id="headlightBeam" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="8" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
               <linearGradient id="gradL2" x1="0%" y1="0%" x2="100%" y2="0%">
                 <stop offset="0%" stopColor={LEVEL2.color} stopOpacity="0.3" />
                 <stop offset="50%" stopColor={LEVEL2.color} stopOpacity="0.6" />
@@ -712,7 +720,55 @@ export function LiveTrackLayout({
                 <stop offset="50%" stopColor={LEVEL1.color} stopOpacity="0.6" />
                 <stop offset="100%" stopColor={LEVEL1.color} stopOpacity="0.3" />
               </linearGradient>
+              {/* Train trail gradients - one per train */}
+              {trains.map(train => (
+                <linearGradient key={`trail-grad-${train.id}`} id={`trailGrad-${train.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor={train.color} stopOpacity="0" />
+                  <stop offset="30%" stopColor={train.color} stopOpacity="0.2" />
+                  <stop offset="100%" stopColor={train.color} stopOpacity="0.6" />
+                </linearGradient>
+              ))}
+              {/* Headlight cone gradient */}
+              <radialGradient id="headlightCone" cx="0%" cy="50%" r="100%" fx="0%" fy="50%">
+                <stop offset="0%" stopColor="#fffbe6" stopOpacity="0.8" />
+                <stop offset="30%" stopColor="#fff9c4" stopOpacity="0.4" />
+                <stop offset="70%" stopColor="#fff59d" stopOpacity="0.15" />
+                <stop offset="100%" stopColor="#fff59d" stopOpacity="0" />
+              </radialGradient>
+              {/* Station glow gradient */}
+              <radialGradient id="stationGlow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                <stop offset="0%" stopColor="#22c55e" stopOpacity="0.4" />
+                <stop offset="60%" stopColor="#22c55e" stopOpacity="0.1" />
+                <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
+              </radialGradient>
             </defs>
+
+            {/* Starfield for night mode */}
+            {nightMode && (
+              <g className="animate-[twinkle_3s_ease-in-out_infinite]">
+                {/* Generate deterministic star positions */}
+                {[
+                  { x: 45, y: 25, r: 1.2 }, { x: 120, y: 50, r: 0.8 }, { x: 200, y: 35, r: 1 },
+                  { x: 280, y: 60, r: 0.7 }, { x: 350, y: 20, r: 1.1 }, { x: 420, y: 45, r: 0.9 },
+                  { x: 500, y: 30, r: 1 }, { x: 580, y: 55, r: 0.8 }, { x: 650, y: 40, r: 1.2 },
+                  { x: 70, y: 380, r: 0.9 }, { x: 150, y: 400, r: 1.1 }, { x: 230, y: 420, r: 0.7 },
+                  { x: 310, y: 395, r: 1 }, { x: 400, y: 410, r: 0.8 }, { x: 480, y: 385, r: 1.2 },
+                  { x: 560, y: 415, r: 0.9 }, { x: 630, y: 390, r: 1 },
+                  { x: 30, y: 200, r: 0.6 }, { x: 670, y: 180, r: 0.7 }, { x: 25, y: 280, r: 0.8 },
+                  { x: 680, y: 260, r: 0.6 },
+                ].map((star, i) => (
+                  <circle
+                    key={`star-${i}`}
+                    cx={star.x}
+                    cy={star.y}
+                    r={star.r}
+                    fill="white"
+                    opacity={0.3 + (i % 3) * 0.2}
+                    className={i % 2 === 0 ? 'animate-pulse' : ''}
+                  />
+                ))}
+              </g>
+            )}
 
             {/* Grid */}
             <g opacity={nightMode ? 0.015 : 0.03}>
@@ -735,8 +791,14 @@ export function LiveTrackLayout({
                 
                 {/* Grand Central Station */}
                 <g transform={`translate(${LEVEL2.cx}, ${LEVEL2.cy - LEVEL2.ry - 20})`}>
+                  {/* Night mode ambient glow */}
+                  {nightMode && (
+                    <ellipse cx="0" cy="0" rx="70" ry="35" fill={LEVEL2.color} opacity="0.08" className="animate-[station-glow_3s_ease-in-out_infinite]" />
+                  )}
                   <rect x="-50" y="-14" width="100" height="28" rx="4" fill="#0f172a" stroke={LEVEL2.color} strokeWidth="1.5" />
-                  {[0,1,2,3].map(i => <rect key={i} x={-42 + i*12} y="-8" width="8" height="16" rx="1" fill={LEVEL2.color} opacity="0.3" />)}
+                  {[0,1,2,3].map(i => (
+                    <rect key={i} x={-42 + i*12} y="-8" width="8" height="16" rx="1" fill={LEVEL2.color} opacity={nightMode ? 0.6 : 0.3} className={nightMode ? 'animate-pulse' : ''} />
+                  ))}
                   <text x="30" y="5" fill={LEVEL2.color} fontSize="10" fontWeight="600" style={{ fontFamily: 'monospace' }}>GC</text>
                   {showLabels && <text x="0" y="30" textAnchor="middle" fill="#60a5fa" fontSize="10" fontWeight="500">Grand Central</text>}
                 </g>
@@ -768,8 +830,14 @@ export function LiveTrackLayout({
 
                 {/* Valley Station */}
                 <g transform={`translate(${LEVEL1.cx}, ${LEVEL1.cy + LEVEL1.ry + 20})`}>
+                  {/* Night mode ambient glow */}
+                  {nightMode && (
+                    <ellipse cx="0" cy="0" rx="70" ry="35" fill={LEVEL1.color} opacity="0.08" className="animate-[station-glow_3s_ease-in-out_infinite]" style={{ animationDelay: '1.5s' }} />
+                  )}
                   <rect x="-50" y="-14" width="100" height="28" rx="4" fill="#1e1b2e" stroke={LEVEL1.color} strokeWidth="1.5" />
-                  {[0,1,2,3].map(i => <rect key={i} x={-42 + i*12} y="-8" width="8" height="16" rx="1" fill={LEVEL1.color} opacity="0.3" />)}
+                  {[0,1,2,3].map(i => (
+                    <rect key={i} x={-42 + i*12} y="-8" width="8" height="16" rx="1" fill={LEVEL1.color} opacity={nightMode ? 0.6 : 0.3} className={nightMode ? 'animate-pulse' : ''} />
+                  ))}
                   <text x="30" y="5" fill={LEVEL1.color} fontSize="10" fontWeight="600" style={{ fontFamily: 'monospace' }}>VS</text>
                   {showLabels && <text x="0" y="30" textAnchor="middle" fill="#c084fc" fontSize="10" fontWeight="500">Valley Station</text>}
                 </g>
@@ -818,19 +886,53 @@ export function LiveTrackLayout({
               </g>
             ))}
 
-            {/* Train Trails */}
-            {showTrails && trains.filter(t => isLevelVisible(t.level) && t.history.length > 1).map(train => (
-              <polyline
-                key={`trail-${train.id}`}
-                points={train.history.map(p => `${p.x},${p.y}`).join(' ')}
-                fill="none"
-                stroke={train.color}
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                opacity="0.3"
-              />
-            ))}
+            {/* Train Trails - Enhanced with gradient effect */}
+            {showTrails && trains.filter(t => isLevelVisible(t.level) && t.history.length > 1).map(train => {
+              // Trail length varies with speed (more history points shown at higher speeds)
+              const trailLength = Math.min(train.history.length, Math.floor(10 + (train.speed / 100) * 20));
+              const visibleHistory = train.history.slice(-trailLength);
+
+              return (
+                <g key={`trail-${train.id}`}>
+                  {/* Glow trail (only visible when moving fast) */}
+                  {train.speed > 30 && (
+                    <polyline
+                      points={visibleHistory.map(p => `${p.x},${p.y}`).join(' ')}
+                      fill="none"
+                      stroke={train.color}
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      opacity="0.1"
+                      filter="url(#trainGlow)"
+                      className="animate-[trail-fade_0.5s_ease-out]"
+                    />
+                  )}
+                  {/* Main trail with segments for gradient effect */}
+                  {visibleHistory.map((point, i) => {
+                    if (i === 0) return null;
+                    const prev = visibleHistory[i - 1];
+                    const progress = i / visibleHistory.length;
+                    const opacity = progress * 0.5; // Fade from transparent to semi-opaque
+                    const width = 2 + progress * 3; // Width increases toward train
+
+                    return (
+                      <line
+                        key={`trail-seg-${train.id}-${i}`}
+                        x1={prev.x}
+                        y1={prev.y}
+                        x2={point.x}
+                        y2={point.y}
+                        stroke={train.color}
+                        strokeWidth={width}
+                        strokeLinecap="round"
+                        opacity={opacity}
+                      />
+                    );
+                  })}
+                </g>
+              );
+            })}
 
             {/* Trains */}
             {trains.filter(t => isLevelVisible(t.level)).map(train => {
@@ -838,16 +940,37 @@ export function LiveTrackLayout({
               const isMoving = train.speed > 0;
               const isSelected = selectedTrain === train.id;
               const hasWarning = warnings.some(w => w.train1 === train.id || w.train2 === train.id);
-              
+
               return (
                 <g key={train.id}>
-                  <g transform={`translate(${pos.x}, ${pos.y}) rotate(${pos.rotation})`} onClick={() => setSelectedTrain(isSelected ? null : train.id)} className="cursor-pointer" filter={isMoving ? 'url(#glow)' : undefined}>
+                  {/* Headlight beam (night mode only, rendered behind train) */}
+                  {nightMode && train.headlights && (
+                    <g transform={`translate(${pos.x}, ${pos.y}) rotate(${pos.rotation})`}>
+                      <ellipse
+                        cx="50"
+                        cy="0"
+                        rx="45"
+                        ry="25"
+                        fill="url(#headlightCone)"
+                        filter="url(#headlightBeam)"
+                        className="animate-[headlight-beam_2s_ease-in-out_infinite]"
+                      />
+                    </g>
+                  )}
+
+                  <g transform={`translate(${pos.x}, ${pos.y}) rotate(${pos.rotation})`} onClick={() => setSelectedTrain(isSelected ? null : train.id)} className="cursor-pointer" filter={isMoving ? 'url(#trainGlow)' : undefined}>
                     {/* Warning ring */}
                     {hasWarning && <circle r="28" fill="none" stroke="#ef4444" strokeWidth="2" className="animate-pulse" />}
-                    
-                    {/* Glow */}
-                    <ellipse rx={isMoving ? 24 : 18} ry={isMoving ? 13 : 9} fill={train.color} opacity={isMoving ? 0.25 : 0.1} />
-                    
+
+                    {/* Moving train glow - enhanced with animation */}
+                    <ellipse
+                      rx={isMoving ? 24 : 18}
+                      ry={isMoving ? 13 : 9}
+                      fill={train.color}
+                      opacity={isMoving ? 0.25 : 0.1}
+                      className={isMoving ? 'animate-[train-glow_1.5s_ease-in-out_infinite]' : ''}
+                    />
+
                     {/* Body */}
                     <rect x="-15" y="-7" width="30" height="14" rx="3" fill={train.color} />
                     <rect x="-12" y="-5" width="6" height="5" rx="1" fill="rgba(255,255,255,0.2)" />
@@ -857,10 +980,15 @@ export function LiveTrackLayout({
                     <circle cx="0" cy="5" r="2.5" fill="rgba(0,0,0,0.4)" />
                     <circle cx="9" cy="5" r="2.5" fill="rgba(0,0,0,0.4)" />
                     <rect x="12" y="-4" width="4" height="8" rx="1" fill="rgba(255,255,255,0.3)" />
-                    
-                    {/* Headlight */}
-                    {train.headlights && <circle cx="15" cy="0" r="2.5" fill="#fff" opacity="0.9" />}
-                    
+
+                    {/* Headlight - enhanced for night mode */}
+                    {train.headlights && (
+                      <g>
+                        {nightMode && <circle cx="15" cy="0" r="4" fill="#fff" opacity="0.3" />}
+                        <circle cx="15" cy="0" r="2.5" fill="#fff" opacity={nightMode ? 1 : 0.9} className={nightMode ? 'animate-pulse' : ''} />
+                      </g>
+                    )}
+
                     {/* Autopilot indicator */}
                     {train.autopilot && (
                       <g transform="translate(0, -14)">
@@ -868,11 +996,11 @@ export function LiveTrackLayout({
                         <text y="3" textAnchor="middle" fill="#fff" fontSize="7" fontWeight="bold">A</text>
                       </g>
                     )}
-                    
+
                     {/* Station dwell */}
                     {train.atStation && (
                       <g transform="translate(0, -14)">
-                        <circle r="8" fill="#22c55e" />
+                        <circle r="8" fill="#22c55e" className="animate-[station-glow_1s_ease-in-out_infinite]" />
                         <text y="4" textAnchor="middle" fill="#000" fontSize="8" fontWeight="bold">{Math.ceil(train.dwellTimer)}</text>
                       </g>
                     )}
@@ -1052,18 +1180,38 @@ export function LiveTrackLayout({
                   </div>
                 </div>
 
-                {/* Control buttons */}
-                <div className="grid grid-cols-4 gap-1 sm:gap-1.5">
-                  <button onClick={() => toggleDirection(train.id)} disabled={train.speed === 0} className="py-1.5 rounded-lg bg-white/5 border border-white/10 text-[9px] sm:text-[10px] text-gray-300 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-0.5 min-h-[32px]" aria-label={`Toggle ${train.name} direction`}>
-                    {train.direction === 'forward' ? <ArrowDownIcon size={10} /> : <ArrowUpIcon size={10} />} <span className="hidden xs:inline">Dir</span>
+                {/* Control buttons - 44px min touch targets for mobile accessibility */}
+                <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+                  <button
+                    onClick={() => toggleDirection(train.id)}
+                    disabled={train.speed === 0}
+                    className="min-h-[44px] rounded-lg bg-white/5 border border-white/10 text-[10px] sm:text-[11px] text-gray-300 hover:bg-white/10 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1 touch-manipulation transition-transform"
+                    aria-label={`Toggle ${train.name} direction`}
+                  >
+                    {train.direction === 'forward' ? <ArrowDownIcon size={14} /> : <ArrowUpIcon size={14} />}
+                    <span className="hidden xs:inline">Dir</span>
                   </button>
-                  <button onClick={() => toggleHeadlights(train.id)} className={`py-1.5 rounded-lg border text-[10px] flex items-center justify-center min-h-[32px] ${train.headlights ? 'bg-amber-500/20 border-amber-500/30 text-amber-400' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`} aria-label={train.headlights ? `Turn off ${train.name} headlights` : `Turn on ${train.name} headlights`} aria-pressed={train.headlights}>
+                  <button
+                    onClick={() => toggleHeadlights(train.id)}
+                    className={`min-h-[44px] rounded-lg border text-base flex items-center justify-center active:scale-95 touch-manipulation transition-transform ${train.headlights ? 'bg-amber-500/20 border-amber-500/30 text-amber-400' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}
+                    aria-label={train.headlights ? `Turn off ${train.name} headlights` : `Turn on ${train.name} headlights`}
+                    aria-pressed={train.headlights}
+                  >
                     💡
                   </button>
-                  <button onClick={() => toggleAutopilot(train.id)} className={`py-1.5 rounded-lg border text-[8px] sm:text-[10px] font-bold flex items-center justify-center min-h-[32px] ${train.autopilot ? 'bg-purple-500/20 border-purple-500/30 text-purple-400' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`} aria-label={train.autopilot ? `Disable ${train.name} autopilot` : `Enable ${train.name} autopilot`} aria-pressed={train.autopilot}>
+                  <button
+                    onClick={() => toggleAutopilot(train.id)}
+                    className={`min-h-[44px] rounded-lg border text-[10px] sm:text-[11px] font-bold flex items-center justify-center active:scale-95 touch-manipulation transition-transform ${train.autopilot ? 'bg-purple-500/20 border-purple-500/30 text-purple-400' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}
+                    aria-label={train.autopilot ? `Disable ${train.name} autopilot` : `Enable ${train.name} autopilot`}
+                    aria-pressed={train.autopilot}
+                  >
                     AUTO
                   </button>
-                  <button onClick={() => setTrainSpeed(train.id, 0)} className="py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-[8px] sm:text-[10px] font-bold hover:bg-red-500/30 min-h-[32px]" aria-label={`Stop ${train.name}`}>
+                  <button
+                    onClick={() => setTrainSpeed(train.id, 0)}
+                    className="min-h-[44px] rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-[10px] sm:text-[11px] font-bold hover:bg-red-500/30 active:scale-95 touch-manipulation transition-transform"
+                    aria-label={`Stop ${train.name}`}
+                  >
                     STOP
                   </button>
                 </div>
@@ -1098,8 +1246,49 @@ export function LiveTrackLayout({
       </div>
 
       <style jsx>{`
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: white; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-        input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: white; cursor: pointer; border: none; }
+        /* Enhanced slider for mobile touch targets */
+        input[type="range"] {
+          touch-action: manipulation;
+          -webkit-tap-highlight-color: transparent;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: white;
+          cursor: pointer;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+          border: 2px solid rgba(255,255,255,0.3);
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+          transform: scale(1.1);
+          box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+        }
+        input[type="range"]::-webkit-slider-thumb:active {
+          transform: scale(0.95);
+        }
+        input[type="range"]::-moz-range-thumb {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: white;
+          cursor: pointer;
+          border: 2px solid rgba(255,255,255,0.3);
+          box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        }
+        /* Touch-friendly minimum size for mobile */
+        @media (max-width: 640px) {
+          input[type="range"]::-webkit-slider-thumb {
+            width: 24px;
+            height: 24px;
+          }
+          input[type="range"]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+          }
+        }
       `}</style>
 
       {/* Token Confirmation Dialog */}

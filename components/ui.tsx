@@ -529,6 +529,164 @@ export function SkeletonRow({ className = '' }: SkeletonProps) {
   );
 }
 
+export function SkeletonTrackLayout({ className = '' }: SkeletonProps) {
+  return (
+    <div
+      className={`rounded-xl bg-[#0c0c14] border border-white/10 overflow-hidden ${className}`}
+      aria-hidden="true"
+    >
+      {/* Track Area Skeleton */}
+      <div className="aspect-[700/450] relative bg-gradient-to-b from-[#0a0a12] to-[#12121c] p-4">
+        <svg viewBox="0 0 700 450" className="w-full h-full opacity-20">
+          {/* Level 2 Track */}
+          <ellipse
+            cx="350" cy="130" rx="260" ry="80"
+            stroke="currentColor"
+            strokeWidth="20"
+            fill="none"
+            className="text-cyan-500/30 animate-pulse"
+          />
+          {/* Level 1 Track */}
+          <ellipse
+            cx="350" cy="340" rx="240" ry="70"
+            stroke="currentColor"
+            strokeWidth="20"
+            fill="none"
+            className="text-purple-500/30 animate-pulse"
+          />
+        </svg>
+        {/* Loading Indicator */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm text-gray-500">Loading track...</span>
+          </div>
+        </div>
+      </div>
+      {/* Control Panel Skeleton */}
+      <div className="p-4 border-t border-white/10 bg-black/20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="p-3 rounded-lg bg-white/5">
+              <div className="flex items-center gap-2 mb-3">
+                <Skeleton className="w-3 h-3 rounded-full" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+              <Skeleton className="h-2 w-full rounded-full mb-3" />
+              <div className="flex gap-2">
+                <Skeleton className="h-8 w-8 rounded-lg" />
+                <Skeleton className="h-8 w-8 rounded-lg" />
+                <Skeleton className="h-8 w-8 rounded-lg" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function SkeletonTelemetry({ className = '' }: SkeletonProps) {
+  return (
+    <div
+      className={`rounded-xl bg-[#0c0c14] border border-white/10 p-4 ${className}`}
+      aria-hidden="true"
+    >
+      <Skeleton className="h-5 w-24 mb-4" />
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="p-3 rounded-lg bg-white/5">
+            <div className="flex items-center gap-2 mb-2">
+              <Skeleton className="w-2 h-2 rounded-full" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Skeleton className="h-3 w-10 mb-1" />
+                <Skeleton className="h-5 w-14" />
+              </div>
+              <div>
+                <Skeleton className="h-3 w-10 mb-1" />
+                <Skeleton className="h-5 w-14" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function SkeletonCameraFeed({ className = '' }: SkeletonProps) {
+  return (
+    <div
+      className={`rounded-xl bg-[#0c0c14] border border-white/10 overflow-hidden ${className}`}
+      aria-hidden="true"
+    >
+      <div className="aspect-video relative bg-gradient-to-br from-gray-900 to-black">
+        {/* Scan Lines Effect */}
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px)',
+          }}
+        />
+        {/* Loading Indicator */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-8 h-8 border-2 border-cyan-400/50 border-t-transparent rounded-full animate-spin" />
+            <span className="text-xs text-gray-500">Connecting...</span>
+          </div>
+        </div>
+        {/* Camera Label */}
+        <div className="absolute top-2 left-2">
+          <Skeleton className="h-5 w-20 rounded" />
+        </div>
+        {/* Status Badge */}
+        <div className="absolute top-2 right-2">
+          <Skeleton className="h-5 w-12 rounded-full" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function SkeletonControlPanel({ className = '' }: SkeletonProps) {
+  return (
+    <div
+      className={`rounded-xl bg-[#0c0c14] border border-white/10 p-4 ${className}`}
+      aria-hidden="true"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <Skeleton className="h-5 w-28" />
+        <Skeleton className="h-8 w-20 rounded-lg" />
+      </div>
+      <div className="space-y-4">
+        {/* Speed Slider */}
+        <div>
+          <div className="flex justify-between mb-2">
+            <Skeleton className="h-3 w-12" />
+            <Skeleton className="h-3 w-8" />
+          </div>
+          <Skeleton className="h-2 w-full rounded-full" />
+        </div>
+        {/* Control Buttons */}
+        <div className="grid grid-cols-4 gap-2">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-10 rounded-lg" />
+          ))}
+        </div>
+        {/* Stats Row */}
+        <div className="flex justify-between pt-2 border-t border-white/10">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-12" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ========================================
 // TOAST NOTIFICATION SYSTEM
 // ========================================
