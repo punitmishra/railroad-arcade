@@ -1,0 +1,11 @@
+# Railroad Arcade Robots.txt
+User-agent: *
+Allow: /
+
+# Disallow API routes and internal pages
+Disallow: /api/
+Disallow: /kiosk
+Disallow: /payment/
+
+# Sitemap location
+Sitemap: https://railroad-arcade.vercel.app/sitemap.xml
