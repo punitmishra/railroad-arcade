@@ -607,15 +607,15 @@ export function LiveTrackLayout({
             <ActivityIcon size={16} className="text-cyan-400 sm:w-5 sm:h-5" />
           </div>
           <div>
-            <h3 className="font-semibold text-xs sm:text-sm tracking-wide flex items-center gap-2" style={{ fontFamily: 'Orbitron, sans-serif' }}>
+            <h2 className="font-semibold text-xs sm:text-sm tracking-wide flex items-center gap-2" style={{ fontFamily: 'Orbitron, sans-serif' }}>
               Live Track Control
               {warnings.length > 0 && (
                 <span className="px-1.5 sm:px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[9px] sm:text-[10px] font-bold animate-pulse">
                   ⚠ PROXIMITY
                 </span>
               )}
-            </h3>
-            <p className="text-[10px] sm:text-[11px] text-gray-500">
+            </h2>
+            <p className="text-[10px] sm:text-[11px] text-gray-400">
               {formatTime(sessionTime)} • {trains.filter(t => t.speed > 0).length} active • {totalLaps} laps
             </p>
           </div>
@@ -672,7 +672,7 @@ export function LiveTrackLayout({
           {/* Level Selector */}
           <div className="flex rounded-lg overflow-hidden border border-white/10" role="group" aria-label="Track level filter">
             {(['both', 2, 1] as const).map(level => (
-              <button key={level} onClick={() => setActiveLevel(level)} className={`px-3 sm:px-4 min-h-[44px] text-[10px] sm:text-[11px] font-medium active:scale-95 touch-manipulation transition-transform ${activeLevel === level ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`} aria-label={level === 'both' ? 'Show all levels' : `Show level ${level} only`} aria-pressed={activeLevel === level}>
+              <button key={level} onClick={() => setActiveLevel(level)} className={`px-3 sm:px-4 min-h-[44px] text-[10px] sm:text-[11px] font-medium active:scale-95 touch-manipulation transition-transform ${activeLevel === level ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`} aria-pressed={activeLevel === level}>
                 {level === 'both' ? 'All' : `L${level}`}
               </button>
             ))}
@@ -680,13 +680,13 @@ export function LiveTrackLayout({
 
           {/* Toggle buttons - hidden on mobile */}
           <div className="hidden md:flex items-center gap-1">
-            <button onClick={() => setShowTrails(!showTrails)} className={`p-1.5 rounded-lg text-[10px] ${showTrails ? 'bg-cyan-500/20 text-cyan-400' : 'bg-white/5 text-gray-500'}`} aria-label={showTrails ? 'Hide train trails' : 'Show train trails'} aria-pressed={showTrails}>
+            <button onClick={() => setShowTrails(!showTrails)} className={`min-h-[28px] min-w-[28px] p-1.5 rounded-lg text-[10px] ${showTrails ? 'bg-cyan-500/20 text-cyan-400' : 'bg-white/5 text-gray-400'}`} aria-label={showTrails ? 'Hide train trails' : 'Show train trails'} aria-pressed={showTrails}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
-            <button onClick={() => setShowSpeedZones(!showSpeedZones)} className={`p-1.5 rounded-lg ${showSpeedZones ? 'bg-amber-500/20 text-amber-400' : 'bg-white/5 text-gray-500'}`} aria-label={showSpeedZones ? 'Hide speed zones' : 'Show speed zones'} aria-pressed={showSpeedZones}>
+            <button onClick={() => setShowSpeedZones(!showSpeedZones)} className={`min-h-[28px] min-w-[28px] p-1.5 rounded-lg ${showSpeedZones ? 'bg-amber-500/20 text-amber-400' : 'bg-white/5 text-gray-400'}`} aria-label={showSpeedZones ? 'Hide speed zones' : 'Show speed zones'} aria-pressed={showSpeedZones}>
               <ZapIcon size={14} />
             </button>
-            <button onClick={() => setShowLabels(!showLabels)} className={`p-1.5 rounded-lg ${showLabels ? 'bg-white/10 text-white' : 'bg-white/5 text-gray-500'}`} aria-label={showLabels ? 'Hide labels' : 'Show labels'} aria-pressed={showLabels}>
+            <button onClick={() => setShowLabels(!showLabels)} className={`min-h-[28px] min-w-[28px] p-1.5 rounded-lg ${showLabels ? 'bg-white/10 text-white' : 'bg-white/5 text-gray-400'}`} aria-label={showLabels ? 'Hide labels' : 'Show labels'} aria-pressed={showLabels}>
               <EyeIcon size={14} />
             </button>
           </div>
@@ -1060,9 +1060,9 @@ export function LiveTrackLayout({
         {showTelemetry && (
           <div className="w-full lg:w-64 border-t lg:border-t-0 lg:border-l border-white/[0.06] bg-[#08080c]/70 overflow-y-auto max-h-[300px] lg:max-h-[400px]">
             <div className="p-3 border-b border-white/[0.06]">
-              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
                 <ChartIcon size={12} /> Train Telemetry
-              </h4>
+              </h3>
             </div>
             
             {trains.map(train => {
@@ -1074,32 +1074,32 @@ export function LiveTrackLayout({
                 <div key={train.id} className="p-3 border-b border-white/[0.04]" style={{ borderLeftColor: train.color, borderLeftWidth: 3 }}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium text-sm" style={{ color: train.color }}>{train.name}</span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${train.autopilot ? 'bg-purple-500/20 text-purple-400' : 'bg-white/5 text-gray-500'}`}>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${train.autopilot ? 'bg-purple-500/20 text-purple-400' : 'bg-white/5 text-gray-400'}`}>
                       {train.autopilot ? 'AUTO' : 'MANUAL'}
                     </span>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-2 text-[10px]">
                     <div className="bg-white/[0.03] rounded px-2 py-1.5">
-                      <div className="text-gray-500">Speed</div>
+                      <div className="text-gray-400">Speed</div>
                       <div className={`font-mono font-bold ${isOverLimit ? 'text-red-400' : 'text-white'}`}>
-                        {train.speed.toFixed(0)} <span className="text-gray-500">/ {speedLimit}</span>
+                        {train.speed.toFixed(0)} <span className="text-gray-400">/ {speedLimit}</span>
                       </div>
                     </div>
                     <div className="bg-white/[0.03] rounded px-2 py-1.5">
-                      <div className="text-gray-500">Direction</div>
+                      <div className="text-gray-400">Direction</div>
                       <div className="font-mono text-white">{train.direction === 'stopped' ? 'STOP' : train.direction === 'forward' ? '→ FWD' : '← REV'}</div>
                     </div>
                     <div className="bg-white/[0.03] rounded px-2 py-1.5">
-                      <div className="text-gray-500">Laps</div>
+                      <div className="text-gray-400">Laps</div>
                       <div className="font-mono text-white">{train.laps}</div>
                     </div>
                     <div className="bg-white/[0.03] rounded px-2 py-1.5">
-                      <div className="text-gray-500">Distance</div>
+                      <div className="text-gray-400">Distance</div>
                       <div className="font-mono text-white">{(train.totalDistance / 100).toFixed(1)}m</div>
                     </div>
                     <div className="bg-white/[0.03] rounded px-2 py-1.5 col-span-2">
-                      <div className="text-gray-500">ETA to Station</div>
+                      <div className="text-gray-400">ETA to Station</div>
                       <div className="font-mono text-white">{eta ? formatTime(eta) : '—'}</div>
                     </div>
                   </div>
@@ -1115,18 +1115,18 @@ export function LiveTrackLayout({
             
             {/* Session Stats */}
             <div className="p-3">
-              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Session Stats</h4>
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Session Stats</h3>
               <div className="grid grid-cols-2 gap-2 text-[10px]">
                 <div className="bg-white/[0.03] rounded px-2 py-1.5">
-                  <div className="text-gray-500">Runtime</div>
+                  <div className="text-gray-400">Runtime</div>
                   <div className="font-mono text-white">{formatTime(sessionTime)}</div>
                 </div>
                 <div className="bg-white/[0.03] rounded px-2 py-1.5">
-                  <div className="text-gray-500">Total Laps</div>
+                  <div className="text-gray-400">Total Laps</div>
                   <div className="font-mono text-white">{totalLaps}</div>
                 </div>
                 <div className="bg-white/[0.03] rounded px-2 py-1.5 col-span-2">
-                  <div className="text-gray-500">Total Distance</div>
+                  <div className="text-gray-400">Total Distance</div>
                   <div className="font-mono text-white">{(trains.reduce((a, t) => a + t.totalDistance, 0) / 100).toFixed(1)}m</div>
                 </div>
               </div>
@@ -1166,6 +1166,10 @@ export function LiveTrackLayout({
                   <input
                     type="range" min="0" max="100" value={train.targetSpeed}
                     onChange={(e) => setTrainSpeed(train.id, parseInt(e.target.value))}
+                    aria-label={`${train.name} speed control`}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={train.targetSpeed}
                     className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
                     style={{ background: `linear-gradient(to right, ${train.color} 0%, ${train.color} ${train.targetSpeed}%, #1a1a24 ${train.targetSpeed}%, #1a1a24 100%)` }}
                   />
@@ -1233,11 +1237,11 @@ export function LiveTrackLayout({
           <span>Speed: {timeScale}x</span>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setShowTelemetry(!showTelemetry)} className={showTelemetry ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-300'} aria-label={showTelemetry ? 'Hide telemetry panel' : 'Show telemetry panel'} aria-pressed={showTelemetry}>
-            <ChartIcon size={11} />
+          <button onClick={() => setShowTelemetry(!showTelemetry)} className={`min-h-[24px] min-w-[24px] flex items-center justify-center ${showTelemetry ? 'text-cyan-400' : 'text-gray-400 hover:text-gray-300'}`} aria-label={showTelemetry ? 'Hide telemetry panel' : 'Show telemetry panel'} aria-pressed={showTelemetry}>
+            <ChartIcon size={14} />
           </button>
-          <button onClick={() => setShowMinimap(!showMinimap)} className={showMinimap ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-300'} aria-label={showMinimap ? 'Hide minimap' : 'Show minimap'} aria-pressed={showMinimap}>
-            <MapIcon size={11} />
+          <button onClick={() => setShowMinimap(!showMinimap)} className={`min-h-[24px] min-w-[24px] flex items-center justify-center ${showMinimap ? 'text-cyan-400' : 'text-gray-400 hover:text-gray-300'}`} aria-label={showMinimap ? 'Hide minimap' : 'Show minimap'} aria-pressed={showMinimap}>
+            <MapIcon size={14} />
           </button>
           <span className={`font-mono ${isPaused ? 'text-amber-400' : mode === 'live' ? 'text-emerald-400' : 'text-purple-400'}`}>
             {isPaused ? '⏸ PAUSED' : mode === 'live' ? '● LIVE' : '● DEMO'}
