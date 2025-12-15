@@ -36,6 +36,7 @@ import { SnapshotGallery } from '@/components/SnapshotGallery';
 import { SessionHistory } from '@/components/SessionHistory';
 import { StreamingPanel } from '@/components/StreamingPanel';
 import { ModeToggle, ViewOnlyBadge } from '@/components/ModeToggle';
+import { InstallPrompt } from '@/components/InstallPrompt';
 import { useGameMode } from '@/lib/contexts/ModeContext';
 import { useUser, useUnlockModule, useStartSession } from '@/hooks/useUser';
 import { MODULE_COSTS } from '@/lib/pricing';
@@ -927,6 +928,9 @@ function RailroadArcade() {
           }}
         />
       )}
+
+      {/* PWA Install Prompt */}
+      <InstallPrompt />
     </div>
   );
 }
