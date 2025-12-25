@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useLeaderboard, useAllLeaderboards, LeaderboardEntry } from '@/hooks/useLeaderboard';
-import { TrophyIcon, ArrowLeftIcon, TrainIcon, ClockIcon, SparklesIcon } from '@/components/icons';
-import { SkeletonRow } from '@/components/ui';
+import { TrophyIcon, ArrowLeftIcon, TrainIcon, ClockIcon, SparklesIcon, ShareIcon } from '@/components/icons';
+import { SkeletonRow, useToast } from '@/components/ui';
 
 const GAME_MODES = [
   { id: 'FREE_PLAY', name: 'Free Play', color: 'cyan', description: 'Sandbox mode' },
@@ -163,7 +163,7 @@ export default function LeaderboardsPage() {
               </div>
             ) : (
               entries.map((entry, index) => (
-                <LeaderboardRow key={entry.user.id} entry={entry} index={index} />
+                <LeaderboardRow key={entry.user.id} entry={entry} index={index} gameMode={selectedMode} />
               ))
             )}
           </div>
@@ -173,10 +173,39 @@ export default function LeaderboardsPage() {
   );
 }
 
-function LeaderboardRow({ entry, index }: { entry: LeaderboardEntry; index: number }) {
+function LeaderboardRow({ entry, index, gameMode }: { entry: LeaderboardEntry; index: number; gameMode: string }) {
   const isTopThree = index < 3;
   const rankColors = ['text-amber-400', 'text-gray-300', 'text-amber-600'];
   const rankBgColors = ['bg-amber-500/20', 'bg-gray-400/20', 'bg-amber-600/20'];
+  const { addToast } = useToast();
+
+  const handleShare = useCallback(async () => {
+    const modeConfig = GAME_MODES.find(m => m.id === gameMode);
+    const shareText = `🏆 ${entry.user.name} scored ${entry.score.toLocaleString()} points in ${modeConfig?.name || gameMode} on Railroad Arcade!`;
+    const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+
+    // Try Web Share API first (mobile-friendly)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Railroad Arcade High Score',
+          text: shareText,
+          url: shareUrl,
+        });
+        return;
+      } catch (err) {
+        // User cancelled or share failed, fall through to clipboard
+      }
+    }
+
+    // Fallback to clipboard
+    try {
+      await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+      addToast('success', 'Score copied to clipboard!');
+    } catch {
+      addToast('error', 'Failed to copy score');
+    }
+  }, [entry, gameMode, addToast]);
 
   return (
     <div
@@ -237,10 +266,20 @@ function LeaderboardRow({ entry, index }: { entry: LeaderboardEntry; index: numb
           <div className="text-[10px] sm:text-xs text-gray-500">points</div>
         </div>
 
+        {/* Share button */}
+        <button
+          onClick={handleShare}
+          className="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-cyan-400 transition-colors"
+          title="Share this score"
+          aria-label={`Share ${entry.user.name}'s score`}
+        >
+          <ShareIcon size={16} />
+        </button>
+
         {/* Trophy for top 3 */}
         {isTopThree && (
-          <div className="hidden sm:flex items-center justify-center w-8">
-            {index === 0 && <SparklesIcon size={20} className="text-amber-400" />}
+          <div className="hidden sm:flex items-center justify-center w-6">
+            {index === 0 && <SparklesIcon size={18} className="text-amber-400" />}
           </div>
         )}
       </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getActionDescription } from '@/lib/token-guard';
+import { useSounds } from '@/hooks/useSounds';
 
 // ============================================
 // Types
@@ -29,6 +30,7 @@ export function TokenConfirmDialog({
   onCancel,
 }: TokenConfirmDialogProps) {
   const [isConfirming, setIsConfirming] = useState(false);
+  const { play: playSound } = useSounds();
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -44,6 +46,7 @@ export function TokenConfirmDialog({
 
   const handleConfirm = async () => {
     setIsConfirming(true);
+    playSound('coin'); // Play coin sound when spending tokens
     onConfirm();
   };
 

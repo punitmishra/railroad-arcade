@@ -9,7 +9,24 @@ export function UserMenu() {
   const { data: session, status } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const [achievementCount, setAchievementCount] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Fetch achievement count
+  useEffect(() => {
+    if (session?.user) {
+      fetch('/api/achievements')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setAchievementCount(data.data.stats?.earned ?? 0);
+          }
+        })
+        .catch(() => {
+          // Silently fail - not critical
+        });
+    }
+  }, [session]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -108,7 +125,12 @@ export function UserMenu() {
               className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-white/10 transition-all"
             >
               <TrophyIcon size={16} />
-              Achievements
+              <span className="flex-1">Achievements</span>
+              {achievementCount !== null && achievementCount > 0 && (
+                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-500/20 text-amber-400">
+                  {achievementCount}
+                </span>
+              )}
             </a>
             <a
               href="/leaderboards"

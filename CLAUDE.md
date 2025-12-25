@@ -311,6 +311,21 @@ STORAGE_URL               # Cloud storage URL for recordings/snapshots
 - **Session Events**: Session start, extend, and end events are broadcast to subscribers
 - **Event Types**: `queue_update` and `session_update` events with position, wait time, and remaining time data
 
+### Achievement System Improvements
+- **Achievement Notifier**: Global component shows toast notifications when achievements unlock
+- **Sound Integration**: Plays achievement sound effect on unlock
+- **User Menu Badge**: Shows earned achievement count in the user dropdown menu
+- **Real-Time Updates**: Achievement unlocks propagate via SSE to show instant notifications
+
+### Sound Effects
+- **Token Spending**: Added coin sound when confirming token purchases
+- **16 Sound Types**: Full set including click, success, error, train sounds, junction, crossing, achievements, and more
+
+### Social Features
+- **Score Sharing**: Share button on leaderboard entries
+- **Web Share API**: Uses native share on mobile, clipboard fallback on desktop
+- **Formatted Share Text**: Includes player name, score, game mode, and link
+
 ## Troubleshooting
 
 ### Build Errors

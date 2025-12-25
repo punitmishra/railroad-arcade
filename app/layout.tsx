@@ -3,6 +3,7 @@ import { AuthProvider } from '@/components/auth/AuthProvider';
 import { ModeProvider } from '@/lib/contexts/ModeContext';
 import { ToastProvider } from '@/components/ui';
 import { SoundProvider } from '@/hooks/useSounds';
+import { AchievementNotifier } from '@/components/AchievementNotifier';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -73,6 +74,7 @@ export default function RootLayout({
           <ModeProvider>
             <SoundProvider>
               <ToastProvider>
+                <AchievementNotifier />
                 {children}
               </ToastProvider>
             </SoundProvider>
