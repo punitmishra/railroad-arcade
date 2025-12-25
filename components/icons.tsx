@@ -277,6 +277,9 @@ export const CloseIcon = ({ size = 24, ...p }: IconProps) => (
 export const MenuIcon = ({ size = 24, ...p }: IconProps) => (
   <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
 );
+export const KeyboardIcon = ({ size = 24, ...p }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/></svg>
+);
 export const ShareIcon = ({ size = 24, ...p }: IconProps) => (
   <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>
 );

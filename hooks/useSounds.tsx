@@ -22,7 +22,8 @@ export type SoundType =
   | 'achievement'
   | 'game_start'
   | 'game_over'
-  | 'score';
+  | 'score'
+  | 'camera';
 
 // ========================================
 // AUDIO CONTEXT SINGLETON
@@ -411,6 +412,51 @@ function playScore(ctx: AudioContext, volume: number) {
   osc.stop(ctx.currentTime + 0.1);
 }
 
+function playCamera(ctx: AudioContext, volume: number) {
+  // Camera shutter click sound
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  const filter = ctx.createBiquadFilter();
+
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+
+  // White noise-like effect for shutter
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(2000, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.05);
+
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(3000, ctx.currentTime);
+  filter.frequency.exponentialRampToValueAtTime(500, ctx.currentTime + 0.05);
+
+  gain.gain.setValueAtTime(volume * 0.25, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + 0.08);
+
+  // Second click for mechanical feel
+  setTimeout(() => {
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+
+    osc2.type = 'square';
+    osc2.frequency.setValueAtTime(1500, ctx.currentTime);
+    osc2.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.02);
+
+    gain2.gain.setValueAtTime(volume * 0.15, ctx.currentTime);
+    gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.03);
+
+    osc2.start(ctx.currentTime);
+    osc2.stop(ctx.currentTime + 0.03);
+  }, 30);
+}
+
 // ========================================
 // SOUND PLAYER
 // ========================================
@@ -432,6 +478,7 @@ const soundPlayers: Record<SoundType, (ctx: AudioContext, volume: number) => voi
   game_start: playGameStart,
   game_over: playGameOver,
   score: playScore,
+  camera: playCamera,
 };
 
 // ========================================

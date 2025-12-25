@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode, ButtonHTMLAttributes, useState, useEffect, createContext, useContext, useCallback } from 'react';
-import { ClockIcon, PlusIcon, LockIcon, CloseIcon } from './icons';
+import { ClockIcon, PlusIcon, LockIcon, CloseIcon, KeyboardIcon } from './icons';
 
 // ========================================
 // ARCADE BUTTON
@@ -788,9 +788,9 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
 // ========================================
 // KEYBOARD SHORTCUTS MODAL
 // ========================================
-interface KeyboardShortcut {
-  key: string;
-  description: string;
+interface ShortcutGroup {
+  title: string;
+  shortcuts: { key: string; description: string }[];
 }
 
 interface KeyboardShortcutsModalProps {
@@ -798,17 +798,49 @@ interface KeyboardShortcutsModalProps {
   onClose: () => void;
 }
 
-const SHORTCUTS: KeyboardShortcut[] = [
-  { key: 'Space', description: 'Pause/Resume simulation' },
-  { key: '1', description: 'Toggle Junction 1' },
-  { key: '2', description: 'Toggle Junction 2' },
-  { key: '3', description: 'Toggle Junction 3' },
-  { key: 'N', description: 'Toggle night mode' },
-  { key: 'T', description: 'Toggle telemetry panel' },
-  { key: 'M', description: 'Toggle minimap' },
-  { key: 'L', description: 'Toggle labels' },
-  { key: 'Esc', description: 'Emergency stop' },
-  { key: '?', description: 'Show this help' },
+const SHORTCUT_GROUPS: ShortcutGroup[] = [
+  {
+    title: 'Train 1 (WASD)',
+    shortcuts: [
+      { key: 'W', description: 'Throttle up' },
+      { key: 'S', description: 'Throttle down' },
+      { key: 'A', description: 'Reverse' },
+      { key: 'D', description: 'Stop' },
+    ],
+  },
+  {
+    title: 'Train 2 (Arrows)',
+    shortcuts: [
+      { key: '↑', description: 'Throttle up' },
+      { key: '↓', description: 'Throttle down' },
+      { key: '←', description: 'Reverse' },
+      { key: '→', description: 'Stop' },
+    ],
+  },
+  {
+    title: 'Track Controls',
+    shortcuts: [
+      { key: '1-3', description: 'Toggle junctions' },
+      { key: 'C', description: 'Toggle crossing' },
+      { key: 'Space', description: 'Emergency stop' },
+    ],
+  },
+  {
+    title: 'Camera',
+    shortcuts: [
+      { key: '[ ]', description: 'Prev/Next camera' },
+      { key: 'F1-F4', description: 'Camera 1-4' },
+    ],
+  },
+  {
+    title: 'Game',
+    shortcuts: [
+      { key: 'Enter', description: 'Start game' },
+      { key: 'P', description: 'Pause' },
+      { key: 'Tab', description: 'Select mode' },
+      { key: '?', description: 'Show help' },
+    ],
+  },
 ];
 
 export function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShortcutsModalProps) {
@@ -826,33 +858,52 @@ export function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShortcutsMod
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div
-        className="relative bg-[#0c0c14] border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+        className="relative bg-[#0c0c14] border border-white/10 rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-auto shadow-2xl"
         onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Keyboard shortcuts"
       >
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'Orbitron, sans-serif' }}>
-            Keyboard Shortcuts
-          </h2>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center">
+              <KeyboardIcon size={22} className="text-cyan-400" />
+            </div>
+            <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'Orbitron, sans-serif' }}>
+              Keyboard Shortcuts
+            </h2>
+          </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-white/10 text-gray-400 transition-colors"
+            className="p-2 rounded-lg hover:bg-white/10 text-gray-400 transition-colors min-h-[44px] min-w-[44px]"
             aria-label="Close"
           >
             <CloseIcon size={18} />
           </button>
         </div>
-        <div className="space-y-2">
-          {SHORTCUTS.map(shortcut => (
-            <div key={shortcut.key} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
-              <span className="text-sm text-gray-400">{shortcut.description}</span>
-              <kbd className="px-2.5 py-1 rounded-lg bg-white/10 border border-white/20 text-xs font-mono text-cyan-400">
-                {shortcut.key}
-              </kbd>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {SHORTCUT_GROUPS.map((group) => (
+            <div key={group.title} className="space-y-2">
+              <h3 className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">
+                {group.title}
+              </h3>
+              <div className="space-y-1.5">
+                {group.shortcuts.map((shortcut) => (
+                  <div key={shortcut.key} className="flex items-center justify-between py-1">
+                    <span className="text-xs text-gray-400">{shortcut.description}</span>
+                    <kbd className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[10px] font-mono text-white">
+                      {shortcut.key}
+                    </kbd>
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>
-        <p className="mt-4 text-xs text-gray-500 text-center">
-          Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-cyan-400">?</kbd> anytime to show this help
+
+        <p className="mt-6 text-xs text-gray-500 text-center">
+          Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-cyan-400 font-mono">?</kbd> anytime to toggle this help
         </p>
       </div>
     </div>
