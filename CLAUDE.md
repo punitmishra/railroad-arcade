@@ -299,6 +299,18 @@ STORAGE_URL               # Cloud storage URL for recordings/snapshots
   - `/api/games` - Uses `Prisma.GameSessionWhereInput` for type-safe queries
 - **Storage Deletion**: Added proper storage cleanup when deleting recordings (ready for S3 integration)
 
+### Camera System Improvements
+- **Stream Type Support**: Added `StreamType` enum supporting `mjpeg`, `hls`, `webrtc`, and `placeholder`
+- **Live Stream Integration**: `CameraFeed` component now supports real MJPEG streams from Raspberry Pi
+- **Auto-Retry Logic**: Camera feeds automatically retry connection on failure (up to 3 attempts)
+- **Demo Mode Detection**: Cameras show placeholder UI when `NEXT_PUBLIC_API_URL` is not configured
+- **Stream Info API**: New `getStreamInfo()` helper returns URL, type, and placeholder status
+
+### Real-Time Updates
+- **Queue Events**: Queue state changes now emit real-time SSE events to all connected clients
+- **Session Events**: Session start, extend, and end events are broadcast to subscribers
+- **Event Types**: `queue_update` and `session_update` events with position, wait time, and remaining time data
+
 ## Troubleshooting
 
 ### Build Errors

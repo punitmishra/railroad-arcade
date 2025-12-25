@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { CameraConfig, getCameraById, buildStreamUrl } from '@/lib/camera-config';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { getCameraById, getStreamInfo, StreamType } from '@/lib/camera-config';
 
 // ============================================
 // Camera Feed Component
@@ -14,20 +14,62 @@ interface CameraFeedProps {
   className?: string;
 }
 
+type StreamStatus = 'connecting' | 'connected' | 'error' | 'placeholder';
+
 export function CameraFeed({ cameraId, onSnapshot, showControls = true, className = '' }: CameraFeedProps) {
   const camera = getCameraById(cameraId);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const streamInfo = getStreamInfo(cameraId);
+  const [status, setStatus] = useState<StreamStatus>('connecting');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const maxRetries = 3;
 
+  // Handle stream connection
   useEffect(() => {
-    setIsLoading(true);
-    setError(null);
-    // Simulate stream loading
-    const timer = setTimeout(() => setIsLoading(false), 1000);
+    setStatus('connecting');
+    setRetryCount(0);
+
+    if (streamInfo.isPlaceholder) {
+      // Simulate loading for placeholder mode
+      const timer = setTimeout(() => setStatus('placeholder'), 800);
+      return () => clearTimeout(timer);
+    }
+
+    // For real streams, we'll try to connect
+    const timer = setTimeout(() => {
+      // Give the image time to load
+      if (imgRef.current?.complete && imgRef.current?.naturalWidth > 0) {
+        setStatus('connected');
+      }
+    }, 2000);
+
     return () => clearTimeout(timer);
-  }, [cameraId]);
+  }, [cameraId, streamInfo.isPlaceholder]);
+
+  // Handle image load/error for MJPEG streams
+  const handleImageLoad = useCallback(() => {
+    setStatus('connected');
+    setRetryCount(0);
+  }, []);
+
+  const handleImageError = useCallback(() => {
+    if (retryCount < maxRetries) {
+      setRetryCount((prev) => prev + 1);
+      // Retry after a delay
+      setTimeout(() => {
+        if (imgRef.current) {
+          imgRef.current.src = `${streamInfo.url}?retry=${retryCount + 1}&t=${Date.now()}`;
+        }
+      }, 2000);
+    } else {
+      setStatus('error');
+    }
+  }, [retryCount, streamInfo.url]);
+
+  const isLoading = status === 'connecting';
+  const hasError = status === 'error';
 
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
@@ -65,7 +107,7 @@ export function CameraFeed({ cameraId, onSnapshot, showControls = true, classNam
       )}
 
       {/* Error State */}
-      {error && (
+      {hasError && (
         <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0f]">
           <div className="text-center">
             <div className="text-red-400 mb-2">
@@ -73,13 +115,44 @@ export function CameraFeed({ cameraId, onSnapshot, showControls = true, classNam
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            <span className="text-sm text-gray-500">{error}</span>
+            <span className="text-sm text-gray-500">Camera offline</span>
+            <button
+              onClick={() => {
+                setRetryCount(0);
+                setStatus('connecting');
+              }}
+              className="mt-2 px-3 py-1 text-xs bg-cyan-500/20 text-cyan-400 rounded hover:bg-cyan-500/30 transition-colors"
+            >
+              Retry
+            </button>
           </div>
         </div>
       )}
 
-      {/* Video Placeholder (simulated feed) */}
-      {!isLoading && !error && (
+      {/* Real MJPEG Stream (when API is configured) */}
+      {!isLoading && !hasError && !streamInfo.isPlaceholder && (
+        <div className="aspect-video bg-black relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            ref={imgRef}
+            src={streamInfo.url}
+            alt={`${camera?.name || 'Camera'} live feed`}
+            className="w-full h-full object-contain"
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+          />
+          {/* Status indicator */}
+          {status === 'connected' && (
+            <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Live
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Placeholder/Demo Mode */}
+      {!isLoading && !hasError && streamInfo.isPlaceholder && (
         <div className="aspect-video bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
           {/* Simulated camera feed pattern */}
           <div className="relative w-full h-full">
@@ -93,9 +166,9 @@ export function CameraFeed({ cameraId, onSnapshot, showControls = true, classNam
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
                 <div className="text-lg text-gray-400" style={{ fontFamily: 'Orbitron, sans-serif' }}>
-                  {camera.name}
+                  {camera?.name || 'Camera'}
                 </div>
-                <div className="text-xs text-gray-600 mt-1">Live Feed</div>
+                <div className="text-xs text-gray-600 mt-1">Demo Mode</div>
               </div>
             </div>
 

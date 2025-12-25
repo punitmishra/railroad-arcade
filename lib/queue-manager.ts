@@ -7,6 +7,7 @@
 import { db, QueueStatus } from './db';
 import { redis, playSessionCache } from './redis';
 import { getTimePricingById, QUEUE_TIME_PACKAGES } from './pricing';
+import { emitQueueUpdate, emitSessionUpdate } from './realtime';
 
 // ============================================
 // Types
@@ -38,6 +39,22 @@ export interface QueueState {
 const QUEUE_CACHE_KEY = 'live:queue:state';
 const ACTIVE_CONTROLLER_KEY = 'live:queue:active';
 const DEFAULT_SESSION_DURATION = 300; // 5 minutes
+
+/**
+ * Emit queue update event to all connected clients
+ */
+async function notifyQueueUpdate(): Promise<void> {
+  try {
+    const state = await getQueueState();
+    emitQueueUpdate({
+      totalInQueue: state.totalInQueue,
+      currentController: state.currentController?.userId ?? null,
+      waitingCount: state.waitingUsers.length,
+    });
+  } catch (error) {
+    console.error('Failed to emit queue update:', error);
+  }
+}
 
 // ============================================
 // Queue Manager Functions
@@ -198,6 +215,9 @@ export async function joinQueue(
   // Try to activate if queue is empty
   await tryActivateNextUser();
 
+  // Emit real-time update
+  await notifyQueueUpdate();
+
   // Return entry with position
   const position = await getUserQueuePosition(userId);
   return { success: true, entry: position ?? undefined };
@@ -252,6 +272,9 @@ export async function leaveQueue(
 
   // Try to activate next user
   await tryActivateNextUser();
+
+  // Emit real-time update
+  await notifyQueueUpdate();
 
   return { success: true, refunded: refund };
 }
@@ -319,6 +342,14 @@ export async function extendSession(
   // Invalidate cache
   await redis.del(QUEUE_CACHE_KEY);
 
+  // Emit session extension event
+  emitSessionUpdate({
+    sessionId: entry.id,
+    status: 'extended',
+    remainingTime: Math.round((newEndTime.getTime() - Date.now()) / 1000),
+  });
+  await notifyQueueUpdate();
+
   return { success: true, newEndTime };
 }
 
@@ -374,6 +405,14 @@ export async function tryActivateNextUser(): Promise<QueueEntry | null> {
 
   // Invalidate cache
   await redis.del(QUEUE_CACHE_KEY);
+
+  // Emit session started event
+  emitSessionUpdate({
+    sessionId: updatedEntry.id,
+    status: 'started',
+    remainingTime: duration,
+  });
+  await notifyQueueUpdate();
 
   return {
     id: updatedEntry.id,

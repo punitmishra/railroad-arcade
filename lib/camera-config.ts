@@ -8,6 +8,8 @@
 // Camera Definitions
 // ============================================
 
+export type StreamType = 'mjpeg' | 'hls' | 'webrtc' | 'placeholder';
+
 export interface CameraConfig {
   id: string;
   name: string;
@@ -17,6 +19,7 @@ export interface CameraConfig {
   position: CameraPosition;
   level: number;
   isPrimary?: boolean;
+  streamType?: StreamType;
 }
 
 export type CameraPosition = 'overhead' | 'station' | 'tunnel' | 'junction' | 'scenic';
@@ -30,6 +33,7 @@ export const CAMERAS: CameraConfig[] = [
     position: 'overhead',
     level: 0,
     isPrimary: true,
+    streamType: 'mjpeg',
   },
   {
     id: 'grand-central',
@@ -38,6 +42,7 @@ export const CAMERAS: CameraConfig[] = [
     streamUrl: '/api/stream/station-gc',
     position: 'station',
     level: 2,
+    streamType: 'mjpeg',
   },
   {
     id: 'valley-station',
@@ -46,6 +51,7 @@ export const CAMERAS: CameraConfig[] = [
     streamUrl: '/api/stream/station-vs',
     position: 'station',
     level: 1,
+    streamType: 'mjpeg',
   },
   {
     id: 'tunnel-east',
@@ -54,6 +60,7 @@ export const CAMERAS: CameraConfig[] = [
     streamUrl: '/api/stream/tunnel',
     position: 'tunnel',
     level: 1,
+    streamType: 'mjpeg',
   },
   {
     id: 'junction',
@@ -62,6 +69,7 @@ export const CAMERAS: CameraConfig[] = [
     streamUrl: '/api/stream/junction',
     position: 'junction',
     level: 2,
+    streamType: 'mjpeg',
   },
   {
     id: 'scenic',
@@ -70,6 +78,7 @@ export const CAMERAS: CameraConfig[] = [
     streamUrl: '/api/stream/scenic',
     position: 'scenic',
     level: 0,
+    streamType: 'mjpeg',
   },
 ];
 
@@ -149,17 +158,53 @@ export function getLayoutById(id: LayoutId): CameraLayout | undefined {
 // Stream URL Builder
 // ============================================
 
-export function buildStreamUrl(cameraId: string): string {
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-  const camera = getCameraById(cameraId);
-  if (!camera) return '';
+export interface StreamInfo {
+  url: string;
+  type: StreamType;
+  isPlaceholder: boolean;
+}
 
-  // For development, return a placeholder
-  if (process.env.NODE_ENV === 'development') {
-    return `/api/camera/placeholder?id=${cameraId}`;
+/**
+ * Build the stream URL for a camera
+ * Returns placeholder URL if no API URL is configured or in demo mode
+ */
+export function buildStreamUrl(cameraId: string): string {
+  const info = getStreamInfo(cameraId);
+  return info.url;
+}
+
+/**
+ * Get complete stream information including type and placeholder status
+ */
+export function getStreamInfo(cameraId: string): StreamInfo {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  const camera = getCameraById(cameraId);
+
+  if (!camera) {
+    return { url: '', type: 'placeholder', isPlaceholder: true };
   }
 
-  return `${apiBase}${camera.streamUrl}`;
+  // Use placeholder if no API URL is configured
+  if (!apiBase) {
+    return {
+      url: `/api/camera/placeholder?id=${cameraId}`,
+      type: 'placeholder',
+      isPlaceholder: true,
+    };
+  }
+
+  return {
+    url: `${apiBase}${camera.streamUrl}`,
+    type: camera.streamType || 'mjpeg',
+    isPlaceholder: false,
+  };
+}
+
+/**
+ * Check if live camera streams are available
+ */
+export function isLiveStreamAvailable(): boolean {
+  return !!process.env.NEXT_PUBLIC_API_URL;
 }
 
 // ============================================
