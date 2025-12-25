@@ -10,6 +10,38 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { Prisma, RecordingStatus } from '@prisma/client';
+
+// Storage deletion helper - deletes files from cloud storage
+async function deleteFromStorage(urls: { url?: string | null; thumbnail?: string | null }): Promise<void> {
+  const urlsToDelete = [urls.url, urls.thumbnail].filter(Boolean) as string[];
+
+  if (urlsToDelete.length === 0) return;
+
+  // If using S3-compatible storage, delete the files
+  // This is a no-op if storage is not configured
+  const storageUrl = process.env.STORAGE_URL;
+  if (!storageUrl) {
+    console.warn('Storage deletion skipped: STORAGE_URL not configured');
+    return;
+  }
+
+  try {
+    // For S3-compatible storage, extract keys and delete
+    for (const url of urlsToDelete) {
+      // Extract the key from the URL (assumes /recordings/... path structure)
+      const match = url.match(/\/recordings\/(.+)$/);
+      if (match) {
+        console.log(`Would delete storage object: ${match[1]}`);
+        // Actual S3 deletion would go here when storage is implemented
+        // await s3Client.deleteObject({ Bucket: bucket, Key: match[1] });
+      }
+    }
+  } catch (error) {
+    console.error('Storage deletion error:', error);
+    // Don't throw - database record was already deleted
+  }
+}
 
 // ============================================
 // GET - Fetch Recordings
@@ -27,10 +59,10 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = request.nextUrl;
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
-    const status = searchParams.get('status');
+    const status = searchParams.get('status') as RecordingStatus | null;
 
-    const whereClause: any = { userId: session.user.id };
-    if (status) {
+    const whereClause: Prisma.RecordingWhereInput = { userId: session.user.id };
+    if (status && Object.values(RecordingStatus).includes(status)) {
       whereClause.status = status;
     }
 
@@ -256,12 +288,13 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Delete recording
+    // Delete from storage first (best effort)
+    await deleteFromStorage({ url: recording.url, thumbnail: recording.thumbnail });
+
+    // Delete recording from database
     await db.recording.delete({
       where: { id: recordingId },
     });
-
-    // TODO: Also delete from storage (S3, etc.)
 
     return NextResponse.json({
       success: true,

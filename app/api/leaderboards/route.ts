@@ -9,6 +9,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { emitLeaderboardUpdate } from '@/lib/realtime';
+import { GameMode } from '@prisma/client';
 
 // ============================================
 // GET - Fetch Leaderboard
@@ -17,14 +18,20 @@ import { emitLeaderboardUpdate } from '@/lib/realtime';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
-    const gameMode = searchParams.get('mode') || 'FREE_PLAY';
+    const gameModeParam = searchParams.get('mode') || 'FREE_PLAY';
     const isLive = searchParams.get('live') === 'true';
     const limit = Math.min(parseInt(searchParams.get('limit') || '10'), 100);
+
+    // Validate game mode
+    const validGameModes = Object.values(GameMode);
+    const gameMode = validGameModes.includes(gameModeParam as GameMode)
+      ? (gameModeParam as GameMode)
+      : GameMode.FREE_PLAY;
 
     // Get leaderboard entries
     const entries = await db.leaderboard.findMany({
       where: {
-        gameMode: gameMode as any,
+        gameMode,
         isLive,
       },
       orderBy: {

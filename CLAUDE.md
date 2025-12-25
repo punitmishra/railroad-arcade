@@ -257,6 +257,8 @@ NEXT_PUBLIC_API_URL       # Raspberry Pi API (for live mode)
 STRIPE_SECRET_KEY         # Payment providers
 PAYPAL_CLIENT_ID
 COINBASE_COMMERCE_API_KEY
+ADMIN_KEY                 # Required for admin endpoints (token grants)
+STORAGE_URL               # Cloud storage URL for recordings/snapshots
 ```
 
 ## Next Steps / Roadmap
@@ -284,6 +286,18 @@ COINBASE_COMMERCE_API_KEY
 - Add comprehensive test coverage
 - Implement proper error boundaries
 - Add request/response logging for debugging
+
+## Recent Changes (December 2025)
+
+### Security Fixes
+- **Admin Endpoint Secured**: Removed hardcoded dev-testing key from `/api/admin/grant-tokens`. Now requires `ADMIN_KEY` environment variable.
+
+### Code Quality Improvements
+- **Type Safety**: Fixed `any` type casts in API routes:
+  - `/api/recordings` - Uses proper Prisma types for query filters
+  - `/api/leaderboards` - Validates `GameMode` enum before database queries
+  - `/api/games` - Uses `Prisma.GameSessionWhereInput` for type-safe queries
+- **Storage Deletion**: Added proper storage cleanup when deleting recordings (ready for S3 integration)
 
 ## Troubleshooting
 

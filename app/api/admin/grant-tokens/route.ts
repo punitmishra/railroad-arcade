@@ -2,14 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
 // Admin endpoint to grant tokens to all users
-// In production, this should be protected by admin authentication
+// Protected by ADMIN_KEY environment variable
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { amount = 1000, adminKey } = body;
 
-    // Simple admin key check (in production, use proper auth)
-    if (adminKey !== process.env.ADMIN_KEY && adminKey !== 'dev-testing') {
+    // Require ADMIN_KEY to be set in environment
+    if (!process.env.ADMIN_KEY) {
+      console.error('ADMIN_KEY environment variable not configured');
+      return NextResponse.json({ success: false, error: 'Admin endpoint not configured' }, { status: 503 });
+    }
+
+    // Validate admin key
+    if (!adminKey || adminKey !== process.env.ADMIN_KEY) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 

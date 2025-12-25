@@ -10,6 +10,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { GAME_MODE_CONFIGS } from '@/lib/game-modes/GameModeEngine';
+import { Prisma, GameMode } from '@prisma/client';
 
 // ============================================
 // POST - Start Game Session
@@ -223,11 +224,11 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = request.nextUrl;
     const limit = Math.min(parseInt(searchParams.get('limit') || '10'), 50);
-    const gameMode = searchParams.get('mode');
+    const gameModeParam = searchParams.get('mode');
 
-    const where: any = { userId: session.user.id };
-    if (gameMode) {
-      where.gameMode = gameMode;
+    const where: Prisma.GameSessionWhereInput = { userId: session.user.id };
+    if (gameModeParam && Object.values(GameMode).includes(gameModeParam as GameMode)) {
+      where.gameMode = gameModeParam as GameMode;
     }
 
     const gameSessions = await db.gameSession.findMany({
