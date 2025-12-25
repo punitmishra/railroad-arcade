@@ -4,6 +4,8 @@ An interactive web application for controlling a 2-level HO scale model railroad
 
 **Live Demo:** https://railroad-arcade-v5.vercel.app
 
+**Version:** 1.0.0 | **Released:** December 2025
+
 ## Features
 
 ### Dual-Mode Operation
@@ -32,11 +34,24 @@ An interactive web application for controlling a 2-level HO scale model railroad
 ### Building Modules
 - Police Station, Fire Station, Cafe, Smart Home, Construction Zone, Diamond Crossing
 
+### Multi-Camera & Recording
+- **Multi-Camera Grid** - Single, dual, quad, and picture-in-picture layouts
+- **Snapshot Gallery** - Capture, like, download, and share snapshots
+- **Camera Presets** - Overview, stations, action, and all-camera views
+- **MJPEG Streaming** - Real-time camera feeds with auto-retry
+
+### Social & Progression
+- **Achievements** - 10 unlockable achievements with toast notifications
+- **Leaderboards** - High scores by game mode with social sharing
+- **Session History** - Timeline view with stats and event tracking
+- **Tournament Mode** - Daily, weekly, and special tournament events
+
 ### Additional Features
 - **Kiosk Mode** - Full-screen arcade cabinet support
-- **Leaderboards** - High scores by game mode
-- **Multi-camera Support** - Multiple camera angles with PiP
 - **Token System** - Stripe, PayPal, and crypto payments
+- **Sound Effects** - 17 synthesized arcade sounds
+- **Keyboard Shortcuts** - Full keyboard/gamepad support with help modal
+- **Real-Time Updates** - SSE events for queue and session state
 
 ## Tech Stack
 
@@ -172,12 +187,20 @@ railroad-arcade/
 │   ├── SceneryControl.tsx      # Scenery control panel
 │   ├── GameModeSelector.tsx    # Game mode selection
 │   ├── GameHUD.tsx             # In-game HUD
+│   ├── MultiCameraGrid.tsx     # Multi-view camera layouts
+│   ├── SnapshotGallery.tsx     # Photo gallery with filters
+│   ├── SessionHistory.tsx      # Session log with timeline
+│   ├── TournamentBanner.tsx    # Tournament display
 │   └── ...                     # Other modules
 ├── hooks/
 │   ├── useUser.ts              # User state management
 │   ├── useLeaderboard.ts       # Leaderboard data
 │   ├── useHardwareAdapter.ts   # Hardware abstraction
-│   └── useArcadeInput.ts       # Arcade input handling
+│   ├── useArcadeInput.ts       # Arcade input handling
+│   ├── useSnapshots.ts         # Snapshot gallery data
+│   ├── useSessionHistory.ts    # Session history with pagination
+│   ├── useTournament.ts        # Tournament data and actions
+│   └── useSounds.tsx           # Synthesized arcade sounds
 ├── lib/
 │   ├── contexts/               # React contexts
 │   │   └── ModeContext.tsx     # Demo/Live mode
