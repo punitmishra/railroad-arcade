@@ -27,9 +27,18 @@ export async function POST(
     const body = await request.json();
     const { score, time } = body;
 
-    if (typeof score !== 'number' || score < 0) {
+    // Validate score
+    if (typeof score !== 'number' || score < 0 || !Number.isFinite(score)) {
       return NextResponse.json(
         { success: false, error: 'Invalid score' },
+        { status: 400 }
+      );
+    }
+
+    // Validate time if provided
+    if (time !== undefined && (typeof time !== 'number' || time < 0 || !Number.isFinite(time))) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid time' },
         { status: 400 }
       );
     }
@@ -46,7 +55,15 @@ export async function POST(
       );
     }
 
-    // Check if tournament is active
+    // Check tournament status - must be ACTIVE
+    if (tournament.status !== 'ACTIVE') {
+      return NextResponse.json(
+        { success: false, error: `Tournament is not active. Current status: ${tournament.status}` },
+        { status: 400 }
+      );
+    }
+
+    // Check if tournament is within time window
     const now = new Date();
     if (now < tournament.startTime) {
       return NextResponse.json(
@@ -101,11 +118,28 @@ export async function POST(
       },
     });
 
-    // Calculate new rank
+    // Calculate new rank with proper tiebreakers (matching leaderboard sort order)
+    // Rank is determined by: higher score > lower bestTime > earlier registration
     const betterEntries = await db.tournamentEntry.count({
       where: {
         tournamentId: id,
-        score: { gt: updatedEntry.score },
+        OR: [
+          // Higher score
+          { score: { gt: updatedEntry.score } },
+          // Same score, better time
+          {
+            score: updatedEntry.score,
+            bestTime: updatedEntry.bestTime
+              ? { lt: updatedEntry.bestTime }
+              : { not: null }, // If we have no time, anyone with a time is better
+          },
+          // Same score, same time (or both null), earlier registration
+          {
+            score: updatedEntry.score,
+            bestTime: updatedEntry.bestTime,
+            registeredAt: { lt: entry.registeredAt },
+          },
+        ],
       },
     });
     const newRank = betterEntries + 1;

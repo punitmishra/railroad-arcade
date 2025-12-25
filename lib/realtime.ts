@@ -238,6 +238,11 @@ export function createSSEStream(
 ): ReadableStream {
   const encoder = new TextEncoder();
 
+  // Store cleanup functions at outer scope for access in cancel
+  let heartbeat: NodeJS.Timeout | null = null;
+  let unsubscribeFns: (() => void)[] = [];
+  let isClosed = false;
+
   return new ReadableStream({
     start(controller) {
       // Send initial connection event
@@ -245,36 +250,57 @@ export function createSSEStream(
       controller.enqueue(encoder.encode(connectEvent));
 
       // Subscribe to events
-      const unsubscribe = eventTypes
+      unsubscribeFns = eventTypes
         ? eventTypes.map((type) =>
             realtimeEmitter.subscribe(type, (event) => {
-              const sseData = `data: ${JSON.stringify(event)}\n\n`;
-              controller.enqueue(encoder.encode(sseData));
+              if (isClosed) return;
+              try {
+                const sseData = `data: ${JSON.stringify(event)}\n\n`;
+                controller.enqueue(encoder.encode(sseData));
+              } catch {
+                // Stream closed, ignore
+              }
             })
           )
         : [
             realtimeEmitter.subscribeAll((event) => {
-              const sseData = `data: ${JSON.stringify(event)}\n\n`;
-              controller.enqueue(encoder.encode(sseData));
+              if (isClosed) return;
+              try {
+                const sseData = `data: ${JSON.stringify(event)}\n\n`;
+                controller.enqueue(encoder.encode(sseData));
+              } catch {
+                // Stream closed, ignore
+              }
             }),
           ];
 
       // Heartbeat to keep connection alive
-      const heartbeat = setInterval(() => {
+      heartbeat = setInterval(() => {
+        if (isClosed) {
+          if (heartbeat) clearInterval(heartbeat);
+          return;
+        }
         const ping = `data: ${JSON.stringify({ type: 'ping', timestamp: Date.now() })}\n\n`;
         try {
           controller.enqueue(encoder.encode(ping));
         } catch {
-          // Stream closed
-          clearInterval(heartbeat);
+          // Stream closed, cleanup
+          isClosed = true;
+          if (heartbeat) clearInterval(heartbeat);
+          unsubscribeFns.forEach((unsub) => unsub());
         }
       }, 30000);
+    },
 
-      // Cleanup on close
-      return () => {
+    cancel() {
+      // Called when the client disconnects
+      isClosed = true;
+      if (heartbeat) {
         clearInterval(heartbeat);
-        unsubscribe.forEach((unsub) => unsub());
-      };
+        heartbeat = null;
+      }
+      unsubscribeFns.forEach((unsub) => unsub());
+      unsubscribeFns = [];
     },
   });
 }

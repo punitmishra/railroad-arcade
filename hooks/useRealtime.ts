@@ -59,9 +59,16 @@ export function useRealtime(options: UseRealtimeOptions = {}): UseRealtimeReturn
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const connect = useCallback(() => {
-    // Close existing connection
+    // Clear any pending reconnect timeout
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
+    // Close existing connection and clear reference
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
+      eventSourceRef.current = null;
     }
 
     const url = getSSEUrl(eventTypes);
@@ -87,14 +94,20 @@ export function useRealtime(options: UseRealtimeOptions = {}): UseRealtimeReturn
 
     eventSource.onerror = () => {
       setIsConnected(false);
-      eventSource.close();
 
-      // Attempt reconnection
+      // Close and clear the current connection
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+
+      // Attempt reconnection with exponential backoff
       if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+        const delay = reconnectDelay * Math.pow(1.5, reconnectAttemptsRef.current);
         reconnectAttemptsRef.current++;
         reconnectTimeoutRef.current = setTimeout(() => {
           connect();
-        }, reconnectDelay);
+        }, delay);
       } else {
         setError(new Error('Max reconnection attempts reached'));
       }
