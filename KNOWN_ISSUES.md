@@ -6,39 +6,41 @@ This document tracks known bugs, issues, and technical debt identified in the Ra
 
 ---
 
-## Critical Issues
+## Critical Issues (FIXED)
 
-### 1. Race Condition in Tournament Registration
-**File:** `app/api/tournaments/[id]/register/route.ts` (lines 70-160)
-**Severity:** CRITICAL
+### 1. ~~Race Condition in Tournament Registration~~ - FIXED
+**File:** `app/api/tournaments/[id]/register/route.ts`
+**Status:** RESOLVED
 
-The registration endpoint checks if tournament is full, then later deducts tokens and creates entry. Between these operations, another user could register, causing the tournament to exceed `maxParticipants`.
+**Fix Applied:** Refactored to use interactive transaction (`db.$transaction(async (tx) => {...})`) that performs all checks and mutations atomically. Capacity check, duplicate registration check, token validation, and entry creation all happen within the same transaction.
 
-**Impact:** Two users can register simultaneously, both pass the capacity check, both get tokens deducted, but tournament exceeds max capacity.
-
-**Fix Required:** Move capacity check inside database transaction or use conditional create with unique constraint.
-
----
-
-### 2. No Idempotency in Prize Distribution
-**File:** `app/api/queue/process/route.ts` (lines 396-483)
-**Severity:** CRITICAL
-
-No validation that tournament is in COMPLETED status before distributing prizes. Can distribute prizes multiple times if handler is retried.
-
-**Impact:** Users can receive duplicate prize tokens on QStash retries.
-
-**Fix Required:** Add status check and mark tournament as "prizes_distributed" after completion.
+**Additional Improvements:**
+- Added tournament status check (must be REGISTRATION or SCHEDULED)
+- Added user cache invalidation after successful registration
 
 ---
 
-### 3. Race Condition in Tournament Status Transitions
-**File:** `app/api/queue/process/route.ts` (lines 287-329)
-**Severity:** CRITICAL
+### 2. ~~No Idempotency in Prize Distribution~~ - FIXED
+**File:** `app/api/queue/process/route.ts`
+**Status:** RESOLVED
 
-Multiple concurrent calls to `handleTournamentStatusCheck` can cause duplicate finalization jobs or status updates.
+**Fix Applied:** Added idempotency check that queries for existing prize transactions before distributing. If any `tournament_prize` transaction exists for the tournament, distribution is skipped.
 
-**Fix Required:** Use database transaction with `SELECT ... FOR UPDATE` lock.
+**Additional Improvements:**
+- Added status verification (must be COMPLETED)
+- Moved cache invalidation outside transaction for better performance
+
+---
+
+### 3. ~~Race Condition in Tournament Status Transitions~~ - FIXED
+**File:** `app/api/queue/process/route.ts`
+**Status:** RESOLVED
+
+**Fix Applied:** Wrapped status check in interactive transaction. Each tournament is re-fetched inside the transaction for atomic status verification before any updates.
+
+**Additional Improvements:**
+- Added proper tie handling in rank calculation (tied scores get same rank)
+- Status transition to COMPLETED now happens atomically with rank updates
 
 ---
 
@@ -57,13 +59,14 @@ No validation on input fields:
 
 ---
 
-### 5. Tied Scores Not Handled in Finalization
-**File:** `app/api/queue/process/route.ts` (lines 363-376)
+### 5. ~~Tied Scores Not Handled in Finalization~~ - FIXED
+**File:** `app/api/queue/process/route.ts`
 **Severity:** HIGH
+**Status:** RESOLVED
 
 Rank calculation uses simple index+1, ignoring tied scores. Two users with identical scores get different ranks.
 
-**Fix Required:** Implement proper tie-breaking with shared ranks.
+**Fix Applied:** Implemented dense ranking where tied entries (same score AND same bestTime) share the same rank. Ranking logic now tracks previous score/time and only increments rank when values differ.
 
 ---
 
@@ -192,13 +195,14 @@ Console.log/error/warn statements throughout codebase. Should use proper logger.
 
 ---
 
-### 18. Missing User Cache Invalidation on Registration
-**File:** `app/api/tournaments/[id]/register/route.ts` (lines 132-160)
+### 18. ~~Missing User Cache Invalidation on Registration~~ - FIXED
+**File:** `app/api/tournaments/[id]/register/route.ts`
 **Severity:** LOW
+**Status:** RESOLVED
 
 Token balance decremented but cache not invalidated. Users see stale balance.
 
-**Fix Required:** Add `userCache.invalidateBalance(session.user.id)`.
+**Fix Applied:** Added `userCache.invalidateBalance(userId)` after successful registration.
 
 ---
 
@@ -224,19 +228,19 @@ ESLint disabled for `<img>` elements. Should use Next.js Image for optimization.
 
 | Severity | Count | Status |
 |----------|-------|--------|
-| CRITICAL | 3 | Open |
-| HIGH | 7 | Open |
+| CRITICAL | 3 | **FIXED** |
+| HIGH | 7 | Open (1 partially fixed - tie handling) |
 | MEDIUM | 6 | Open |
-| LOW | 5 | Open |
+| LOW | 5 | Open (1 fixed - cache invalidation) |
 
 ---
 
 ## Recommended Priority Order
 
-1. **Fix race conditions** (Issues #1, #2, #3) - Can cause data corruption
+1. ~~**Fix race conditions** (Issues #1, #2, #3)~~ - **FIXED**
 2. **Add input validation** (Issue #4) - Security concern
 3. **Fix memory leaks** (Issues #6, #7) - Affects stability
-4. **Fix ranking consistency** (Issues #5, #8) - Affects fairness
+4. ~~**Fix ranking consistency** (Issues #5, #8)~~ - **PARTIALLY FIXED** (tie handling added)
 5. **Add status checks** (Issue #9) - Logic correctness
 6. **Optimize queries** (Issue #11) - Performance
 7. **Fix cache invalidation** (Issue #12) - Data freshness

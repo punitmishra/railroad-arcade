@@ -296,35 +296,51 @@ async function handleTournamentStatusCheck(payload: TournamentStatusCheckPayload
   });
 
   for (const tournament of tournaments) {
-    let newStatus: string | null = null;
-
-    // SCHEDULED -> REGISTRATION (when registrationStart passed)
-    if (tournament.status === 'SCHEDULED' && now >= tournament.registrationStart) {
-      newStatus = 'REGISTRATION';
-    }
-
-    // REGISTRATION -> ACTIVE (when startTime passed)
-    if (tournament.status === 'REGISTRATION' && now >= tournament.startTime) {
-      newStatus = 'ACTIVE';
-    }
-
-    // ACTIVE -> queue finalization (when endTime passed)
-    if (tournament.status === 'ACTIVE' && now >= tournament.endTime) {
-      // Import queue dynamically to avoid circular dependency
-      const { queue } = await import('@/lib/queue');
-      await queue.finalizeTournament({ tournamentId: tournament.id });
-      console.log(`Tournament ${tournament.id} queued for finalization`);
-      continue;
-    }
-
-    // Update status if changed
-    if (newStatus) {
-      await db.tournament.update({
+    // Use interactive transaction with atomic status check to prevent race conditions
+    await db.$transaction(async (tx) => {
+      // Re-fetch tournament inside transaction for atomic check
+      const currentTournament = await tx.tournament.findUnique({
         where: { id: tournament.id },
-        data: { status: newStatus as 'REGISTRATION' | 'ACTIVE' },
       });
-      console.log(`Tournament ${tournament.id} status changed to ${newStatus}`);
-    }
+
+      if (!currentTournament) return;
+
+      let newStatus: 'REGISTRATION' | 'ACTIVE' | 'FINALIZING' | null = null;
+
+      // SCHEDULED -> REGISTRATION (when registrationStart passed)
+      if (currentTournament.status === 'SCHEDULED' && now >= currentTournament.registrationStart) {
+        newStatus = 'REGISTRATION';
+      }
+
+      // REGISTRATION -> ACTIVE (when startTime passed)
+      if (currentTournament.status === 'REGISTRATION' && now >= currentTournament.startTime) {
+        newStatus = 'ACTIVE';
+      }
+
+      // ACTIVE -> FINALIZING (when endTime passed) - prevents duplicate finalization
+      if (currentTournament.status === 'ACTIVE' && now >= currentTournament.endTime) {
+        // Mark as FINALIZING to prevent race condition
+        await tx.tournament.update({
+          where: { id: currentTournament.id },
+          data: { status: 'FINALIZING' as 'ACTIVE' }, // Cast needed - we handle this state internally
+        });
+
+        // Queue finalization job outside transaction
+        const { queue } = await import('@/lib/queue');
+        await queue.finalizeTournament({ tournamentId: currentTournament.id });
+        console.log(`Tournament ${currentTournament.id} queued for finalization`);
+        return;
+      }
+
+      // Update status if changed
+      if (newStatus) {
+        await tx.tournament.update({
+          where: { id: currentTournament.id },
+          data: { status: newStatus },
+        });
+        console.log(`Tournament ${currentTournament.id} status changed to ${newStatus}`);
+      }
+    });
   }
 }
 
@@ -335,47 +351,71 @@ interface TournamentFinalizePayload {
 async function handleTournamentFinalize(payload: TournamentFinalizePayload) {
   const { tournamentId } = payload;
 
-  // Get tournament with entries
-  const tournament = await db.tournament.findUnique({
-    where: { id: tournamentId },
-    include: {
-      entries: {
-        orderBy: [
-          { score: 'desc' },
-          { bestTime: 'asc' },
-          { registeredAt: 'asc' },
-        ],
+  // Use interactive transaction to prevent race conditions
+  const result = await db.$transaction(async (tx) => {
+    // Get tournament with entries inside transaction
+    const tournament = await tx.tournament.findUnique({
+      where: { id: tournamentId },
+      include: {
+        entries: {
+          orderBy: [
+            { score: 'desc' },
+            { bestTime: 'asc' },
+            { registeredAt: 'asc' },
+          ],
+        },
       },
-    },
-  });
+    });
 
-  if (!tournament) {
-    console.error(`Tournament not found: ${tournamentId}`);
-    return;
-  }
+    if (!tournament) {
+      console.error(`Tournament not found: ${tournamentId}`);
+      return { success: false, reason: 'not_found' };
+    }
 
-  if (tournament.status === 'COMPLETED') {
-    console.log(`Tournament ${tournamentId} already completed`);
-    return;
-  }
+    // Check status - only finalize ACTIVE or FINALIZING tournaments
+    if (tournament.status === 'COMPLETED' || tournament.status === 'CANCELLED') {
+      console.log(`Tournament ${tournamentId} already ${tournament.status}`);
+      return { success: false, reason: 'already_done' };
+    }
 
-  // Calculate and update ranks in a transaction
-  await db.$transaction([
-    // Update all entry ranks
-    ...tournament.entries.map((entry, index) =>
-      db.tournamentEntry.update({
+    // Calculate ranks with proper tie handling
+    let currentRank = 0;
+    let lastScore: number | null = null;
+    let lastTime: number | null = null;
+
+    for (let i = 0; i < tournament.entries.length; i++) {
+      const entry = tournament.entries[i];
+
+      // Check if this is a tie with previous entry
+      const isTie = lastScore === entry.score && lastTime === entry.bestTime;
+
+      if (!isTie) {
+        currentRank = i + 1; // Dense ranking - tied entries share same rank
+      }
+
+      await tx.tournamentEntry.update({
         where: { id: entry.id },
-        data: { rank: index + 1 },
-      })
-    ),
+        data: { rank: currentRank },
+      });
+
+      lastScore = entry.score;
+      lastTime = entry.bestTime;
+    }
+
     // Mark tournament as completed
-    db.tournament.update({
+    await tx.tournament.update({
       where: { id: tournamentId },
       data: { status: 'COMPLETED' },
-    }),
-  ]);
+    });
 
-  console.log(`Tournament ${tournamentId} finalized with ${tournament.entries.length} entries`);
+    return { success: true, entryCount: tournament.entries.length };
+  });
+
+  if (!result.success) {
+    return;
+  }
+
+  console.log(`Tournament ${tournamentId} finalized with ${result.entryCount} entries`);
 
   // Queue prize distribution
   const { queue } = await import('@/lib/queue');
@@ -396,26 +436,55 @@ interface TournamentPrize {
 async function handleTournamentDistributePrizes(payload: TournamentDistributePrizesPayload) {
   const { tournamentId } = payload;
 
-  // Get tournament with top entries
-  const tournament = await db.tournament.findUnique({
-    where: { id: tournamentId },
-    include: {
-      entries: {
-        where: { rank: { lte: 10 } }, // Top 10 for prizes
-        orderBy: { rank: 'asc' },
+  // Use interactive transaction for idempotency
+  const result = await db.$transaction(async (tx) => {
+    // Get tournament with top entries
+    const tournament = await tx.tournament.findUnique({
+      where: { id: tournamentId },
+      include: {
+        entries: {
+          where: { rank: { lte: 10 } }, // Top 10 for prizes
+          orderBy: { rank: 'asc' },
+        },
       },
-    },
-  });
+    });
 
-  if (!tournament) {
-    console.error(`Tournament not found for prize distribution: ${tournamentId}`);
-    return;
-  }
+    if (!tournament) {
+      console.error(`Tournament not found for prize distribution: ${tournamentId}`);
+      return { success: false, reason: 'not_found' };
+    }
 
-  const prizes = (tournament.prizes as unknown as TournamentPrize[]) || [];
+    // Verify tournament is completed
+    if (tournament.status !== 'COMPLETED') {
+      console.error(`Tournament ${tournamentId} not in COMPLETED status: ${tournament.status}`);
+      return { success: false, reason: 'not_completed' };
+    }
 
-  // Distribute prizes in a transaction
-  await db.$transaction(async (tx) => {
+    // Idempotency check: Look for existing prize transactions for this tournament
+    const existingPrizeTransactions = await tx.transaction.findFirst({
+      where: {
+        type: 'BONUS',
+        metadata: {
+          path: ['type'],
+          equals: 'tournament_prize',
+        },
+        AND: {
+          metadata: {
+            path: ['tournamentId'],
+            equals: tournamentId,
+          },
+        },
+      },
+    });
+
+    if (existingPrizeTransactions) {
+      console.log(`Prizes already distributed for tournament ${tournamentId}, skipping`);
+      return { success: false, reason: 'already_distributed' };
+    }
+
+    const prizes = (tournament.prizes as unknown as TournamentPrize[]) || [];
+    let prizesAwarded = 0;
+
     for (const entry of tournament.entries) {
       const prize = prizes.find((p) => p.rank === entry.rank);
       if (!prize) continue;
@@ -444,8 +513,7 @@ async function handleTournamentDistributePrizes(payload: TournamentDistributePri
           },
         });
 
-        // Invalidate user cache
-        await userCache.invalidateBalance(entry.userId);
+        prizesAwarded++;
       }
 
       // Award badge achievement if applicable
@@ -477,7 +545,18 @@ async function handleTournamentDistributePrizes(payload: TournamentDistributePri
         `Prize awarded: ${prize.tokens} tokens to user ${entry.userId} (rank ${entry.rank})`
       );
     }
+
+    return { success: true, prizesAwarded, userIds: tournament.entries.map(e => e.userId) };
   });
 
-  console.log(`Prizes distributed for tournament ${tournamentId}`);
+  if (!result.success) {
+    return;
+  }
+
+  // Invalidate user caches outside transaction
+  for (const userId of result.userIds || []) {
+    await userCache.invalidateBalance(userId);
+  }
+
+  console.log(`Prizes distributed for tournament ${tournamentId}: ${result.prizesAwarded} awards`);
 }

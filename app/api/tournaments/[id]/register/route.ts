@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { userCache } from '@/lib/redis';
 
 // ============================================
 // POST /api/tournaments/[id]/register - Register for tournament
@@ -36,12 +37,11 @@ export async function POST(
       );
     }
 
-    // Get tournament
+    const userId = session.user.id;
+
+    // Get tournament for initial validation (non-atomic checks)
     const tournament = await db.tournament.findUnique({
       where: { id },
-      include: {
-        _count: { select: { entries: true } },
-      },
     });
 
     if (!tournament) {
@@ -51,7 +51,7 @@ export async function POST(
       );
     }
 
-    // Check if registration is open
+    // Check if registration is open (time-based, safe to check outside transaction)
     const now = new Date();
     if (now < tournament.registrationStart) {
       return NextResponse.json(
@@ -66,98 +66,127 @@ export async function POST(
       );
     }
 
-    // Check if tournament is full
-    if (tournament._count.entries >= tournament.maxParticipants) {
+    // Check tournament status
+    if (tournament.status !== 'REGISTRATION' && tournament.status !== 'SCHEDULED') {
       return NextResponse.json(
-        { success: false, error: 'Tournament is full' },
+        { success: false, error: 'Tournament is not accepting registrations' },
         { status: 400 }
       );
     }
 
-    // Check if user is already registered
-    const existingEntry = await db.tournamentEntry.findUnique({
-      where: {
-        tournamentId_userId: {
-          tournamentId: id,
-          userId: session.user.id,
+    // Use interactive transaction to prevent race conditions
+    // All capacity checks and mutations happen atomically
+    const result = await db.$transaction(async (tx) => {
+      // Re-fetch tournament with entry count inside transaction for atomic check
+      const tournamentWithCount = await tx.tournament.findUnique({
+        where: { id },
+        include: {
+          _count: { select: { entries: true } },
         },
-      },
-    });
+      });
 
-    if (existingEntry) {
-      return NextResponse.json(
-        { success: false, error: 'Already registered' },
-        { status: 400 }
-      );
-    }
-
-    // Check user's token balance and level
-    const user = await db.user.findUnique({
-      where: { id: session.user.id },
-      select: { tokenBalance: true, totalSessions: true },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    // Check level requirement
-    if (tournament.minLevel > 1) {
-      const userLevel = calculateUserLevel(user.totalSessions);
-      if (userLevel < tournament.minLevel) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: `Requires level ${tournament.minLevel}. You are level ${userLevel}.`,
-            currentLevel: userLevel,
-            requiredLevel: tournament.minLevel,
-          },
-          { status: 400 }
-        );
+      if (!tournamentWithCount) {
+        return { error: 'Tournament not found', status: 404 };
       }
-    }
 
-    // Check token balance
-    if (user.tokenBalance < tournament.entryFee) {
-      return NextResponse.json(
-        { success: false, error: 'Insufficient tokens' },
-        { status: 400 }
-      );
-    }
+      // Atomic capacity check
+      if (tournamentWithCount._count.entries >= tournamentWithCount.maxParticipants) {
+        return { error: 'Tournament is full', status: 400 };
+      }
 
-    // Deduct entry fee and create registration
-    await db.$transaction([
-      db.user.update({
-        where: { id: session.user.id },
-        data: {
-          tokenBalance: { decrement: tournament.entryFee },
-          totalTokensUsed: { increment: tournament.entryFee },
+      // Check if user is already registered (inside transaction)
+      const existingEntry = await tx.tournamentEntry.findUnique({
+        where: {
+          tournamentId_userId: {
+            tournamentId: id,
+            userId,
+          },
         },
-      }),
-      db.tournamentEntry.create({
+      });
+
+      if (existingEntry) {
+        return { error: 'Already registered', status: 400 };
+      }
+
+      // Get user's token balance and level
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { tokenBalance: true, totalSessions: true },
+      });
+
+      if (!user) {
+        return { error: 'User not found', status: 404 };
+      }
+
+      // Check level requirement
+      if (tournamentWithCount.minLevel > 1) {
+        const userLevel = calculateUserLevel(user.totalSessions);
+        if (userLevel < tournamentWithCount.minLevel) {
+          return {
+            error: `Requires level ${tournamentWithCount.minLevel}. You are level ${userLevel}.`,
+            status: 400,
+            currentLevel: userLevel,
+            requiredLevel: tournamentWithCount.minLevel,
+          };
+        }
+      }
+
+      // Check token balance
+      if (user.tokenBalance < tournamentWithCount.entryFee) {
+        return { error: 'Insufficient tokens', status: 400 };
+      }
+
+      // All checks passed - perform atomic registration
+      // Deduct entry fee
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          tokenBalance: { decrement: tournamentWithCount.entryFee },
+          totalTokensUsed: { increment: tournamentWithCount.entryFee },
+        },
+      });
+
+      // Create tournament entry
+      await tx.tournamentEntry.create({
         data: {
           tournamentId: id,
-          userId: session.user.id,
+          userId,
         },
-      }),
+      });
+
       // Record the transaction
-      db.transaction.create({
+      await tx.transaction.create({
         data: {
-          userId: session.user.id,
+          userId,
           type: 'SPEND',
-          amount: -tournament.entryFee,
+          amount: -tournamentWithCount.entryFee,
           status: 'COMPLETED',
           metadata: {
             type: 'tournament_entry',
             tournamentId: id,
-            tournamentName: tournament.name,
+            tournamentName: tournamentWithCount.name,
           },
         },
-      }),
-    ]);
+      });
+
+      return { success: true };
+    });
+
+    // Handle transaction result
+    if ('error' in result) {
+      const response: Record<string, unknown> = {
+        success: false,
+        error: result.error,
+      };
+      if ('currentLevel' in result) {
+        response.currentLevel = result.currentLevel;
+        response.requiredLevel = result.requiredLevel;
+      }
+      return NextResponse.json(response, { status: result.status });
+    }
+
+    // Invalidate user cache after successful registration
+    await userCache.invalidateBalance(userId);
 
     return NextResponse.json({
       success: true,
