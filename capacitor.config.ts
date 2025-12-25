@@ -1,15 +1,19 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
+// For development: use local server
+// For production: use hosted URL (native app loads from web server)
+const serverUrl = process.env.CAPACITOR_SERVER_URL || 'https://railroad-arcade-v5.vercel.app';
+
 const config: CapacitorConfig = {
   appId: 'com.railroadarcade.app',
   appName: 'Railroad Arcade',
-  webDir: 'out',
+  webDir: 'public', // Fallback assets only
   server: {
     androidScheme: 'https',
     iosScheme: 'https',
-    // For development, uncomment to use live reload:
-    // url: 'http://localhost:3000',
-    // cleartext: true,
+    // Load from hosted server (enables full API support)
+    url: serverUrl,
+    cleartext: false,
   },
   plugins: {
     SplashScreen: {
