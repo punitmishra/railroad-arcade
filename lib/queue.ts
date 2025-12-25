@@ -22,7 +22,10 @@ export type JobType =
   | 'CHECK_ACHIEVEMENTS'
   | 'SEND_EMAIL'
   | 'GENERATE_THUMBNAIL'
-  | 'AGGREGATE_STATS';
+  | 'AGGREGATE_STATS'
+  | 'TOURNAMENT_STATUS_CHECK'
+  | 'TOURNAMENT_FINALIZE'
+  | 'TOURNAMENT_DISTRIBUTE_PRIZES';
 
 export interface QueueJob<T = unknown> {
   type: JobType;
@@ -72,6 +75,18 @@ export interface GenerateThumbnailPayload {
 export interface AggregateStatsPayload {
   date: string;
   type: 'daily' | 'weekly' | 'monthly';
+}
+
+export interface TournamentStatusCheckPayload {
+  tournamentId?: string; // If not provided, checks all tournaments
+}
+
+export interface TournamentFinalizePayload {
+  tournamentId: string;
+}
+
+export interface TournamentDistributePrizesPayload {
+  tournamentId: string;
 }
 
 // ============================================
@@ -162,6 +177,37 @@ export const queue = {
   aggregateStats: async (payload: AggregateStatsPayload) => {
     return enqueueJob('AGGREGATE_STATS', payload, {
       delay: 60, // 1 minute delay for batching
+    });
+  },
+
+  // Tournament: Check and transition statuses
+  checkTournamentStatus: async (payload: TournamentStatusCheckPayload = {}) => {
+    return enqueueJob('TOURNAMENT_STATUS_CHECK', payload);
+  },
+
+  // Tournament: Finalize and calculate final ranks
+  finalizeTournament: async (payload: TournamentFinalizePayload) => {
+    return enqueueJob('TOURNAMENT_FINALIZE', payload);
+  },
+
+  // Tournament: Distribute prizes to winners
+  distributePrizes: async (payload: TournamentDistributePrizesPayload) => {
+    return enqueueJob('TOURNAMENT_DISTRIBUTE_PRIZES', payload, {
+      delay: 5, // Small delay to ensure finalization is complete
+    });
+  },
+
+  // Tournament: Schedule status check at specific time
+  scheduleTournamentCheck: async (
+    payload: TournamentStatusCheckPayload,
+    atTime: Date
+  ) => {
+    const now = Date.now();
+    const targetTime = atTime.getTime();
+    const delaySeconds = Math.max(0, Math.floor((targetTime - now) / 1000));
+
+    return enqueueJob('TOURNAMENT_STATUS_CHECK', payload, {
+      delay: delaySeconds,
     });
   },
 };

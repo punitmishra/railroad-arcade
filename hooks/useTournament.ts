@@ -122,25 +122,50 @@ export function useTournament(options: UseTournamentOptions = {}): UseTournament
     }
   }, []);
 
-  // Fetch leaderboard
+  // Fetch leaderboard from real API
   const refreshLeaderboard = useCallback(async (tournamentId: string) => {
     try {
-      // In production, this would fetch from /api/tournaments/[id]/leaderboard
-      // For now, use mock data
-      const mockEntries: TournamentEntry[] = [
-        { id: '1', tournamentId, userId: 'u1', username: 'SpeedDemon', score: 12500, attempts: 3, rank: 1, registeredAt: new Date() },
-        { id: '2', tournamentId, userId: 'u2', username: 'TrainMaster', score: 11200, attempts: 2, rank: 2, registeredAt: new Date() },
-        { id: '3', tournamentId, userId: 'u3', username: 'RailRunner', score: 10800, attempts: 3, rank: 3, registeredAt: new Date() },
-        { id: '4', tournamentId, userId: 'u4', username: 'Conductor42', score: 9500, attempts: 1, rank: 4, registeredAt: new Date() },
-        { id: '5', tournamentId, userId: 'u5', username: 'ChooChoo', score: 8900, attempts: 2, rank: 5, registeredAt: new Date() },
-      ];
+      const response = await fetch(`/api/tournaments/${tournamentId}/leaderboard`);
 
-      setLeaderboard({
-        tournamentId,
-        entries: mockEntries,
-        totalParticipants: 42,
-        userEntry: undefined,
-      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch leaderboard');
+      }
+
+      const data = await response.json();
+
+      if (data.success && data.leaderboard) {
+        const entries = data.leaderboard.entries.map((e: TournamentEntry & {
+          registeredAt: string;
+          lastAttemptAt?: string;
+        }) => ({
+          ...e,
+          registeredAt: new Date(e.registeredAt),
+          lastAttemptAt: e.lastAttemptAt ? new Date(e.lastAttemptAt) : undefined,
+        }));
+
+        setLeaderboard({
+          tournamentId,
+          entries,
+          totalParticipants: data.leaderboard.totalParticipants,
+          userEntry: data.leaderboard.userEntry ? {
+            ...data.leaderboard.userEntry,
+            registeredAt: new Date(data.leaderboard.userEntry.registeredAt),
+            lastAttemptAt: data.leaderboard.userEntry.lastAttemptAt
+              ? new Date(data.leaderboard.userEntry.lastAttemptAt)
+              : undefined,
+          } : undefined,
+        });
+
+        if (data.leaderboard.userEntry) {
+          setUserEntry({
+            ...data.leaderboard.userEntry,
+            registeredAt: new Date(data.leaderboard.userEntry.registeredAt),
+            lastAttemptAt: data.leaderboard.userEntry.lastAttemptAt
+              ? new Date(data.leaderboard.userEntry.lastAttemptAt)
+              : undefined,
+          });
+        }
+      }
     } catch (err) {
       console.error('Failed to fetch leaderboard:', err);
     }
@@ -239,6 +264,76 @@ export function useTournament(options: UseTournamentOptions = {}): UseTournament
 
     return () => clearInterval(interval);
   }, [autoRefresh, refreshInterval, refreshTournaments]);
+
+  // SSE subscription for real-time tournament updates
+  useEffect(() => {
+    if (!activeTournament) return;
+
+    const eventSource = new EventSource(
+      `/api/realtime?events=tournament_update&events=tournament_leaderboard`
+    );
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+
+        // Handle tournament leaderboard updates
+        if (
+          data.type === 'tournament_leaderboard' &&
+          data.data?.tournamentId === activeTournament.id
+        ) {
+          // Update leaderboard with new top entries
+          setLeaderboard((prev) => {
+            if (!prev || prev.tournamentId !== data.data.tournamentId) return prev;
+
+            // Map SSE entries to our format
+            const newEntries = data.data.topEntries.map((e: {
+              rank: number;
+              userId: string;
+              username: string;
+              score: number;
+              bestTime?: number;
+            }) => ({
+              id: e.userId, // Use userId as temporary id
+              tournamentId: data.data.tournamentId,
+              userId: e.userId,
+              username: e.username,
+              score: e.score,
+              attempts: 0, // Not included in SSE data
+              bestTime: e.bestTime,
+              rank: e.rank,
+              registeredAt: new Date(),
+            }));
+
+            return {
+              ...prev,
+              entries: newEntries,
+            };
+          });
+        }
+
+        // Handle tournament status updates
+        if (
+          data.type === 'tournament_update' &&
+          data.data?.tournamentId === activeTournament.id
+        ) {
+          // Refresh tournaments to get updated status
+          refreshTournaments();
+        }
+      } catch (err) {
+        console.error('Failed to parse SSE event:', err);
+      }
+    };
+
+    eventSource.onerror = () => {
+      // Reconnect on error after a delay
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [activeTournament?.id, refreshTournaments]);
 
   return {
     activeTournament,

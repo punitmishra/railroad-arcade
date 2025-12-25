@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { emitTournamentLeaderboard } from '@/lib/realtime';
+import { cacheDelete } from '@/lib/redis';
 
 // ============================================
 // POST /api/tournaments/[id]/submit - Submit score
@@ -113,6 +115,35 @@ export async function POST(
       where: { id: entry.id },
       data: { rank: newRank },
     });
+
+    // Emit real-time leaderboard update
+    const topEntries = await db.tournamentEntry.findMany({
+      where: { tournamentId: id },
+      orderBy: [{ score: 'desc' }, { bestTime: 'asc' }],
+      take: 10,
+    });
+
+    // Get usernames for top entries
+    const userIds = topEntries.map((e) => e.userId);
+    const users = await db.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true },
+    });
+    const userMap = new Map(users.map((u) => [u.id, u.name]));
+
+    emitTournamentLeaderboard({
+      tournamentId: id,
+      topEntries: topEntries.map((e, index) => ({
+        rank: index + 1,
+        userId: e.userId,
+        username: userMap.get(e.userId) || 'Anonymous',
+        score: e.score,
+        bestTime: e.bestTime ?? undefined,
+      })),
+    });
+
+    // Invalidate leaderboard cache
+    await cacheDelete(`tournament:${id}:leaderboard:50:0`);
 
     return NextResponse.json({
       success: true,

@@ -7,6 +7,20 @@ import { db } from '@/lib/db';
 // POST /api/tournaments/[id]/register - Register for tournament
 // ============================================
 
+// Calculate user level based on total sessions
+// Level 1: 0-9 sessions
+// Level 2: 10-29 sessions
+// Level 3: 30-59 sessions
+// Level 4: 60-99 sessions
+// Level 5: 100+ sessions
+function calculateUserLevel(totalSessions: number): number {
+  if (totalSessions >= 100) return 5;
+  if (totalSessions >= 60) return 4;
+  if (totalSessions >= 30) return 3;
+  if (totalSessions >= 10) return 2;
+  return 1;
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -77,13 +91,37 @@ export async function POST(
       );
     }
 
-    // Check user's token balance for entry fee
+    // Check user's token balance and level
     const user = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { tokenBalance: true },
+      select: { tokenBalance: true, totalSessions: true },
     });
 
-    if (!user || user.tokenBalance < tournament.entryFee) {
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check level requirement
+    if (tournament.minLevel > 1) {
+      const userLevel = calculateUserLevel(user.totalSessions);
+      if (userLevel < tournament.minLevel) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Requires level ${tournament.minLevel}. You are level ${userLevel}.`,
+            currentLevel: userLevel,
+            requiredLevel: tournament.minLevel,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Check token balance
+    if (user.tokenBalance < tournament.entryFee) {
       return NextResponse.json(
         { success: false, error: 'Insufficient tokens' },
         { status: 400 }

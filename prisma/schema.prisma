@@ -225,6 +225,10 @@ enum AchievementType {
   CONDUCTOR
   MASTER_ENGINEER
   VETERAN
+  // Tournament achievements
+  TOURNAMENT_CHAMPION
+  TOURNAMENT_SILVER
+  TOURNAMENT_BRONZE
 }
 
 // ============================================

@@ -16,6 +16,9 @@ export type RealtimeEventType =
   | 'session_update'
   | 'system_status'
   | 'leaderboard_update'
+  | 'tournament_update'
+  | 'tournament_leaderboard'
+  | 'tournament_prizes'
   | 'ping'
   | 'connected';
 
@@ -75,6 +78,30 @@ export interface LeaderboardUpdateData {
     username: string;
     score: number;
   }>;
+}
+
+export interface TournamentUpdateData {
+  tournamentId: string;
+  status: 'SCHEDULED' | 'REGISTRATION' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  participantCount?: number;
+}
+
+export interface TournamentLeaderboardData {
+  tournamentId: string;
+  topEntries: Array<{
+    rank: number;
+    userId: string;
+    username: string;
+    score: number;
+    bestTime?: number;
+  }>;
+}
+
+export interface TournamentPrizesData {
+  tournamentId: string;
+  tournamentName: string;
+  winnersCount: number;
+  prizePool: number;
 }
 
 // ============================================
@@ -188,6 +215,18 @@ export function emitSystemStatus(data: SystemStatusData): void {
 
 export function emitLeaderboardUpdate(data: LeaderboardUpdateData): void {
   realtimeEmitter.emit('leaderboard_update', data);
+}
+
+export function emitTournamentUpdate(data: TournamentUpdateData): void {
+  realtimeEmitter.emit('tournament_update', data);
+}
+
+export function emitTournamentLeaderboard(data: TournamentLeaderboardData): void {
+  realtimeEmitter.emit('tournament_leaderboard', data);
+}
+
+export function emitTournamentPrizes(data: TournamentPrizesData): void {
+  realtimeEmitter.emit('tournament_prizes', data);
 }
 
 // ============================================
