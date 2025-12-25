@@ -59,6 +59,7 @@ export const viewport: Viewport = {
   themeColor: '#050508',
   width: 'device-width',
   initialScale: 1,
+  viewportFit: 'cover', // Enable safe-area support for notched devices
   // Removed maximumScale: 1 to allow user zooming for accessibility
 };
 

@@ -366,7 +366,7 @@ function RailroadArcade() {
       </Suspense>
 
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-white/10">
+      <header className="sticky-header z-50 bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-white/10">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2 sm:py-3">
           <div className="flex items-center justify-between">
             {/* Logo */}
@@ -576,7 +576,7 @@ function RailroadArcade() {
 
       {/* Tab Navigation (when playing) */}
       {isPlaying && (
-        <div className="sticky top-[57px] sm:top-[65px] md:top-[73px] z-40 bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-white/10">
+        <div className="sticky-tabs z-40 bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-white/10">
           <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
             <div className="flex items-center gap-0.5 sm:gap-1 py-1.5 sm:py-2 overflow-x-auto scrollbar-hide">
               {tabs.map(tab => (
@@ -853,7 +853,8 @@ function RailroadArcade() {
       {/* Emergency Stop Button (fixed) */}
       {isPlaying && (
         <button
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 group"
+          className="fixed left-1/2 -translate-x-1/2 z-40 group"
+          style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
           onClick={() => setShowEmergencyConfirm(true)}
           aria-label="Emergency stop - halt all trains"
         >
