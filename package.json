@@ -1,10 +1,13 @@
 {
   "name": "railroad-arcade",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
+    "build:web": "prisma generate && next build",
+    "build:static": "prisma generate && next build && next export",
+    "build:mobile": "npm run build:static && npx cap sync",
     "postinstall": "prisma generate",
     "start": "next start",
     "lint": "next lint",
@@ -14,10 +17,25 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:auth": "./scripts/test-auth.sh",
-    "test:auth:no-server": "./scripts/test-auth.sh --no-server"
+    "test:auth:no-server": "./scripts/test-auth.sh --no-server",
+    "ios": "npx cap open ios",
+    "android": "npx cap open android",
+    "cap:sync": "npx cap sync",
+    "cap:copy": "npx cap copy"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/app": "^8.0.0",
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/haptics": "^8.0.0",
+    "@capacitor/ios": "^8.0.0",
+    "@capacitor/keyboard": "^8.0.0",
+    "@capacitor/preferences": "^8.0.0",
+    "@capacitor/share": "^8.0.0",
+    "@capacitor/splash-screen": "^8.0.0",
+    "@capacitor/status-bar": "^8.0.0",
     "@neondatabase/serverless": "^1.0.2",
     "@prisma/client": "^5.22.0",
     "@stripe/stripe-js": "^8.5.3",
@@ -31,7 +49,8 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "stripe": "^20.0.0",
-    "ws": "^8.18.3"
+    "ws": "^8.18.3",
+    "zod": "^4.2.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

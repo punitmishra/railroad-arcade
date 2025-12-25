@@ -1,259 +1,376 @@
-# Railroad Arcade
+<p align="center">
+  <img src="public/icons/icon-512x512.png" alt="Railroad Arcade" width="120" height="120">
+</p>
 
-An interactive web application for controlling a 2-level HO scale model railroad with dual-mode operation (Demo/Live), token-based access, real-time train tracking, game modes, and comprehensive scenery control.
+<h1 align="center">Railroad Arcade</h1>
 
-**Live Demo:** https://railroad-arcade-v5.vercel.app
+<p align="center">
+  <strong>Control a real 2-level HO scale model railroad from anywhere in the world</strong>
+</p>
 
-**Version:** 1.0.0 | **Released:** December 2025
+<p align="center">
+  <a href="https://railroad-arcade-v5.vercel.app">
+    <img src="https://img.shields.io/badge/demo-live-00f0ff?style=for-the-badge" alt="Live Demo">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/license-MIT-a855f7?style=for-the-badge" alt="MIT License">
+  </a>
+  <img src="https://img.shields.io/badge/version-1.2.0-ffd700?style=for-the-badge" alt="Version 1.2.0">
+  <img src="https://img.shields.io/badge/next.js-14-black?style=for-the-badge&logo=next.js" alt="Next.js 14">
+</p>
+
+<p align="center">
+  <a href="#features">Features</a> •
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#tech-stack">Tech Stack</a> •
+  <a href="#screenshots">Screenshots</a> •
+  <a href="#api">API</a> •
+  <a href="#contributing">Contributing</a>
+</p>
+
+---
+
+## What is Railroad Arcade?
+
+Railroad Arcade is an interactive web and mobile application that lets you control a real model railroad remotely. Play in **Demo Mode** for free simulation, or switch to **Live Mode** to control actual hardware via a Raspberry Pi. Compete in tournaments, unlock achievements, and climb the leaderboards!
+
+### Download
+
+<p align="center">
+  <a href="#">
+    <img src="https://img.shields.io/badge/App_Store-Coming_Soon-000000?style=for-the-badge&logo=apple" alt="App Store">
+  </a>
+  <a href="#">
+    <img src="https://img.shields.io/badge/Google_Play-Coming_Soon-414141?style=for-the-badge&logo=google-play" alt="Google Play">
+  </a>
+  <a href="https://railroad-arcade-v5.vercel.app">
+    <img src="https://img.shields.io/badge/Web_App-Play_Now-00f0ff?style=for-the-badge&logo=pwa" alt="Web App">
+  </a>
+</p>
+
+---
 
 ## Features
 
-### Dual-Mode Operation
-- **Demo Mode** - Full simulation free for all users, no hardware required
-- **Live Mode** - Real Raspberry Pi hardware control with token-based access
-
-### Interactive Control System
-- **Real-time Train Tracking** - Live SVG visualization with 3 trains across 2 levels
-- **Junction & Crossing Control** - Toggle junctions and railroad crossings
-- **Autopilot Mode** - Automated train operation with station stops
-- **Emergency Stop** - Global emergency stop with confirmation
+### Train Control
+- **Real-time Visualization** — Live SVG track with 3 animated trains across 2 levels
+- **Junction & Crossing Control** — Toggle switches and railroad crossings
+- **Autopilot Mode** — Automated train operation with station stops
+- **Emergency Stop** — Global safety stop with confirmation
 
 ### Game Modes
-- **Free Play** - Sandbox mode for exploration
-- **Speed Run** - Complete circuits as fast as possible
-- **Delivery Mission** - Transport cargo between stations
-- **Survival** - Avoid collisions and obstacles
-- **Time Attack** - Score points within time limit
+| Mode | Description | Token Cost |
+|------|-------------|------------|
+| Free Play | Sandbox exploration | 2 |
+| Speed Run | Complete circuits fast | 5 |
+| Delivery Mission | Transport cargo | 5 |
+| Survival | Avoid collisions | 5 |
+| Time Attack | Score in time limit | 5 |
 
-### Scenery Control
-- **Time of Day** - Dawn, Day, Sunset, Night with ambient lighting
-- **Lighting Zones** - 11+ controllable zones
-- **Water Features** - Waterfalls, lakes, fountains with speed control
-- **Animated Elements** - Windmill, smokestacks, boats
+### Scenery & Buildings
+- **Time of Day** — Dawn, Day, Sunset, Night with ambient lighting
+- **11+ Lighting Zones** — Individual control for realistic scenes
+- **Water Features** — Waterfalls, lakes, fountains
+- **Animated Elements** — Windmill, smokestacks, boats
+- **Unlockable Modules** — Police, Fire Station, Cafe, Smart Home, and more
 
-### Building Modules
-- Police Station, Fire Station, Cafe, Smart Home, Construction Zone, Diamond Crossing
+### Multi-Camera System
+- **Layout Options** — Single, dual, quad, and picture-in-picture
+- **Snapshot Gallery** — Capture, like, download, and share
+- **MJPEG Streaming** — Real-time feeds with auto-retry
+- **Camera Presets** — Overview, stations, action views
 
-### Multi-Camera & Recording
-- **Multi-Camera Grid** - Single, dual, quad, and picture-in-picture layouts
-- **Snapshot Gallery** - Capture, like, download, and share snapshots
-- **Camera Presets** - Overview, stations, action, and all-camera views
-- **MJPEG Streaming** - Real-time camera feeds with auto-retry
+### Progression & Social
+- **10 Achievements** — Unlock badges with toast notifications
+- **Leaderboards** — Global rankings by game mode
+- **Session History** — Timeline view with detailed stats
+- **Tournament System** — Daily, weekly, and championship events
+- **Social Sharing** — Share scores and snapshots
 
-### Social & Progression
-- **Achievements** - 10 unlockable achievements with toast notifications
-- **Leaderboards** - High scores by game mode with social sharing
-- **Session History** - Timeline view with stats and event tracking
-- **Tournament Mode** - Daily, weekly, and special tournament events
+### Platform Features
+- **PWA Support** — Install as app on any device
+- **Kiosk Mode** — Full-screen arcade cabinet support
+- **17 Sound Effects** — Synthesized arcade audio
+- **Keyboard & Gamepad** — Full control support
+- **Real-time Updates** — SSE for live queue and session state
 
-### Additional Features
-- **Kiosk Mode** - Full-screen arcade cabinet support
-- **Token System** - Stripe, PayPal, and crypto payments
-- **Sound Effects** - 17 synthesized arcade sounds
-- **Keyboard Shortcuts** - Full keyboard/gamepad support with help modal
-- **Real-Time Updates** - SSE events for queue and session state
+---
+
+## Quick Start
+
+### 1. Clone & Install
+
+```bash
+git clone https://github.com/punitmishra/railroad-arcade.git
+cd railroad-arcade
+npm install
+```
+
+### 2. Configure Environment
+
+```bash
+cp .env.example .env
+# Edit .env with your database and API keys
+```
+
+### 3. Run
+
+```bash
+npx prisma db push    # Create database tables
+npm run dev           # Start at localhost:3000
+```
+
+**That's it!** Open http://localhost:3000 and start playing in Demo Mode.
+
+---
 
 ## Tech Stack
 
-- **Framework:** Next.js 14 (App Router)
-- **Language:** TypeScript
-- **Database:** PostgreSQL (Neon) with Prisma ORM
-- **Auth:** NextAuth.js v4
-- **Styling:** Tailwind CSS
-- **Caching:** Upstash Redis
-- **Payments:** Stripe, PayPal, Coinbase Commerce
-- **Deployment:** Vercel
+<table>
+  <tr>
+    <td align="center" width="96">
+      <img src="https://skillicons.dev/icons?i=nextjs" width="48" height="48" alt="Next.js" />
+      <br>Next.js 14
+    </td>
+    <td align="center" width="96">
+      <img src="https://skillicons.dev/icons?i=ts" width="48" height="48" alt="TypeScript" />
+      <br>TypeScript
+    </td>
+    <td align="center" width="96">
+      <img src="https://skillicons.dev/icons?i=tailwind" width="48" height="48" alt="Tailwind" />
+      <br>Tailwind
+    </td>
+    <td align="center" width="96">
+      <img src="https://skillicons.dev/icons?i=prisma" width="48" height="48" alt="Prisma" />
+      <br>Prisma
+    </td>
+    <td align="center" width="96">
+      <img src="https://skillicons.dev/icons?i=postgres" width="48" height="48" alt="PostgreSQL" />
+      <br>PostgreSQL
+    </td>
+    <td align="center" width="96">
+      <img src="https://skillicons.dev/icons?i=redis" width="48" height="48" alt="Redis" />
+      <br>Redis
+    </td>
+  </tr>
+</table>
 
-## Prerequisites
+| Category | Technology |
+|----------|------------|
+| **Framework** | Next.js 14 (App Router) |
+| **Language** | TypeScript |
+| **Database** | PostgreSQL (Neon) + Prisma ORM |
+| **Auth** | NextAuth.js v4 (JWT) |
+| **Styling** | Tailwind CSS |
+| **Caching** | Upstash Redis |
+| **Queue** | QStash (scheduled jobs) |
+| **Payments** | Stripe, PayPal, Coinbase Commerce |
+| **Real-time** | Server-Sent Events (SSE) |
+| **PWA** | next-pwa with Service Worker |
+| **Deployment** | Vercel |
 
-- Node.js 18+
-- npm or yarn
-- PostgreSQL database (Neon recommended)
-- Redis instance (Upstash recommended)
+---
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><b>Main Control Panel</b></td>
+    <td align="center"><b>Game Mode Selection</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/control-panel.png" alt="Control Panel" width="400"></td>
+    <td><img src="docs/screenshots/game-modes.png" alt="Game Modes" width="400"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Multi-Camera View</b></td>
+    <td align="center"><b>Leaderboards</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/multi-camera.png" alt="Multi-Camera" width="400"></td>
+    <td><img src="docs/screenshots/leaderboards.png" alt="Leaderboards" width="400"></td>
+  </tr>
+</table>
+
+---
 
 ## Environment Variables
 
-Create a `.env` file in the root directory:
+Create a `.env` file based on `.env.example`:
 
-```env
-# Database (Neon PostgreSQL)
-DATABASE_URL="postgresql://user:password@host/database?sslmode=require"
-
-# NextAuth
+```bash
+# Required
+DATABASE_URL="postgresql://..."      # Neon PostgreSQL
 NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-secret-key-generate-with-openssl-rand-base64-32"
+NEXTAUTH_SECRET="openssl rand -base64 32"
 
-# Redis (Upstash)
-UPSTASH_REDIS_REST_URL="https://your-redis.upstash.io"
-UPSTASH_REDIS_REST_TOKEN="your-token"
+# Caching & Queue
+UPSTASH_REDIS_REST_URL="https://..."
+UPSTASH_REDIS_REST_TOKEN="..."
 
-# Raspberry Pi API (optional, for live mode)
-NEXT_PUBLIC_API_URL="http://raspberry-pi-ip:5000"
+# Hardware (for Live Mode)
+NEXT_PUBLIC_API_URL="http://raspberry-pi:5000"
 
 # Payments (optional)
 STRIPE_SECRET_KEY="sk_..."
-STRIPE_WEBHOOK_SECRET="whsec_..."
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_..."
 PAYPAL_CLIENT_ID="..."
-PAYPAL_CLIENT_SECRET="..."
 COINBASE_COMMERCE_API_KEY="..."
-COINBASE_WEBHOOK_SECRET="..."
-
-# OAuth Providers (optional)
-GOOGLE_CLIENT_ID="..."
-GOOGLE_CLIENT_SECRET="..."
-GITHUB_ID="..."
-GITHUB_SECRET="..."
 ```
 
-## Installation
+See [.env.example](.env.example) for all options.
 
-```bash
-# Clone the repository
-git clone https://github.com/punitmishra/railroad-arcade.git
-cd railroad-arcade
+---
 
-# Install dependencies
-npm install
+## API
 
-# Generate Prisma client
-npx prisma generate
+### Public Endpoints
 
-# Push database schema (creates tables)
-npx prisma db push
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/leaderboards` | GET | Fetch high scores |
+| `/api/tournaments` | GET | List tournaments |
+| `/api/tournaments/[id]/leaderboard` | GET | Tournament rankings |
 
-# Start development server
-npm run dev
-```
+### Authenticated Endpoints
 
-Open http://localhost:3000 to view the application.
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/user` | GET | Current user data |
+| `/api/user/modules` | POST | Unlock module |
+| `/api/sessions` | POST | Start/end session |
+| `/api/tournaments/[id]/register` | POST | Join tournament |
+| `/api/tournaments/[id]/submit` | POST | Submit score |
 
-## Build & Production
+### Hardware API (Raspberry Pi)
 
-```bash
-# Build for production
-npm run build
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/status` | GET | System status |
+| `/api/emergency-stop` | POST | Stop all trains |
+| `/api/tracks/:id/speed` | POST | Set train speed |
+| `/api/cpx/gate/:position` | POST | Control crossings |
 
-# Start production server
-npm start
-```
+Full API documentation: [docs/API.md](docs/API.md)
 
-## Database Commands
-
-```bash
-npx prisma generate      # Generate Prisma client
-npx prisma db push       # Push schema to database
-npx prisma studio        # Open Prisma Studio GUI
-npx prisma migrate dev   # Create migration (development)
-npx prisma migrate deploy # Apply migrations (production)
-```
-
-## Deployment (Vercel)
-
-1. Push code to GitHub
-2. Connect repository to Vercel
-3. Add environment variables in Vercel dashboard
-4. Deploy
-
-```bash
-# Deploy to production
-vercel --prod
-```
+---
 
 ## Project Structure
 
 ```
 railroad-arcade/
-├── app/
-│   ├── api/                    # API routes
-│   │   ├── auth/               # NextAuth endpoints
-│   │   ├── payments/           # Stripe, PayPal, Coinbase
-│   │   ├── leaderboards/       # Game leaderboards
-│   │   ├── queue/              # Live queue system
-│   │   └── user/               # User data endpoints
-│   ├── kiosk/                  # Arcade cabinet mode
-│   ├── leaderboards/           # Leaderboards page
-│   ├── settings/               # User settings
-│   ├── profile/                # User profile
-│   ├── globals.css             # Global styles
-│   ├── layout.tsx              # Root layout
-│   └── page.tsx                # Main arcade page
-├── components/
-│   ├── auth/                   # Auth components
-│   ├── kiosk/                  # Kiosk-specific components
-│   ├── icons.tsx               # 60+ custom SVG icons
-│   ├── ui.tsx                  # Core UI components
-│   ├── LiveTrackLayout.tsx     # Real-time track visualization
-│   ├── SceneryControl.tsx      # Scenery control panel
-│   ├── GameModeSelector.tsx    # Game mode selection
-│   ├── GameHUD.tsx             # In-game HUD
-│   ├── MultiCameraGrid.tsx     # Multi-view camera layouts
-│   ├── SnapshotGallery.tsx     # Photo gallery with filters
-│   ├── SessionHistory.tsx      # Session log with timeline
-│   ├── TournamentBanner.tsx    # Tournament display
-│   └── ...                     # Other modules
-├── hooks/
-│   ├── useUser.ts              # User state management
-│   ├── useLeaderboard.ts       # Leaderboard data
-│   ├── useHardwareAdapter.ts   # Hardware abstraction
-│   ├── useArcadeInput.ts       # Arcade input handling
-│   ├── useSnapshots.ts         # Snapshot gallery data
-│   ├── useSessionHistory.ts    # Session history with pagination
-│   ├── useTournament.ts        # Tournament data and actions
-│   └── useSounds.tsx           # Synthesized arcade sounds
-├── lib/
-│   ├── contexts/               # React contexts
-│   │   └── ModeContext.tsx     # Demo/Live mode
-│   ├── game-modes/             # Game mode engines
-│   ├── hardware/               # Hardware adapters
-│   ├── api.ts                  # Raspberry Pi API client
-│   ├── auth.ts                 # NextAuth config
-│   ├── db.ts                   # Prisma client
-│   ├── redis.ts                # Redis/cache utilities
-│   └── pricing.ts              # Token pricing
-├── prisma/
-│   └── schema.prisma           # Database schema
-├── public/                     # Static assets
-├── CLAUDE.md                   # AI assistant guide
-└── README.md                   # This file
+├── app/                    # Next.js App Router
+│   ├── api/                # API routes
+│   │   ├── auth/           # NextAuth
+│   │   ├── payments/       # Stripe, PayPal, Coinbase
+│   │   ├── tournaments/    # Tournament system
+│   │   └── user/           # User endpoints
+│   ├── kiosk/              # Arcade cabinet mode
+│   └── page.tsx            # Main app
+├── components/             # React components
+│   ├── LiveTrackLayout.tsx # Track visualization
+│   ├── GameModeSelector.tsx
+│   ├── MultiCameraGrid.tsx
+│   └── TournamentBanner.tsx
+├── hooks/                  # React hooks
+│   ├── useHardwareAdapter.ts
+│   ├── useTournament.ts
+│   └── useSounds.tsx
+├── lib/                    # Utilities
+│   ├── hardware/           # Demo/Live adapters
+│   ├── game-modes/         # Game engines
+│   ├── auth.ts             # NextAuth config
+│   └── db.ts               # Prisma client
+└── prisma/
+    └── schema.prisma       # Database schema
 ```
 
-## API Integration (Raspberry Pi)
+---
 
-For live hardware control, the app connects to a Raspberry Pi running a control server:
+## Development
 
-```env
-NEXT_PUBLIC_API_URL=http://raspberry-pi-ip:5000
+```bash
+npm run dev          # Development server
+npm run build        # Production build
+npm run start        # Production server
+npm run lint         # ESLint
+npm run test         # Jest tests
 ```
 
-### Hardware API Endpoints
-- `GET /api/status` - System status
-- `POST /api/emergency-stop` - Emergency stop all trains
-- `POST /api/tracks/:id/speed` - Set track speed
-- `POST /api/cpx/gate/:position` - Control crossing gates
-- `POST /api/scenery` - Update scenery state
+### Database
 
-## Design System
+```bash
+npx prisma generate  # Generate client
+npx prisma db push   # Push schema
+npx prisma studio    # GUI browser
+npx prisma migrate dev  # Create migration
+```
 
-### Colors
-- **Neon Cyan:** `#00f0ff` - Primary accent
-- **Neon Purple:** `#a855f7` - Secondary accent
-- **Token Gold:** `#ffd700` - Currency/rewards
-- **Background:** `#0a0a0f` - Dark base
+### Mobile (Capacitor)
 
-### Typography
-- **Display:** Orbitron (headers)
-- **Body:** Space Grotesk / Inter
-- **Mono:** JetBrains Mono
+```bash
+npm run build:mobile  # Build for mobile
+npm run ios          # Open Xcode
+npm run android      # Open Android Studio
+```
+
+---
+
+## Deployment
+
+### Vercel (Recommended)
+
+1. Push to GitHub
+2. Import in [Vercel](https://vercel.com)
+3. Add environment variables
+4. Deploy
+
+### Docker
+
+```bash
+docker build -t railroad-arcade .
+docker run -p 3000:3000 --env-file .env railroad-arcade
+```
+
+---
 
 ## Contributing
 
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
 1. Fork the repository
-2. Create a feature branch
-3. Make changes
-4. Run `npm run build` to verify
-5. Submit a pull request
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+---
+
+## Security
+
+Found a vulnerability? Please see [SECURITY.md](SECURITY.md) for our responsible disclosure policy.
+
+---
 
 ## License
 
-MIT License - feel free to use and modify for your own projects.
+[MIT License](LICENSE) — feel free to use and modify for your own projects.
+
+---
+
+## Acknowledgments
+
+- Train icons by [Lucide](https://lucide.dev)
+- Fonts: Orbitron, Space Grotesk, JetBrains Mono
+- Deployed on [Vercel](https://vercel.com)
+
+---
+
+<p align="center">
+  Made with <span style="color: #00f0ff;">♥</span> for model railroad enthusiasts
+</p>
+
+<p align="center">
+  <a href="https://railroad-arcade-v5.vercel.app">Play Now</a> •
+  <a href="https://github.com/punitmishra/railroad-arcade/issues">Report Bug</a> •
+  <a href="https://github.com/punitmishra/railroad-arcade/discussions">Discussions</a>
+</p>
