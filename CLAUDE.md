@@ -30,11 +30,14 @@ Railroad Arcade is a Next.js 14 App Router application for controlling a 2-level
 ```
 app/                          # Next.js App Router
 ├── api/                      # API routes (all server-side)
+│   ├── admin/                # Admin endpoints (tournaments, tokens)
 │   ├── auth/                 # NextAuth endpoints
 │   ├── payments/             # Stripe, PayPal, Coinbase
 │   ├── leaderboards/         # Game leaderboards
-│   ├── queue/                # Live mode queue system
+│   ├── queue/                # Live mode queue system + job processing
+│   ├── tournaments/          # Tournament API (CRUD, register, submit, leaderboard)
 │   └── user/                 # User data (stats, sessions, transactions)
+├── admin/tournaments/        # Admin tournament management UI
 ├── kiosk/page.tsx            # Arcade cabinet mode
 ├── leaderboards/page.tsx     # Leaderboards UI
 ├── settings/page.tsx         # User settings
@@ -75,14 +78,17 @@ lib/
 │   ├── HardwareAdapter.ts    # Interface definition
 │   ├── DemoAdapter.ts        # Simulation adapter
 │   └── LiveAdapter.ts        # Real hardware adapter
+├── admin.ts                  # Admin auth (session + API key)
 ├── api.ts                    # Raspberry Pi API client
 ├── auth.ts                   # NextAuth configuration
 ├── db.ts                     # Prisma client singleton
+├── queue.ts                  # QStash job queue (tournament automation)
+├── realtime.ts               # SSE event emitters
 ├── redis.ts                  # Upstash Redis + rate limiters
 ├── pricing.ts                # Token costs for actions
 ├── kiosk-config.ts           # Arcade cabinet settings
 ├── camera-config.ts          # Camera streams and layouts
-└── tournament.ts             # Tournament types and helpers
+└── tournament.ts             # Tournament types, helpers, and prize tiers
 
 prisma/
 └── schema.prisma             # Database schema
@@ -167,6 +173,8 @@ Key models in `prisma/schema.prisma`:
 - `Transaction` - token purchases and spending
 - `Leaderboard` - high scores per gameMode + isLive flag
 - `LiveQueue` - queue positions for live hardware access
+- `Tournament` - tournament config, status, prizes (JSON), dates
+- `TournamentEntry` - user registration, score, rank, attempts
 
 ### API Routes
 
@@ -188,6 +196,26 @@ Key models in `prisma/schema.prisma`:
 - `POST /api/payments/stripe` - Create Stripe checkout
 - `POST /api/payments/paypal` - Create PayPal order
 - `POST /api/payments/coinbase` - Create crypto charge
+
+#### Tournaments
+- `GET /api/tournaments` - List tournaments (filter by status, type)
+- `POST /api/tournaments` - Create tournament (admin only)
+- `GET /api/tournaments/[id]` - Get tournament details
+- `POST /api/tournaments/[id]/register` - Register for tournament
+- `POST /api/tournaments/[id]/submit` - Submit score
+- `GET /api/tournaments/[id]/leaderboard` - Paginated leaderboard with user context
+
+#### Admin
+- `POST /api/admin/grant-tokens` - Grant tokens to user
+- `PATCH /api/admin/tournaments/[id]` - Update tournament
+- `DELETE /api/admin/tournaments/[id]` - Cancel tournament (refunds entry fees)
+- `POST /api/admin/tournaments/[id]/finalize` - Force finalize active tournament
+
+#### Queue Processing
+- `POST /api/queue/process` - QStash webhook for job processing
+  - `TOURNAMENT_STATUS_CHECK` - Transition tournament statuses
+  - `TOURNAMENT_FINALIZE` - Calculate ranks, mark complete
+  - `TOURNAMENT_DISTRIBUTE_PRIZES` - Award tokens and achievements
 
 ### Styling Conventions
 
@@ -251,6 +279,49 @@ Recent improvements include:
 3. Implement in `LiveAdapter.ts` (API call)
 4. Add token cost in `lib/pricing.ts` if applicable
 
+### Creating a Tournament
+
+1. Navigate to `/admin/tournaments` (requires admin access)
+2. Click "Create Tournament" and fill in:
+   - Name, description, type (Daily/Weekly/Special/Championship)
+   - Game mode (Speed Run, Delivery Mission, etc.)
+   - Registration and tournament dates
+   - Entry fee, max participants, min level requirement
+   - Prize pool and distribution
+3. Tournament will automatically transition through statuses via QStash
+
+### Tournament Lifecycle
+
+```
+SCHEDULED → REGISTRATION → ACTIVE → COMPLETED
+    │            │           │          │
+    └── registrationStart    │          │
+                 └── startTime          │
+                             └── endTime (auto-finalize)
+```
+
+- **SCHEDULED**: Tournament visible but registration not open
+- **REGISTRATION**: Players can register (tokens deducted)
+- **ACTIVE**: Players can submit scores (best score kept)
+- **COMPLETED**: Ranks calculated, prizes distributed
+
+### Admin Authentication
+
+Two methods supported in `lib/admin.ts`:
+
+1. **Session-based**: User must be in `ADMIN_USER_IDS` or `ADMIN_EMAILS` env vars
+2. **API key**: Include `x-admin-key` header matching `ADMIN_KEY` env var
+
+```typescript
+// In API route
+import { checkAdminAccess } from '@/lib/admin';
+
+const adminId = await checkAdminAccess(request);
+if (!adminId) {
+  return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+}
+```
+
 ## Environment Variables
 
 Required:
@@ -268,8 +339,18 @@ NEXT_PUBLIC_API_URL       # Raspberry Pi API (for live mode)
 STRIPE_SECRET_KEY         # Payment providers
 PAYPAL_CLIENT_ID
 COINBASE_COMMERCE_API_KEY
-ADMIN_KEY                 # Required for admin endpoints (token grants)
 STORAGE_URL               # Cloud storage URL for recordings/snapshots
+
+# Admin Configuration
+ADMIN_KEY                 # API key for admin endpoints
+ADMIN_USER_IDS            # Comma-separated list of admin user IDs
+ADMIN_EMAILS              # Comma-separated list of admin emails
+
+# QStash (for tournament automation)
+QSTASH_URL                # https://qstash.upstash.io
+QSTASH_TOKEN              # QStash API token
+QSTASH_CURRENT_SIGNING_KEY
+QSTASH_NEXT_SIGNING_KEY
 ```
 
 ## Next Steps / Roadmap
@@ -290,7 +371,7 @@ STORAGE_URL               # Cloud storage URL for recordings/snapshots
 9. **Mobile App** - React Native version for mobile control
 10. **Replay System** - Record and replay train sessions
 11. **Custom Track Layouts** - Allow users to design track configurations
-12. ~~**Tournament Mode**~~ - ✅ Foundation with registration, countdown, leaderboards
+12. ~~**Tournament Mode**~~ - ✅ Full API with automation, prizes, and admin UI
 
 ### Technical Debt
 - Replace `<img>` with Next.js `<Image />` for optimization
@@ -366,15 +447,29 @@ STORAGE_URL               # Cloud storage URL for recordings/snapshots
 - **Change Camera**: Select any available camera for each slot
 - **Snapshot Support**: Take snapshots from any camera in the grid
 
-### Tournament Mode Foundation
+### Tournament System (Full API)
 - **Tournament Types**: Daily, Weekly, Special, and Championship events
 - **Status Tracking**: Scheduled, Registration, Active, Completed, Cancelled
-- **Registration Flow**: Entry fee, participant limits, min level requirements
+- **Registration Flow**: Entry fee, participant limits, level-based validation
 - **Prize System**: Configurable prize tiers with tokens, badges, and titles
 - **Countdown Timer**: Real-time countdown to tournament start/end
-- **Leaderboard Preview**: Top players shown in tournament banner
-- **useTournament Hook**: Data fetching for tournaments and leaderboards
+- **Leaderboard Endpoint**: Paginated results with Redis caching and user context
+- **useTournament Hook**: Real API integration with SSE subscription for live updates
 - **TournamentBanner Component**: Expandable banner for displaying tournament info
+
+### Tournament Automation (QStash)
+- **Status Transitions**: Automatic SCHEDULED → REGISTRATION → ACTIVE → COMPLETED
+- **Finalization Handler**: Calculates final ranks in batch transaction
+- **Prize Distribution**: Awards tokens, creates transaction records, grants achievements
+- **Achievement Types**: TOURNAMENT_CHAMPION, TOURNAMENT_SILVER, TOURNAMENT_BRONZE
+
+### Admin Tournament Management
+- **Admin UI**: `/admin/tournaments` page for full tournament lifecycle management
+- **Create Tournaments**: Form with type, game mode, dates, prizes, participant limits
+- **Edit Tournaments**: Update name, description, dates, prize pool
+- **Cancel Tournaments**: Automatic refund of entry fees to all participants
+- **Force Finalize**: End active tournaments early with immediate rank calculation
+- **Admin Auth**: Supports both session-based and API key authentication
 
 ## Troubleshooting
 
