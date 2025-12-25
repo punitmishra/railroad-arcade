@@ -486,3 +486,26 @@ QSTASH_NEXT_SIGNING_KEY
 - Verify NEXT_PUBLIC_API_URL points to Raspberry Pi
 - Check Pi server is running and accessible
 - Verify network connectivity between frontend and Pi
+
+## Known Issues
+
+See `KNOWN_ISSUES.md` for a comprehensive list of bugs and technical debt.
+
+### Critical Issues (Require Immediate Attention)
+1. **Race condition in tournament registration** - Concurrent registrations can exceed max participants
+2. **No idempotency in prize distribution** - QStash retries can award duplicate prizes
+3. **Race condition in status transitions** - Concurrent status checks can cause duplicate jobs
+
+### Key Technical Debt
+- Tournament ranking doesn't handle tied scores properly
+- SSE connections lack reconnection logic
+- N+1 query problem in tournament listing
+- Console statements should be replaced with proper logger
+- Email and thumbnail handlers are stub implementations
+
+## Version History
+
+| Version | Date | Key Changes |
+|---------|------|-------------|
+| v1.1.0 | Dec 2025 | Full Tournament API with automation and admin UI |
+| v1.0.0 | Dec 2025 | Initial release with core features |
