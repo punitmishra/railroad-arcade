@@ -50,13 +50,22 @@ components/
 ├── GameModeSelector.tsx      # Game mode selection UI
 ├── GameHUD.tsx               # In-game heads-up display
 ├── ModeToggle.tsx            # Demo/Live mode switcher
-└── TokenConfirmDialog.tsx    # Token spending confirmation
+├── TokenConfirmDialog.tsx    # Token spending confirmation
+├── SnapshotGallery.tsx       # Photo gallery with filters
+├── SessionHistory.tsx        # Session log with timeline/stats
+├── MultiCameraGrid.tsx       # Multi-view camera layouts
+├── CameraFeed.tsx            # Individual camera stream
+└── TournamentBanner.tsx      # Tournament display component
 
 hooks/
 ├── useUser.ts                # User state, tokens, modules
 ├── useLeaderboard.ts         # Leaderboard data fetching
 ├── useHardwareAdapter.ts     # Hardware abstraction layer
-└── useArcadeInput.ts         # Keyboard/gamepad input
+├── useArcadeInput.ts         # Keyboard/gamepad input
+├── useSnapshots.ts           # Snapshot gallery data
+├── useSessionHistory.ts      # Session history with pagination
+├── useTournament.ts          # Tournament data and actions
+└── useSounds.tsx             # Synthesized arcade sounds
 
 lib/
 ├── contexts/ModeContext.tsx  # Demo/Live mode context
@@ -71,7 +80,9 @@ lib/
 ├── db.ts                     # Prisma client singleton
 ├── redis.ts                  # Upstash Redis + rate limiters
 ├── pricing.ts                # Token costs for actions
-└── kiosk-config.ts           # Arcade cabinet settings
+├── kiosk-config.ts           # Arcade cabinet settings
+├── camera-config.ts          # Camera streams and layouts
+└── tournament.ts             # Tournament types and helpers
 
 prisma/
 └── schema.prisma             # Database schema
@@ -264,22 +275,22 @@ STORAGE_URL               # Cloud storage URL for recordings/snapshots
 ## Next Steps / Roadmap
 
 ### High Priority
-1. **Real Camera Integration** - Replace placeholder camera feeds with actual Raspberry Pi camera streams
-2. **WebSocket Real-time Updates** - Replace polling with WebSocket for train positions, queue status
-3. **Recording System** - Implement actual video recording and snapshot saving
+1. ~~**Real Camera Integration**~~ - ✅ MJPEG stream support added with auto-retry
+2. ~~**WebSocket Real-time Updates**~~ - ✅ SSE events for queue and session updates
+3. ~~**Recording System**~~ - ✅ Snapshot gallery with full API integration
 4. **Queue System Testing** - Full testing of live mode queue with multiple users
 
 ### Medium Priority
-5. **Multi-camera Grid** - Implement PiP and split-view layouts for multiple cameras
-6. **Achievement System** - Implement achievement unlocking and display
-7. **Social Features** - Share scores, challenge friends
-8. **Sound Effects** - Add arcade-style audio feedback
+5. ~~**Multi-camera Grid**~~ - ✅ PiP, grid layouts, camera swap functionality
+6. ~~**Achievement System**~~ - ✅ Notifications, sounds, and badge count
+7. ~~**Social Features**~~ - ✅ Share scores on leaderboards and snapshots
+8. ~~**Sound Effects**~~ - ✅ 17 synthesized arcade sounds
 
 ### Low Priority / Nice-to-Have
 9. **Mobile App** - React Native version for mobile control
 10. **Replay System** - Record and replay train sessions
 11. **Custom Track Layouts** - Allow users to design track configurations
-12. **Tournament Mode** - Scheduled competitive events
+12. ~~**Tournament Mode**~~ - ✅ Foundation with registration, countdown, leaderboards
 
 ### Technical Debt
 - Replace `<img>` with Next.js `<Image />` for optimization
@@ -325,6 +336,45 @@ STORAGE_URL               # Cloud storage URL for recordings/snapshots
 - **Score Sharing**: Share button on leaderboard entries
 - **Web Share API**: Uses native share on mobile, clipboard fallback on desktop
 - **Formatted Share Text**: Includes player name, score, game mode, and link
+
+### Snapshot Gallery
+- **Full API Integration**: `/api/snapshots` endpoint with GET, POST, PATCH, DELETE operations
+- **useSnapshots Hook**: Data fetching hook with optimistic updates for better UX
+- **Real-Time Features**: Capture, like/unlike, download, and share snapshots
+- **Filter Support**: Filter by all, liked, level 1, or level 2
+- **Camera Sound**: New camera shutter sound effect on capture
+
+### Keyboard Shortcuts
+- **Comprehensive Help Modal**: Shows all train, track, camera, and game controls
+- **Multi-Column Layout**: Organized by control category
+- **Train Controls**: WASD for Train 1, Arrow keys for Train 2
+- **Track Controls**: Number keys for junctions, C for crossing, Space for emergency stop
+- **Toggle with ?**: Press ? anywhere to show/hide shortcuts help
+
+### Session History
+- **Full API Integration**: `/api/sessions` endpoint with pagination
+- **useSessionHistory Hook**: Data fetching with cursor-based pagination
+- **Three View Modes**: Sessions list, timeline view, and statistics
+- **Event Tracking**: Records train starts, junction switches, achievements, and more
+- **Expandable Sessions**: Click to see detailed event log and trains operated
+
+### Multi-Camera Grid
+- **Layout Options**: Single, dual horizontal/vertical, quad grid, picture-in-picture
+- **Preset Views**: Quick switch between overview, stations, action, and all cameras
+- **Camera Swapping**: Click swap button, then click another camera to swap positions
+- **PiP Swap**: Quick swap main and overlay cameras in picture-in-picture mode
+- **Change Camera**: Select any available camera for each slot
+- **Snapshot Support**: Take snapshots from any camera in the grid
+
+### Tournament Mode Foundation
+- **Tournament Types**: Daily, Weekly, Special, and Championship events
+- **Status Tracking**: Scheduled, Registration, Active, Completed, Cancelled
+- **Registration Flow**: Entry fee, participant limits, min level requirements
+- **Prize System**: Configurable prize tiers with tokens, badges, and titles
+- **Countdown Timer**: Real-time countdown to tournament start/end
+- **Leaderboard Preview**: Top players shown in tournament banner
+- **useTournament Hook**: Data fetching for tournaments and leaderboards
+- **TournamentBanner Component**: Expandable banner for displaying tournament info
 
 ## Troubleshooting
 

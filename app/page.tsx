@@ -35,6 +35,7 @@ import { TokenStore } from '@/components/TokenStore';
 import { SnapshotGallery } from '@/components/SnapshotGallery';
 import { SessionHistory } from '@/components/SessionHistory';
 import { StreamingPanel } from '@/components/StreamingPanel';
+import { MultiCameraGrid } from '@/components/MultiCameraGrid';
 import { ModeToggle, ViewOnlyBadge } from '@/components/ModeToggle';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { useGameMode } from '@/lib/contexts/ModeContext';
@@ -716,57 +717,44 @@ function RailroadArcade() {
 
             {/* Camera Tab */}
             {activeTab === 'camera' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-[tab-enter_0.3s_ease-out]">
-                {/* Main Camera Feed */}
-                <div className="rounded-2xl border border-white/10 bg-[#0c0c14] overflow-hidden lg:col-span-2">
-                  <div className="p-4 border-b border-white/10 flex items-center justify-between">
+              <div className="animate-[tab-enter_0.3s_ease-out]">
+                <div className="bg-[#0c0c14] rounded-2xl border border-white/10 overflow-hidden">
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-red-500/[0.08] to-orange-500/[0.08] border-b border-white/[0.06]">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
-                        <CameraIcon size={20} className="text-red-400" />
+                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center border border-red-500/20">
+                        <CameraIcon size={22} className="text-red-400" />
                       </div>
                       <div>
-                        <h3 className="font-semibold" style={{ fontFamily: 'Orbitron, sans-serif' }}>Live Camera Feed</h3>
-                        <p className="text-xs text-gray-400">Overhead view • 1080p</p>
+                        <h3
+                          className="font-semibold text-[15px] tracking-wide"
+                          style={{ fontFamily: 'Orbitron, system-ui, sans-serif' }}
+                        >
+                          Multi-Camera View
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Select layout and cameras • Click to snapshot
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-red-500/20 text-red-400 text-xs">
+                      <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/20 text-red-400 text-xs font-medium">
                         <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                         LIVE
                       </span>
                     </div>
                   </div>
-                  <div className="aspect-video bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
-                    <div className="text-center">
-                      <CameraIcon size={48} className="text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500">Camera feed connecting...</p>
-                      <p className="text-xs text-gray-600 mt-1">Stream will appear when available</p>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Camera Selection */}
-                <div className="rounded-2xl border border-white/10 bg-[#0c0c14] p-4">
-                  <h4 className="font-medium mb-3">Camera Views</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    {['Overhead', 'Station 1', 'Station 2', 'Tunnel Entry'].map((cam, i) => (
-                      <button key={cam} className={`p-3 rounded-xl border text-sm ${i === 0 ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}>
-                        {cam}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Recording Controls */}
-                <div className="rounded-2xl border border-white/10 bg-[#0c0c14] p-4">
-                  <h4 className="font-medium mb-3">Recording</h4>
-                  <div className="flex gap-2">
-                    <button className="flex-1 py-3 rounded-xl bg-red-500/20 border border-red-500/40 text-red-400 font-medium">
-                      ⏺ Record
-                    </button>
-                    <button className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-gray-400">
-                      📷 Snapshot
-                    </button>
+                  {/* Multi-Camera Grid */}
+                  <div className="p-5">
+                    <ErrorBoundary variant="full">
+                      <MultiCameraGrid
+                        onSnapshot={(cameraId) => {
+                          playSound('camera');
+                          addToast('success', `Snapshot taken from ${cameraId}`);
+                        }}
+                      />
+                    </ErrorBoundary>
                   </div>
                 </div>
               </div>
