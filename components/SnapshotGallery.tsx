@@ -328,10 +328,13 @@ export function SnapshotGallery({
                 {/* Thumbnail or Placeholder */}
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
                   {snapshot.thumbnail && !snapshot.thumbnail.includes('placeholder') ? (
+                    // Using native img for user-uploaded content with dynamic URLs
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={snapshot.thumbnail}
                       alt={snapshot.description || 'Snapshot'}
                       className="w-full h-full object-cover"
+                      loading="lazy"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = 'none';
                       }}
@@ -389,10 +392,12 @@ export function SnapshotGallery({
               >
                 <div className="w-20 h-14 rounded-lg overflow-hidden bg-gray-800 flex-shrink-0 flex items-center justify-center">
                   {snapshot.thumbnail && !snapshot.thumbnail.includes('placeholder') ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={snapshot.thumbnail}
                       alt=""
                       className="w-full h-full object-cover"
+                      loading="lazy"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = 'none';
                       }}
@@ -462,6 +467,7 @@ export function SnapshotGallery({
             {/* Image */}
             <div className="aspect-video rounded-2xl overflow-hidden bg-gray-900 flex items-center justify-center">
               {selectedSnapshot.fullUrl && !selectedSnapshot.fullUrl.includes('placeholder') ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={selectedSnapshot.fullUrl}
                   alt={selectedSnapshot.description || 'Snapshot'}

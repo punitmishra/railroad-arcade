@@ -65,35 +65,57 @@ export function useTournament(options: UseTournamentOptions = {}): UseTournament
     setError(null);
 
     try {
-      // In production, this would fetch from /api/tournaments
-      // For now, use mock data
-      const mockTournament = createMockTournament();
-      const status = getTournamentStatus(mockTournament);
+      const response = await fetch('/api/tournaments');
 
-      if (status.canPlay) {
-        setActiveTournament(mockTournament);
-        setUpcomingTournaments([]);
-      } else if (status.canJoin) {
-        setActiveTournament(null);
-        setUpcomingTournaments([mockTournament]);
-      } else {
-        setActiveTournament(null);
-        setUpcomingTournaments([mockTournament]);
+      if (!response.ok) {
+        // Fall back to mock data if API fails
+        const mockTournament = createMockTournament();
+        const status = getTournamentStatus(mockTournament);
+
+        if (status.canPlay) {
+          setActiveTournament(mockTournament);
+          setUpcomingTournaments([]);
+        } else {
+          setActiveTournament(null);
+          setUpcomingTournaments([mockTournament]);
+        }
+        return;
       }
 
-      // Mock past tournaments
-      setPastTournaments([
-        {
-          ...mockTournament,
-          id: 'past-weekly-1',
-          name: 'Last Week Challenge',
-          status: 'COMPLETED',
-          participantCount: 87,
-          startTime: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-          endTime: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
-        },
-      ]);
+      const data = await response.json();
+      const tournaments = (data.tournaments || []).map((t: Tournament & {
+        registrationStart: string;
+        registrationEnd: string;
+        startTime: string;
+        endTime: string
+      }) => ({
+        ...t,
+        registrationStart: new Date(t.registrationStart),
+        registrationEnd: new Date(t.registrationEnd),
+        startTime: new Date(t.startTime),
+        endTime: new Date(t.endTime),
+      }));
+
+      // Categorize tournaments
+      const active = tournaments.find((t: Tournament) => t.status === 'ACTIVE');
+      const upcoming = tournaments.filter((t: Tournament) =>
+        t.status === 'SCHEDULED' || t.status === 'REGISTRATION'
+      );
+      const past = tournaments.filter((t: Tournament) => t.status === 'COMPLETED');
+
+      setActiveTournament(active || null);
+      setUpcomingTournaments(upcoming);
+      setPastTournaments(past);
+
+      // If no tournaments exist, use mock data for demo
+      if (tournaments.length === 0) {
+        const mockTournament = createMockTournament();
+        setUpcomingTournaments([mockTournament]);
+      }
     } catch (err) {
+      // Fall back to mock data on error
+      const mockTournament = createMockTournament();
+      setUpcomingTournaments([mockTournament]);
       setError(err instanceof Error ? err : new Error('Failed to fetch tournaments'));
     } finally {
       setIsLoading(false);

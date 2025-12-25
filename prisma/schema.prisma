@@ -367,3 +367,72 @@ enum JobStatus {
   COMPLETED
   FAILED
 }
+
+// ============================================
+// Tournament System
+// ============================================
+
+model Tournament {
+  id          String           @id @default(cuid())
+  name        String
+  description String?
+  type        TournamentType
+  status      TournamentStatus @default(SCHEDULED)
+  gameMode    GameMode
+
+  // Schedule
+  registrationStart DateTime
+  registrationEnd   DateTime
+  startTime         DateTime
+  endTime           DateTime
+
+  // Rules
+  maxParticipants  Int     @default(100)
+  entryFee         Int     @default(0) // tokens
+  minLevel         Int     @default(1)
+  attemptsPerPlayer Int    @default(3)
+
+  // Prizes
+  prizePool Int      @default(0) // total tokens
+  prizes    Json?    // Array of prize tiers
+
+  // Relations
+  entries TournamentEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, startTime])
+}
+
+enum TournamentType {
+  DAILY
+  WEEKLY
+  SPECIAL
+  CHAMPIONSHIP
+}
+
+enum TournamentStatus {
+  SCHEDULED
+  REGISTRATION
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model TournamentEntry {
+  id           String     @id @default(cuid())
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  userId       String
+  score        Int        @default(0)
+  attempts     Int        @default(0)
+  bestTime     Int?       // Best completion time in seconds
+  rank         Int?
+
+  registeredAt  DateTime  @default(now())
+  lastAttemptAt DateTime?
+
+  @@unique([tournamentId, userId])
+  @@index([tournamentId, score])
+}

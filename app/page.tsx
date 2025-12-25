@@ -36,6 +36,7 @@ import { SnapshotGallery } from '@/components/SnapshotGallery';
 import { SessionHistory } from '@/components/SessionHistory';
 import { StreamingPanel } from '@/components/StreamingPanel';
 import { MultiCameraGrid } from '@/components/MultiCameraGrid';
+import { TournamentBanner } from '@/components/TournamentBanner';
 import { ModeToggle, ViewOnlyBadge } from '@/components/ModeToggle';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { useGameMode } from '@/lib/contexts/ModeContext';
@@ -630,6 +631,21 @@ function RailroadArcade() {
                   <Suspense fallback={<SkeletonTrackLayout />}>
                     <LiveTrackLayout />
                   </Suspense>
+                </ErrorBoundary>
+
+                {/* Tournament Banner */}
+                <ErrorBoundary variant="inline">
+                  <TournamentBanner
+                    onJoinTournament={(tournament) => {
+                      playSound('success');
+                      addToast('success', `Joined ${tournament.name}!`);
+                    }}
+                    onViewLeaderboard={(tournament) => {
+                      playSound('click');
+                      // Could navigate to a tournament page or open a modal
+                    }}
+                    compact={false}
+                  />
                 </ErrorBoundary>
 
                 {/* Quick Access Grid */}

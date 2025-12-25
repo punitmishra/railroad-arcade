@@ -76,13 +76,23 @@ const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
 
-  // Allow external images from OAuth providers
+  // Allow external images from OAuth providers and cloud storage
   images: {
     remotePatterns: [
+      // OAuth provider avatars
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
       { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
       { protocol: 'https', hostname: 'cdn.discordapp.com' },
       { protocol: 'https', hostname: '*.googleusercontent.com' },
+      // Cloud storage for user uploads
+      { protocol: 'https', hostname: '*.s3.amazonaws.com' },
+      { protocol: 'https', hostname: '*.s3.*.amazonaws.com' },
+      { protocol: 'https', hostname: 'storage.googleapis.com' },
+      { protocol: 'https', hostname: '*.storage.googleapis.com' },
+      { protocol: 'https', hostname: '*.blob.core.windows.net' },
+      { protocol: 'https', hostname: '*.supabase.co' },
+      { protocol: 'https', hostname: '*.cloudinary.com' },
+      { protocol: 'https', hostname: 'res.cloudinary.com' },
     ],
   },
 
