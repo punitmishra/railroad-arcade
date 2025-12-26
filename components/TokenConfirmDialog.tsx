@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getActionDescription } from '@/lib/token-guard';
 import { useSounds } from '@/hooks/useSounds';
+import { haptic } from '@/lib/native';
 
 // ============================================
 // Types
@@ -120,7 +121,10 @@ export function TokenConfirmDialog({
         {/* Buttons */}
         <div className="flex gap-3">
           <button
-            onClick={onCancel}
+            onClick={() => {
+              haptic.light(); // Light haptic on cancel
+              onCancel();
+            }}
             disabled={isConfirming}
             className="flex-1 py-2.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 font-medium hover:bg-white/10 disabled:opacity-50 transition-colors"
           >

@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { haptic, isNative } from '@/lib/native';
 
 // ========================================
 // SOUND TYPES
@@ -482,6 +483,68 @@ const soundPlayers: Record<SoundType, (ctx: AudioContext, volume: number) => voi
 };
 
 // ========================================
+// HAPTIC FEEDBACK MAPPING
+// ========================================
+// Maps sound types to appropriate haptic feedback
+type HapticType = 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' | 'selection' | 'none';
+
+const hapticMapping: Record<SoundType, HapticType> = {
+  click: 'light',
+  success: 'success',
+  error: 'error',
+  warning: 'warning',
+  notification: 'light',
+  train_start: 'medium',
+  train_stop: 'medium',
+  train_horn: 'heavy',
+  junction: 'light',
+  crossing: 'medium',
+  emergency: 'heavy',
+  coin: 'light',
+  unlock: 'success',
+  achievement: 'success',
+  game_start: 'medium',
+  game_over: 'heavy',
+  score: 'light',
+  camera: 'light',
+};
+
+// Play haptic feedback based on sound type
+async function playHaptic(sound: SoundType): Promise<void> {
+  if (!isNative) return;
+
+  const hapticType = hapticMapping[sound];
+
+  switch (hapticType) {
+    case 'light':
+      await haptic.light();
+      break;
+    case 'medium':
+      await haptic.medium();
+      break;
+    case 'heavy':
+      await haptic.heavy();
+      break;
+    case 'success':
+      await haptic.success();
+      break;
+    case 'warning':
+      await haptic.warning();
+      break;
+    case 'error':
+      await haptic.error();
+      break;
+    case 'selection':
+      await haptic.selection();
+      break;
+    case 'none':
+    default:
+      // No haptic feedback
+      break;
+  }
+}
+
+// ========================================
 // SOUND CONTEXT
 // ========================================
 interface SoundContextType {
@@ -534,6 +597,11 @@ export function SoundProvider({ children }: SoundProviderProps) {
 
   const play = useCallback((sound: SoundType) => {
     if (!enabled) return;
+
+    // Play haptic feedback (runs in parallel, doesn't block)
+    playHaptic(sound).catch(() => {
+      // Haptic feedback is optional, ignore errors
+    });
 
     const ctx = getAudioContext();
     if (!ctx) return;
