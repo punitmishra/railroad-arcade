@@ -95,10 +95,10 @@ export function MultiCameraGrid({ initialConfig, onSnapshot }: MultiCameraGridPr
   return (
     <div className="space-y-4">
       {/* Controls */}
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3 sm:gap-4">
         {/* Layout Selector */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500">Layout:</span>
+          <span className="text-xs text-gray-500 hidden sm:inline">Layout:</span>
           <div className="flex gap-1">
             {CAMERA_LAYOUTS.map((l) => (
               <button
@@ -120,14 +120,14 @@ export function MultiCameraGrid({ initialConfig, onSnapshot }: MultiCameraGridPr
         </div>
 
         {/* Preset Views */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500">Presets:</span>
+        <div className="flex items-center gap-2 overflow-x-auto">
+          <span className="text-xs text-gray-500 hidden sm:inline">Presets:</span>
           <div className="flex gap-1">
             {Object.entries(PRESET_VIEWS).map(([key, preset]) => (
               <button
                 key={key}
                 onClick={() => handlePresetChange(key)}
-                className="px-3 py-1.5 rounded-lg text-xs bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 transition-colors capitalize"
+                className="px-2 sm:px-3 py-1.5 rounded-lg text-xs bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 active:bg-white/20 transition-colors capitalize whitespace-nowrap min-h-[36px]"
               >
                 {key}
               </button>
@@ -166,8 +166,8 @@ export function MultiCameraGrid({ initialConfig, onSnapshot }: MultiCameraGridPr
               onSnapshot={() => onSnapshot?.(config.cameras[0])}
               className="w-full h-full"
             />
-            {/* PiP overlay */}
-            <div className="absolute bottom-4 right-4 w-1/4 aspect-video">
+            {/* PiP overlay - larger on mobile for better visibility */}
+            <div className="absolute bottom-2 right-2 sm:bottom-4 sm:right-4 w-2/5 sm:w-1/3 md:w-1/4 aspect-video">
               <div
                 className="relative w-full h-full rounded-lg overflow-hidden border-2 border-white/20 shadow-xl cursor-pointer hover:scale-105 transition-transform"
                 onClick={() => setShowCameraSelector(1)}
@@ -213,8 +213,8 @@ export function MultiCameraGrid({ initialConfig, onSnapshot }: MultiCameraGridPr
                 onSnapshot={() => onSnapshot?.(cameraId)}
                 className="w-full h-full"
               />
-              {/* Control buttons - visible on hover */}
-              <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {/* Control buttons - always visible on mobile, hover on desktop */}
+              <div className="absolute top-2 right-2 flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 {/* Swap button */}
                 {config.cameras.length > 1 && (
                   <button
@@ -265,20 +265,27 @@ export function MultiCameraGrid({ initialConfig, onSnapshot }: MultiCameraGridPr
 
       {/* Camera Selector Modal */}
       {showCameraSelector !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#12121c] rounded-xl border border-white/10 p-4 max-w-md w-full mx-4">
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4"
+          onClick={() => setShowCameraSelector(null)}
+        >
+          <div
+            className="bg-[#12121c] rounded-t-xl sm:rounded-xl border border-white/10 p-4 w-full sm:max-w-sm md:max-w-md max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-white">Select Camera</h3>
               <button
                 onClick={() => setShowCameraSelector(null)}
-                className="text-gray-400 hover:text-white"
+                className="p-2 -mr-2 text-gray-400 hover:text-white active:text-white"
+                aria-label="Close camera selector"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {CAMERAS.map((camera) => (
                 <CameraThumbnail
                   key={camera.id}
