@@ -133,7 +133,7 @@ export function SessionHistory() {
             <p className="text-red-400 mb-3">Failed to load sessions</p>
             <button
               onClick={() => refresh()}
-              className="px-4 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+              className="px-4 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 active:bg-red-500/40 transition-colors min-h-[44px]"
             >
               Retry
             </button>
@@ -164,7 +164,7 @@ export function SessionHistory() {
             {hasMore && (
               <button
                 onClick={loadMore}
-                className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 active:bg-white/15 transition-all min-h-[44px]"
               >
                 Load More
               </button>
@@ -182,12 +182,12 @@ export function SessionHistory() {
               </div>
             ) : (
               <>
-                <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-white/10" />
-                <div className="space-y-6">
+                <div className="absolute left-4 sm:left-6 top-0 bottom-0 w-0.5 bg-white/10" />
+                <div className="space-y-4 sm:space-y-6">
                   {allEvents.map((event) => (
-                    <div key={event.id} className="flex items-start gap-4 pl-4">
+                    <div key={event.id} className="flex items-start gap-3 sm:gap-4 pl-2 sm:pl-4">
                       <div
-                        className="w-5 h-5 rounded-full bg-[#0c0c14] border-2 flex items-center justify-center z-10 text-xs"
+                        className="w-5 h-5 rounded-full bg-[#0c0c14] border-2 flex items-center justify-center z-10 text-xs flex-shrink-0"
                         style={{
                           borderColor: event.type === 'EMERGENCY' ? '#ef4444' :
                             event.type === 'ACHIEVEMENT' ? '#f59e0b' : '#22c55e'
@@ -195,9 +195,9 @@ export function SessionHistory() {
                       >
                         {getEventIcon(event.type)}
                       </div>
-                      <div className="flex-1 pb-4">
-                        <div className="text-sm font-medium">{event.description}</div>
-                        <div className="text-xs text-gray-500 mt-1">
+                      <div className="flex-1 pb-4 min-w-0">
+                        <div className="text-xs sm:text-sm font-medium break-words">{event.description}</div>
+                        <div className="text-[10px] sm:text-xs text-gray-500 mt-1">
                           {event.timestamp.toLocaleDateString()} at {event.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
@@ -213,20 +213,23 @@ export function SessionHistory() {
         {authSession?.user && !isLoading && !error && activeTab === 'stats' && (
           <div className="space-y-6">
             {/* Summary Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
               {[
-                { label: 'Total Sessions', value: stats.totalSessions, icon: '🎮', color: '#00f0ff' },
-                { label: 'Time Played', value: formatDuration(stats.totalDuration), icon: '⏱️', color: '#a855f7' },
-                { label: 'Tokens Spent', value: stats.totalTokensSpent, icon: '🪙', color: '#f59e0b' },
-                { label: 'Distance', value: `${stats.totalDistance.toFixed(1)} km`, icon: '📏', color: '#22c55e' },
+                { label: 'Sessions', labelFull: 'Total Sessions', value: stats.totalSessions, icon: '🎮', color: '#00f0ff' },
+                { label: 'Time', labelFull: 'Time Played', value: formatDuration(stats.totalDuration), icon: '⏱️', color: '#a855f7' },
+                { label: 'Tokens', labelFull: 'Tokens Spent', value: stats.totalTokensSpent, icon: '🪙', color: '#f59e0b' },
+                { label: 'Distance', labelFull: 'Distance', value: `${stats.totalDistance.toFixed(1)} km`, icon: '📏', color: '#22c55e' },
               ].map((stat, i) => (
-                <div key={i} className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg">{stat.icon}</span>
-                    <span className="text-xs text-gray-500 uppercase tracking-wider">{stat.label}</span>
+                <div key={i} className="p-3 sm:p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                    <span className="text-base sm:text-lg">{stat.icon}</span>
+                    <span className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider truncate">
+                      <span className="sm:hidden">{stat.label}</span>
+                      <span className="hidden sm:inline">{stat.labelFull}</span>
+                    </span>
                   </div>
                   <div
-                    className="text-2xl font-bold"
+                    className="text-lg sm:text-2xl font-bold truncate"
                     style={{ color: stat.color, fontFamily: 'JetBrains Mono, monospace' }}
                   >
                     {stat.value}
@@ -236,13 +239,13 @@ export function SessionHistory() {
             </div>
 
             {/* Sessions This Week */}
-            <div className="p-5 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-              <h4 className="font-semibold mb-4">This Week</h4>
-              <div className="flex items-center gap-4">
-                <div className="text-4xl font-bold text-cyan-400" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+            <div className="p-4 sm:p-5 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+              <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">This Week</h4>
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="text-3xl sm:text-4xl font-bold text-cyan-400" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
                   {stats.sessionsThisWeek}
                 </div>
-                <div className="text-gray-500 text-sm">
+                <div className="text-gray-500 text-xs sm:text-sm">
                   sessions played
                 </div>
               </div>
@@ -250,17 +253,17 @@ export function SessionHistory() {
 
             {/* Train Usage */}
             {sessions.length > 0 && (
-              <div className="p-5 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-                <h4 className="font-semibold mb-4">Most Used Trains</h4>
+              <div className="p-4 sm:p-5 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Most Used Trains</h4>
                 <div className="space-y-3">
                   {getTrainStats(sessions).map((train, i) => (
-                    <div key={i} className="flex items-center gap-4">
+                    <div key={i} className="flex items-center gap-3 sm:gap-4 min-h-[32px]">
                       <div
-                        className="w-3 h-3 rounded-full"
+                        className="w-3 h-3 rounded-full flex-shrink-0"
                         style={{ backgroundColor: ['#22c55e', '#3b82f6', '#a855f7'][i % 3] }}
                       />
-                      <span className="flex-1 font-medium text-sm">{train.name}</span>
-                      <span className="text-xs text-gray-500">{train.count} uses</span>
+                      <span className="flex-1 font-medium text-xs sm:text-sm truncate">{train.name}</span>
+                      <span className="text-[10px] sm:text-xs text-gray-500 flex-shrink-0">{train.count} uses</span>
                     </div>
                   ))}
                 </div>
@@ -292,23 +295,24 @@ function SessionCard({
     <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] overflow-hidden">
       {/* Session Header */}
       <div
-        className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/[0.02] transition-all"
+        className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-all min-h-[72px]"
         onClick={onToggle}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => e.key === 'Enter' && onToggle()}
         aria-expanded={isExpanded}
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
           <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center"
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ backgroundColor: `${statusColor}15` }}
           >
-            <TrainIcon size={24} style={{ color: statusColor }} />
+            <TrainIcon size={20} className="sm:hidden" style={{ color: statusColor }} />
+            <TrainIcon size={24} className="hidden sm:block" style={{ color: statusColor }} />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold">{session.startTime.toLocaleDateString()}</span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-sm sm:text-base">{session.startTime.toLocaleDateString()}</span>
               <span
                 className="text-[10px] px-2 py-0.5 rounded-full font-medium uppercase"
                 style={{
@@ -319,28 +323,28 @@ function SessionCard({
                 {session.status.replace('_', ' ')}
               </span>
             </div>
-            <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
+            <div className="flex items-center gap-2 sm:gap-4 text-xs text-gray-500 mt-1 flex-wrap">
               <span>{session.startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-              <span>•</span>
+              <span className="hidden sm:inline">•</span>
               <span>{formatDuration(session.duration || 0)}</span>
               {session.trainsOperated.length > 0 && (
                 <>
-                  <span>•</span>
-                  <span>{session.trainsOperated.length} train{session.trainsOperated.length !== 1 ? 's' : ''}</span>
+                  <span className="hidden sm:inline">•</span>
+                  <span className="hidden sm:inline">{session.trainsOperated.length} train{session.trainsOperated.length !== 1 ? 's' : ''}</span>
                 </>
               )}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-2 sm:gap-6 flex-shrink-0 ml-2">
           <div className="text-right">
-            <div className="text-sm font-semibold text-amber-400">{session.tokensSpent} tokens</div>
-            <div className="text-xs text-gray-500">{session.totalDistance.toFixed(1)} km</div>
+            <div className="text-xs sm:text-sm font-semibold text-amber-400">{session.tokensSpent} <span className="hidden sm:inline">tokens</span><span className="sm:hidden">tk</span></div>
+            <div className="text-[10px] sm:text-xs text-gray-500">{session.totalDistance.toFixed(1)} km</div>
           </div>
           <ChevronDownIcon
             size={20}
-            className={`text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+            className={`text-gray-500 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
           />
         </div>
       </div>
@@ -353,17 +357,19 @@ function SessionCard({
           ) : (
             <>
               <div className="text-xs text-gray-500 uppercase tracking-wider mb-3">Event Log</div>
-              <div className="space-y-2">
+              <div className="space-y-3 sm:space-y-2">
                 {session.events.map(event => (
-                  <div key={event.id} className="flex items-center gap-3 text-sm">
-                    <span className="text-lg">{getEventIcon(event.type)}</span>
-                    <span className="text-gray-400 w-16 flex-shrink-0">
-                      {event.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    <span className="text-gray-300">{event.description}</span>
+                  <div key={event.id} className="flex items-start sm:items-center gap-2 sm:gap-3 text-sm">
+                    <span className="text-base sm:text-lg flex-shrink-0">{getEventIcon(event.type)}</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-3 flex-1 min-w-0">
+                      <span className="text-gray-400 text-xs sm:text-sm sm:w-16 flex-shrink-0">
+                        {event.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span className="text-gray-300 text-xs sm:text-sm">{event.description}</span>
+                    </div>
                     {event.level && (
                       <span
-                        className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                        className="text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0"
                         style={{
                           backgroundColor: event.level === 1 ? 'rgba(168,85,247,0.2)' : 'rgba(14,165,233,0.2)',
                           color: event.level === 1 ? '#a855f7' : '#0ea5e9'

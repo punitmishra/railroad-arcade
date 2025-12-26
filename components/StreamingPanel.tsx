@@ -167,42 +167,48 @@ export function StreamingPanel() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {/* Viewer Count */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5">
+          <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg bg-white/5">
             <UsersIcon size={14} className="text-red-400" />
-            <span className="text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+            <span className="text-xs sm:text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
               {viewerCount.toLocaleString()}
             </span>
           </div>
 
           {/* Like Count */}
-          <button 
+          <button
             onClick={handleLike}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
-              isLiked ? 'bg-pink-500/20 text-pink-400' : 'bg-white/5 text-gray-400 hover:text-pink-400'
+            className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 sm:py-1.5 rounded-lg transition-all min-h-[44px] active:scale-95 ${
+              isLiked ? 'bg-pink-500/20 text-pink-400' : 'bg-white/5 text-gray-400 hover:text-pink-400 active:bg-pink-500/10'
             }`}
+            aria-label={isLiked ? 'Unlike stream' : 'Like stream'}
           >
             <HeartIcon size={14} className={isLiked ? 'fill-current' : ''} />
-            <span className="text-sm font-medium">{(likeCount / 1000).toFixed(1)}k</span>
+            <span className="text-xs sm:text-sm font-medium">{(likeCount / 1000).toFixed(1)}k</span>
           </button>
 
           {/* Share */}
-          <button className="p-2 rounded-lg bg-white/5 text-gray-400 hover:text-white transition-all">
+          <button
+            className="p-2.5 sm:p-2 rounded-lg bg-white/5 text-gray-400 hover:text-white active:bg-white/10 transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
+            aria-label="Share stream"
+          >
             <ShareIcon size={18} />
           </button>
 
           {/* Toggle Chat */}
-          <button 
+          <button
             onClick={() => setShowChat(!showChat)}
-            className={`p-2 rounded-lg transition-all ${showChat ? 'bg-cyan-500/20 text-cyan-400' : 'bg-white/5 text-gray-400'}`}
+            className={`p-2.5 sm:p-2 rounded-lg transition-all min-w-[44px] min-h-[44px] flex items-center justify-center ${showChat ? 'bg-cyan-500/20 text-cyan-400' : 'bg-white/5 text-gray-400 active:bg-white/10'}`}
+            aria-label={showChat ? 'Hide chat' : 'Show chat'}
+            aria-pressed={showChat}
           >
             <MessageIcon size={18} />
           </button>
         </div>
       </div>
 
-      <div className="flex">
+      <div className="flex flex-col lg:flex-row">
         {/* Video Player */}
         <div className={`flex-1 ${showChat ? '' : 'w-full'}`}>
           {/* Video Area */}
@@ -250,22 +256,25 @@ export function StreamingPanel() {
             </div>
 
             {/* Video Controls */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <button 
+            <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 bg-gradient-to-t from-black/80 to-transparent">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <button
                     onClick={() => setIsLive(!isLive)}
-                    className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all"
+                    className="p-2.5 sm:p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 active:bg-white/30 transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
+                    aria-label={isLive ? 'Pause stream' : 'Play stream'}
                   >
-                    {isLive ? <PauseIcon size={18} /> : <PlayIcon size={18} />}
+                    {isLive ? <PauseIcon size={20} /> : <PlayIcon size={20} />}
                   </button>
-                  <button 
+                  <button
                     onClick={() => setIsMuted(!isMuted)}
-                    className={`p-2 rounded-lg transition-all ${isMuted ? 'bg-red-500/20 text-red-400' : 'bg-white/10 text-white hover:bg-white/20'}`}
+                    className={`p-2.5 sm:p-2 rounded-lg transition-all min-w-[44px] min-h-[44px] flex items-center justify-center ${isMuted ? 'bg-red-500/20 text-red-400' : 'bg-white/10 text-white hover:bg-white/20 active:bg-white/30'}`}
+                    aria-label={isMuted ? 'Unmute' : 'Mute'}
+                    aria-pressed={isMuted}
                   >
-                    <VolumeIcon size={18} />
+                    <VolumeIcon size={20} />
                   </button>
-                  <div className="text-xs text-white/80 font-mono">
+                  <div className="hidden sm:block text-xs text-white/80 font-mono">
                     {isLive ? 'LIVE' : 'PAUSED'} • {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                   </div>
                 </div>
@@ -275,14 +284,18 @@ export function StreamingPanel() {
                   <select
                     value={streamQuality}
                     onChange={(e) => setStreamQuality(e.target.value as typeof streamQuality)}
-                    className="px-2 py-1 rounded bg-white/10 text-xs text-white outline-none"
+                    className="px-2 sm:px-3 py-2 rounded-lg bg-white/10 text-xs text-white outline-none min-h-[44px]"
+                    aria-label="Stream quality"
                   >
                     <option value="1080p">1080p</option>
                     <option value="720p">720p</option>
                     <option value="480p">480p</option>
                   </select>
-                  <button className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all">
-                    <MaximizeIcon size={18} />
+                  <button
+                    className="p-2.5 sm:p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 active:bg-white/30 transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
+                    aria-label="Toggle fullscreen"
+                  >
+                    <MaximizeIcon size={20} />
                   </button>
                 </div>
               </div>
@@ -313,7 +326,7 @@ export function StreamingPanel() {
           {/* Donation Tiers */}
           <div className="p-4">
             <h5 className="text-xs text-gray-500 uppercase tracking-wider mb-3">Support the Stream</h5>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
                 { amount: 10, icon: '☕', label: 'Coffee' },
                 { amount: 25, icon: '🎫', label: 'Ticket' },
@@ -322,7 +335,8 @@ export function StreamingPanel() {
               ].map((tier) => (
                 <button
                   key={tier.amount}
-                  className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-amber-500/10 hover:border-amber-500/30 transition-all text-center group"
+                  className="p-3 sm:p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-amber-500/10 active:bg-amber-500/20 hover:border-amber-500/30 transition-all text-center group min-h-[80px]"
+                  aria-label={`Donate ${tier.amount} tokens - ${tier.label}`}
                 >
                   <div className="text-2xl mb-1">{tier.icon}</div>
                   <div className="text-amber-400 font-semibold text-sm">{tier.amount}</div>
@@ -335,23 +349,32 @@ export function StreamingPanel() {
 
         {/* Chat Panel */}
         {showChat && (
-          <div className="w-80 border-l border-white/[0.06] flex flex-col">
+          <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-white/[0.06] flex flex-col">
             {/* Chat Header */}
-            <div className="p-4 border-b border-white/[0.06]">
+            <div className="p-3 sm:p-4 border-b border-white/[0.06]">
               <div className="flex items-center justify-between">
                 <h4 className="font-semibold text-sm">Live Chat</h4>
-                <div className="flex items-center gap-1 text-xs text-gray-500">
-                  <ActivityIcon size={12} className="text-emerald-400" />
-                  {messages.length} messages
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <ActivityIcon size={12} className="text-emerald-400" />
+                    {messages.length} messages
+                  </div>
+                  <button
+                    onClick={() => setShowChat(false)}
+                    className="lg:hidden p-2 -mr-2 text-gray-400 hover:text-white active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center"
+                    aria-label="Close chat"
+                  >
+                    <CloseIcon size={18} />
+                  </button>
                 </div>
               </div>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-3 max-h-[400px]">
+            <div className="flex-1 overflow-y-auto p-3 space-y-3 max-h-[300px] lg:max-h-[400px]">
               {messages.map((msg) => (
-                <div 
-                  key={msg.id} 
+                <div
+                  key={msg.id}
                   className={`
                     flex gap-2 text-sm
                     ${msg.isGift ? 'p-2 rounded-lg bg-amber-500/10 border border-amber-500/20' : ''}
@@ -359,11 +382,11 @@ export function StreamingPanel() {
                 >
                   <span className="text-lg flex-shrink-0">{msg.avatar}</span>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className={`font-medium truncate ${
-                        msg.isStreamer ? 'text-red-400' : 
-                        msg.isModerator ? 'text-emerald-400' : 
-                        msg.isGift ? 'text-amber-400' : 
+                        msg.isStreamer ? 'text-red-400' :
+                        msg.isModerator ? 'text-emerald-400' :
+                        msg.isGift ? 'text-amber-400' :
                         'text-cyan-400'
                       }`}>
                         {msg.user}
@@ -395,22 +418,23 @@ export function StreamingPanel() {
                   onChange={(e) => setChatMessage(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                   placeholder="Send a message..."
-                  className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-500 outline-none focus:border-cyan-500/50"
+                  className="flex-1 px-3 py-2.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-500 outline-none focus:border-cyan-500/50 min-h-[44px]"
                 />
-                <button 
+                <button
                   onClick={sendMessage}
                   disabled={!chatMessage.trim()}
-                  className="p-2 rounded-lg bg-cyan-500 text-white hover:bg-cyan-400 transition-all disabled:opacity-50 disabled:hover:bg-cyan-500"
+                  className="p-2.5 rounded-lg bg-cyan-500 text-white hover:bg-cyan-400 active:bg-cyan-600 transition-all disabled:opacity-50 disabled:hover:bg-cyan-500 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                  aria-label="Send message"
                 >
                   <SendIcon size={18} />
                 </button>
               </div>
-              <div className="flex items-center gap-2 mt-2">
-                <button className="text-lg hover:scale-110 transition-transform">😊</button>
-                <button className="text-lg hover:scale-110 transition-transform">🚂</button>
-                <button className="text-lg hover:scale-110 transition-transform">❤️</button>
-                <button className="text-lg hover:scale-110 transition-transform">🎉</button>
-                <button className="text-lg hover:scale-110 transition-transform">👏</button>
+              <div className="flex items-center gap-1 mt-2">
+                <button className="p-2 text-xl hover:scale-110 active:scale-95 transition-transform min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Insert smiley emoji">😊</button>
+                <button className="p-2 text-xl hover:scale-110 active:scale-95 transition-transform min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Insert train emoji">🚂</button>
+                <button className="p-2 text-xl hover:scale-110 active:scale-95 transition-transform min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Insert heart emoji">❤️</button>
+                <button className="p-2 text-xl hover:scale-110 active:scale-95 transition-transform min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Insert party emoji">🎉</button>
+                <button className="p-2 text-xl hover:scale-110 active:scale-95 transition-transform min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Insert clap emoji">👏</button>
               </div>
             </div>
           </div>

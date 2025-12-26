@@ -239,35 +239,35 @@ export function SnapshotGallery({
           <div className="flex rounded-lg overflow-hidden border border-white/10">
             <button
               onClick={() => setView('grid')}
-              className={`p-2 min-h-[36px] min-w-[36px] ${view === 'grid' ? 'bg-white/10 text-white' : 'text-gray-500 hover:bg-white/5'}`}
+              className={`p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center ${view === 'grid' ? 'bg-white/10 text-white' : 'text-gray-500 hover:bg-white/5 active:bg-white/10'}`}
               aria-label="Grid view"
               aria-pressed={view === 'grid'}
             >
-              <GridIcon size={16} />
+              <GridIcon size={18} />
             </button>
             <button
               onClick={() => setView('list')}
-              className={`p-2 min-h-[36px] min-w-[36px] ${view === 'list' ? 'bg-white/10 text-white' : 'text-gray-500 hover:bg-white/5'}`}
+              className={`p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center ${view === 'list' ? 'bg-white/10 text-white' : 'text-gray-500 hover:bg-white/5 active:bg-white/10'}`}
               aria-label="List view"
               aria-pressed={view === 'list'}
             >
-              <LayersIcon size={16} />
+              <LayersIcon size={18} />
             </button>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2 px-5 py-3 bg-black/20 border-b border-white/[0.04] overflow-x-auto">
+      <div className="flex gap-2 px-3 sm:px-5 py-2 sm:py-3 bg-black/20 border-b border-white/[0.04] overflow-x-auto scrollbar-hide">
         {filterTabs.map((f) => (
           <button
             key={f.id}
             onClick={() => setFilter(f.id)}
             className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap min-h-[32px]
+              flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap min-h-[44px] active:scale-95
               ${filter === f.id
                 ? 'bg-pink-500/15 text-pink-400 border border-pink-500/30'
-                : 'text-gray-400 hover:bg-white/5 border border-transparent'
+                : 'text-gray-400 hover:bg-white/5 active:bg-white/10 border border-transparent'
               }
             `}
           >
@@ -344,11 +344,11 @@ export function SnapshotGallery({
                   )}
                 </div>
 
-                {/* Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                {/* Overlay - always visible on mobile */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" />
 
-                {/* Info */}
-                <div className="absolute bottom-0 left-0 right-0 p-2 translate-y-full group-hover:translate-y-0 transition-transform">
+                {/* Info - always visible on mobile */}
+                <div className="absolute bottom-0 left-0 right-0 p-2 sm:translate-y-full sm:group-hover:translate-y-0 transition-transform">
                   <div className="text-xs font-medium truncate">{snapshot.description || 'Untitled'}</div>
                   <div className="text-[10px] text-gray-400 flex items-center gap-2">
                     <span>{formatTime(snapshot.timestamp)}</span>
@@ -420,20 +420,20 @@ export function SnapshotGallery({
                     <span>{formatTime(snapshot.timestamp)}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   <button
                     onClick={(e) => handleToggleLike(snapshot.id, e)}
-                    className={`p-2 rounded-lg transition-all min-h-[36px] min-w-[36px] ${snapshot.liked ? 'text-pink-500' : 'text-gray-500 hover:text-pink-400'}`}
+                    className={`p-2.5 rounded-lg transition-all min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 ${snapshot.liked ? 'text-pink-500' : 'text-gray-500 hover:text-pink-400 active:bg-pink-500/10'}`}
                     aria-label={snapshot.liked ? 'Unlike' : 'Like'}
                   >
-                    <HeartIcon size={16} className={snapshot.liked ? 'fill-current' : ''} />
+                    <HeartIcon size={18} className={snapshot.liked ? 'fill-current' : ''} />
                   </button>
                   <button
                     onClick={(e) => handleDelete(snapshot.id, e)}
-                    className="p-2 rounded-lg text-gray-500 hover:text-red-400 transition-all min-h-[36px] min-w-[36px]"
+                    className="p-2.5 rounded-lg text-gray-500 hover:text-red-400 active:bg-red-500/10 transition-all min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95"
                     aria-label="Delete snapshot"
                   >
-                    <TrashIcon size={16} />
+                    <TrashIcon size={18} />
                   </button>
                 </div>
               </div>
@@ -442,30 +442,35 @@ export function SnapshotGallery({
         )}
       </div>
 
-      {/* Lightbox Modal */}
+      {/* Lightbox Modal - Bottom sheet on mobile, centered on desktop */}
       {selectedSnapshot && (
         <div
-          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/95 flex items-end sm:items-center justify-center p-0 sm:p-4"
           onClick={() => setSelectedSnapshot(null)}
           role="dialog"
           aria-modal="true"
           aria-label="Snapshot preview"
         >
           <div
-            className="relative max-w-5xl w-full"
+            className="relative max-w-5xl w-full bg-[#0c0c14] sm:bg-transparent rounded-t-2xl sm:rounded-2xl max-h-[95vh] sm:max-h-none overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close Button */}
+            {/* Mobile drag handle */}
+            <div className="sm:hidden flex justify-center pt-3 pb-2">
+              <div className="w-10 h-1 rounded-full bg-white/20" />
+            </div>
+
+            {/* Close Button - inside on mobile, outside on desktop */}
             <button
               onClick={() => setSelectedSnapshot(null)}
-              className="absolute -top-12 right-0 p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all min-h-[44px] min-w-[44px]"
+              className="absolute top-3 right-3 sm:-top-12 sm:right-0 p-2.5 rounded-lg bg-white/10 text-white hover:bg-white/20 active:bg-white/30 transition-all min-h-[44px] min-w-[44px] flex items-center justify-center z-10"
               aria-label="Close preview"
             >
               <CloseIcon size={20} />
             </button>
 
             {/* Image */}
-            <div className="aspect-video rounded-2xl overflow-hidden bg-gray-900 flex items-center justify-center">
+            <div className="aspect-video rounded-none sm:rounded-2xl overflow-hidden bg-gray-900 flex items-center justify-center">
               {selectedSnapshot.fullUrl && !selectedSnapshot.fullUrl.includes('placeholder') ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -478,66 +483,68 @@ export function SnapshotGallery({
                 />
               ) : (
                 <div className="text-center">
-                  <TrainIcon size={80} className="text-gray-700 mx-auto mb-4" />
+                  <TrainIcon size={64} className="text-gray-700 mx-auto mb-4 sm:w-20 sm:h-20" />
                   <p className="text-gray-500">Image Preview</p>
                 </div>
               )}
             </div>
 
             {/* Info Bar */}
-            <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h3 className="font-semibold text-lg">{selectedSnapshot.description || 'Untitled'}</h3>
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400 mt-1">
-                  <span>{selectedSnapshot.camera}</span>
-                  {selectedSnapshot.trainName && (
-                    <span className="text-cyan-400">🚂 {selectedSnapshot.trainName}</span>
-                  )}
-                  <span>{selectedSnapshot.timestamp.toLocaleString()}</span>
+            <div className="p-4 sm:mt-4 sm:p-0">
+              <div className="flex flex-col gap-4">
+                <div>
+                  <h3 className="font-semibold text-lg">{selectedSnapshot.description || 'Untitled'}</h3>
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-gray-400 mt-1">
+                    <span>{selectedSnapshot.camera}</span>
+                    {selectedSnapshot.trainName && (
+                      <span className="text-cyan-400">🚂 {selectedSnapshot.trainName}</span>
+                    )}
+                    <span>{selectedSnapshot.timestamp.toLocaleString()}</span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => handleToggleLike(selectedSnapshot.id)}
+                    className={`
+                      flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all min-h-[44px] active:scale-95
+                      ${selectedSnapshot.liked
+                        ? 'bg-pink-500/20 border-pink-500/30 text-pink-400'
+                        : 'bg-white/5 border-white/10 text-gray-400 hover:text-pink-400 active:bg-pink-500/10'
+                      }
+                    `}
+                    aria-pressed={selectedSnapshot.liked}
+                  >
+                    <HeartIcon size={18} className={selectedSnapshot.liked ? 'fill-current' : ''} />
+                    <span className="hidden sm:inline">{selectedSnapshot.liked ? 'Liked' : 'Like'}</span>
+                  </button>
+                  <button
+                    onClick={() => handleDownload(selectedSnapshot)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white active:bg-white/10 transition-all min-h-[44px] active:scale-95"
+                  >
+                    <DownloadIcon size={18} />
+                    <span className="hidden sm:inline">Download</span>
+                  </button>
+                  <button
+                    onClick={() => handleShare(selectedSnapshot)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white active:bg-white/10 transition-all min-h-[44px] active:scale-95"
+                  >
+                    <ShareIcon size={18} />
+                    <span className="hidden sm:inline">Share</span>
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleToggleLike(selectedSnapshot.id)}
-                  className={`
-                    flex items-center gap-2 px-4 py-2 rounded-xl border transition-all min-h-[44px]
-                    ${selectedSnapshot.liked
-                      ? 'bg-pink-500/20 border-pink-500/30 text-pink-400'
-                      : 'bg-white/5 border-white/10 text-gray-400 hover:text-pink-400'
-                    }
-                  `}
-                  aria-pressed={selectedSnapshot.liked}
-                >
-                  <HeartIcon size={18} className={selectedSnapshot.liked ? 'fill-current' : ''} />
-                  {selectedSnapshot.liked ? 'Liked' : 'Like'}
-                </button>
-                <button
-                  onClick={() => handleDownload(selectedSnapshot)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all min-h-[44px]"
-                >
-                  <DownloadIcon size={18} />
-                  Download
-                </button>
-                <button
-                  onClick={() => handleShare(selectedSnapshot)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all min-h-[44px]"
-                >
-                  <ShareIcon size={18} />
-                  Share
-                </button>
-              </div>
-            </div>
 
-            {/* Tags */}
-            {selectedSnapshot.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-4">
-                {selectedSnapshot.tags.map((tag) => (
-                  <span key={tag} className="px-2 py-1 rounded-lg bg-white/5 text-xs text-gray-400">
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            )}
+              {/* Tags */}
+              {selectedSnapshot.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-4 pb-4 sm:pb-0">
+                  {selectedSnapshot.tags.map((tag) => (
+                    <span key={tag} className="px-2 py-1 rounded-lg bg-white/5 text-xs text-gray-400">
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
