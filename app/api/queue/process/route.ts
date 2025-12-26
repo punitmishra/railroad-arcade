@@ -435,6 +435,7 @@ interface TournamentPrize {
 
 async function handleTournamentDistributePrizes(payload: TournamentDistributePrizesPayload) {
   const { tournamentId } = payload;
+  const idempotencyKey = `tournament_prize_${tournamentId}`;
 
   // Use interactive transaction for idempotency
   const result = await db.$transaction(async (tx) => {
@@ -460,34 +461,56 @@ async function handleTournamentDistributePrizes(payload: TournamentDistributePri
       return { success: false, reason: 'not_completed' };
     }
 
-    // Idempotency check: Look for existing prize transactions for this tournament
-    const existingPrizeTransactions = await tx.transaction.findFirst({
+    // Robust idempotency check: Use QueueJob to track if this operation has been done
+    const existingJob = await tx.queueJob.findFirst({
       where: {
-        type: 'BONUS',
-        metadata: {
-          path: ['type'],
-          equals: 'tournament_prize',
+        type: 'TOURNAMENT_PRIZE_DISTRIBUTED',
+        payload: {
+          path: ['tournamentId'],
+          equals: tournamentId,
         },
-        AND: {
+        status: 'COMPLETED',
+      },
+    });
+
+    if (existingJob) {
+      console.log(`Prizes already distributed for tournament ${tournamentId} (job ${existingJob.id}), skipping`);
+      return { success: false, reason: 'already_distributed' };
+    }
+
+    // Create job record first with PROCESSING status to claim the work
+    const jobRecord = await tx.queueJob.create({
+      data: {
+        type: 'TOURNAMENT_PRIZE_DISTRIBUTED',
+        payload: { tournamentId, idempotencyKey },
+        status: 'PROCESSING',
+      },
+    });
+
+    const prizes = (tournament.prizes as unknown as TournamentPrize[]) || [];
+    let prizesAwarded = 0;
+    const awardedUserIds: string[] = [];
+
+    for (const entry of tournament.entries) {
+      const prize = prizes.find((p) => p.rank === entry.rank);
+      if (!prize) continue;
+
+      // Check if this specific user already received a prize for this tournament
+      const existingUserPrize = await tx.transaction.findFirst({
+        where: {
+          userId: entry.userId,
+          type: 'BONUS',
           metadata: {
             path: ['tournamentId'],
             equals: tournamentId,
           },
         },
-      },
-    });
+      });
 
-    if (existingPrizeTransactions) {
-      console.log(`Prizes already distributed for tournament ${tournamentId}, skipping`);
-      return { success: false, reason: 'already_distributed' };
-    }
-
-    const prizes = (tournament.prizes as unknown as TournamentPrize[]) || [];
-    let prizesAwarded = 0;
-
-    for (const entry of tournament.entries) {
-      const prize = prizes.find((p) => p.rank === entry.rank);
-      if (!prize) continue;
+      if (existingUserPrize) {
+        console.log(`User ${entry.userId} already received prize for tournament ${tournamentId}, skipping`);
+        continue;
+      }
 
       // Award tokens
       if (prize.tokens > 0) {
@@ -509,11 +532,13 @@ async function handleTournamentDistributePrizes(payload: TournamentDistributePri
               rank: entry.rank,
               badge: prize.badge,
               title: prize.title,
+              idempotencyKey,
             },
           },
         });
 
         prizesAwarded++;
+        awardedUserIds.push(entry.userId);
       }
 
       // Award badge achievement if applicable
@@ -546,7 +571,16 @@ async function handleTournamentDistributePrizes(payload: TournamentDistributePri
       );
     }
 
-    return { success: true, prizesAwarded, userIds: tournament.entries.map(e => e.userId) };
+    // Mark job as completed
+    await tx.queueJob.update({
+      where: { id: jobRecord.id },
+      data: {
+        status: 'COMPLETED',
+        result: { prizesAwarded, userIds: awardedUserIds },
+      },
+    });
+
+    return { success: true, prizesAwarded, userIds: awardedUserIds };
   });
 
   if (!result.success) {
