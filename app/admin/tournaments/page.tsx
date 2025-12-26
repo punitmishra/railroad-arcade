@@ -2,8 +2,26 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { ArcadeButton } from '@/components/ui';
-import { TrophyIcon, RefreshIcon, EyeIcon, TrashIcon, PlayIcon, PlusIcon, UsersIcon, CoinsIcon } from '@/components/icons';
+import { TrophyIcon, RefreshIcon, EyeIcon, TrashIcon, PlayIcon, PlusIcon, UsersIcon, CoinsIcon, LockIcon } from '@/components/icons';
 import { TOURNAMENT_TYPES, DEFAULT_PRIZE_TIERS, TournamentPrize } from '@/lib/tournament';
+
+// ============================================
+// Admin Key Management (Session-based)
+// ============================================
+function getAdminKey(): string {
+  if (typeof window === 'undefined') return '';
+  return sessionStorage.getItem('admin_key') || '';
+}
+
+function setAdminKey(key: string): void {
+  if (typeof window === 'undefined') return;
+  sessionStorage.setItem('admin_key', key);
+}
+
+function clearAdminKey(): void {
+  if (typeof window === 'undefined') return;
+  sessionStorage.removeItem('admin_key');
+}
 
 // ============================================
 // Types
@@ -40,6 +58,8 @@ export default function AdminTournamentsPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adminKeyInput, setAdminKeyInput] = useState('');
 
   // Fetch tournaments
   const fetchTournaments = useCallback(async () => {
@@ -61,9 +81,37 @@ export default function AdminTournamentsPage() {
     }
   }, []);
 
+  // Check for stored admin key on mount
   useEffect(() => {
-    fetchTournaments();
-  }, [fetchTournaments]);
+    const storedKey = getAdminKey();
+    if (storedKey) {
+      setIsAuthenticated(true);
+    }
+    setIsLoading(false);
+  }, []);
+
+  // Fetch tournaments when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchTournaments();
+    }
+  }, [fetchTournaments, isAuthenticated]);
+
+  // Handle admin login
+  const handleLogin = () => {
+    if (adminKeyInput.trim()) {
+      setAdminKey(adminKeyInput.trim());
+      setIsAuthenticated(true);
+      setAdminKeyInput('');
+    }
+  };
+
+  // Handle admin logout
+  const handleLogout = () => {
+    clearAdminKey();
+    setIsAuthenticated(false);
+    setTournaments([]);
+  };
 
   // Cancel tournament
   const handleCancel = async (tournamentId: string) => {
@@ -76,7 +124,7 @@ export default function AdminTournamentsPage() {
       const response = await fetch(`/api/admin/tournaments/${tournamentId}`, {
         method: 'DELETE',
         headers: {
-          'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || '',
+          'x-admin-key': getAdminKey(),
         },
       });
 
@@ -106,7 +154,7 @@ export default function AdminTournamentsPage() {
       const response = await fetch(`/api/admin/tournaments/${tournamentId}/finalize`, {
         method: 'POST',
         headers: {
-          'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || '',
+          'x-admin-key': getAdminKey(),
         },
       });
 
@@ -134,7 +182,7 @@ export default function AdminTournamentsPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || '',
+          'x-admin-key': getAdminKey(),
         },
         body: JSON.stringify(formData),
       });
@@ -173,6 +221,47 @@ export default function AdminTournamentsPage() {
     }
   };
 
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-gray-900/50 border border-gray-800 rounded-2xl p-8">
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 rounded-xl bg-purple-500/20 flex items-center justify-center">
+              <LockIcon className="w-8 h-8 text-purple-400" />
+            </div>
+          </div>
+          <h1 className="text-2xl font-bold text-center mb-2">Admin Access</h1>
+          <p className="text-gray-400 text-center text-sm mb-6">
+            Enter your admin key to manage tournaments
+          </p>
+          <div className="space-y-4">
+            <input
+              type="password"
+              value={adminKeyInput}
+              onChange={(e) => setAdminKeyInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+              placeholder="Enter admin key"
+              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+              autoFocus
+            />
+            <ArcadeButton
+              variant="primary"
+              className="w-full"
+              onClick={handleLogin}
+              disabled={!adminKeyInput.trim()}
+            >
+              Authenticate
+            </ArcadeButton>
+          </div>
+          <p className="text-gray-500 text-xs text-center mt-4">
+            Your key is stored in session only and cleared when you close the browser.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6">
       {/* Header */}
@@ -188,6 +277,14 @@ export default function AdminTournamentsPage() {
             </div>
           </div>
           <div className="flex gap-3">
+            <ArcadeButton
+              variant="ghost"
+              onClick={handleLogout}
+              title="Sign out"
+            >
+              <LockIcon className="w-4 h-4" />
+              Sign Out
+            </ArcadeButton>
             <ArcadeButton
               variant="ghost"
               onClick={fetchTournaments}

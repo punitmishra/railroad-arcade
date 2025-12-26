@@ -50,48 +50,47 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Check if user is registered for each tournament
-    const tournamentData = await Promise.all(
-      tournaments.map(async (t) => {
-        let isRegistered = false;
-        let userEntry = null;
+    // Fetch all user entries in a single query (fixes N+1 problem)
+    const tournamentIds = tournaments.map(t => t.id);
+    type TournamentEntry = Awaited<ReturnType<typeof db.tournamentEntry.findFirst>>;
+    const userEntriesMap = new Map<string, NonNullable<TournamentEntry>>();
 
-        if (session?.user?.id) {
-          const entry = await db.tournamentEntry.findUnique({
-            where: {
-              tournamentId_userId: {
-                tournamentId: t.id,
-                userId: session.user.id,
-              },
-            },
-          });
-          isRegistered = !!entry;
-          userEntry = entry;
-        }
+    if (session?.user?.id && tournamentIds.length > 0) {
+      const userEntries = await db.tournamentEntry.findMany({
+        where: {
+          userId: session.user.id,
+          tournamentId: { in: tournamentIds },
+        },
+      });
+      userEntries.forEach(e => userEntriesMap.set(e.tournamentId, e));
+    }
 
-        return {
-          id: t.id,
-          name: t.name,
-          description: t.description,
-          type: t.type,
-          status: t.status,
-          gameMode: t.gameMode,
-          registrationStart: t.registrationStart,
-          registrationEnd: t.registrationEnd,
-          startTime: t.startTime,
-          endTime: t.endTime,
-          maxParticipants: t.maxParticipants,
-          entryFee: t.entryFee,
-          minLevel: t.minLevel,
-          attemptsPerPlayer: t.attemptsPerPlayer,
-          prizePool: t.prizePool,
-          prizes: t.prizes,
-          participantCount: t._count.entries,
-          isRegistered,
-          userEntry,
-        };
-      })
-    );
+    // Map tournament data with user registration status
+    const tournamentData = tournaments.map((t) => {
+      const userEntry = userEntriesMap.get(t.id) || null;
+
+      return {
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        type: t.type,
+        status: t.status,
+        gameMode: t.gameMode,
+        registrationStart: t.registrationStart,
+        registrationEnd: t.registrationEnd,
+        startTime: t.startTime,
+        endTime: t.endTime,
+        maxParticipants: t.maxParticipants,
+        entryFee: t.entryFee,
+        minLevel: t.minLevel,
+        attemptsPerPlayer: t.attemptsPerPlayer,
+        prizePool: t.prizePool,
+        prizes: t.prizes,
+        participantCount: t._count.entries,
+        isRegistered: !!userEntry,
+        userEntry,
+      };
+    });
 
     return NextResponse.json({
       success: true,

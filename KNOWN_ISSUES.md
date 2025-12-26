@@ -44,6 +44,24 @@ This document tracks known bugs, issues, and technical debt identified in the Ra
 
 ---
 
+## Security Issues (FIXED)
+
+### 20. ~~Admin Key Exposed in Client Bundle~~ - FIXED
+**File:** `app/admin/tournaments/page.tsx`
+**Severity:** MEDIUM (was HIGH)
+**Status:** RESOLVED
+
+**Issue:** Admin key was stored in `NEXT_PUBLIC_ADMIN_KEY` env var, which gets bundled into client-side JavaScript and is visible to anyone inspecting the page source.
+
+**Fix Applied:**
+- Removed `NEXT_PUBLIC_ADMIN_KEY` usage
+- Added session-based admin key management (stored in `sessionStorage`)
+- Admin page now shows login prompt requiring key entry
+- Key is stored only for the browser session and cleared on close
+- Added sign out button to clear session
+
+---
+
 ## High Priority Issues (FIXED)
 
 ### 4. ~~Missing Input Validation in Tournament Creation~~ - FIXED
@@ -147,13 +165,23 @@ Also added limit bounds validation (1-100).
 
 ---
 
-### 11. N+1 Query in Tournament List
-**File:** `app/api/tournaments/route.ts` (lines 37-77)
+### 11. ~~N+1 Query in Tournament List~~ - FIXED
+**File:** `app/api/tournaments/route.ts` (lines 53-66)
 **Severity:** MEDIUM
+**Status:** RESOLVED
 
-For each tournament, a separate query checks if user is registered. With 10 tournaments = 10+ extra queries.
+**Fix Applied:** Replaced N+1 pattern with single batch query:
+```typescript
+const userEntries = await db.tournamentEntry.findMany({
+  where: {
+    userId: session.user.id,
+    tournamentId: { in: tournamentIds },
+  },
+});
+userEntriesMap = new Map(userEntries.map(e => [e.tournamentId, e]));
+```
 
-**Fix Required:** Use single `findMany` query to get all user entries.
+Now fetches all user entries in one query and uses Map for O(1) lookup.
 
 ---
 
@@ -256,8 +284,9 @@ ESLint disabled for `<img>` elements. Should use Next.js Image for optimization.
 | Severity | Count | Status |
 |----------|-------|--------|
 | CRITICAL | 3 | **ALL FIXED** |
+| SECURITY | 1 | **ALL FIXED** |
 | HIGH | 7 | **ALL FIXED** |
-| MEDIUM | 3 | Open |
+| MEDIUM | 4 | 2 Open, 2 Fixed |
 | LOW | 4 | Open (1 fixed - cache invalidation) |
 
 ---
@@ -268,7 +297,8 @@ ESLint disabled for `<img>` elements. Should use Next.js Image for optimization.
 2. ~~**Add input validation** (Issue #4)~~ - **FIXED**
 3. ~~**Fix memory leaks** (Issues #6, #7)~~ - **FIXED**
 4. ~~**Fix ranking consistency** (Issues #5, #8, #9, #10)~~ - **FIXED**
-5. **Optimize queries** (Issue #11) - Performance
-6. **Fix cache invalidation** (Issue #12) - Data freshness
-7. **Add reconnection logic** (Issue #13) - User experience
-8. **Clean up console statements** (Issue #17) - Code quality
+5. ~~**Optimize queries** (Issue #11)~~ - **FIXED**
+6. ~~**Fix admin security** (Issue #20)~~ - **FIXED**
+7. **Fix cache invalidation** (Issue #12) - Data freshness
+8. **Add reconnection logic** (Issue #13) - User experience
+9. **Clean up console statements** (Issue #17) - Code quality

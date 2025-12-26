@@ -381,6 +381,29 @@ QSTASH_NEXT_SIGNING_KEY
 
 ## Recent Changes (December 2025)
 
+### Capacitor Mobile Integration (v1.2.0+)
+- **Native App Support**: iOS and Android platforms via Capacitor
+- **Haptic Feedback**: Integrated with sound system - all sounds trigger matching haptics
+- **Native Share**: Uses platform share sheet on mobile devices
+- **App Lifecycle**: Handles background/foreground transitions
+- **Server-Loaded**: Mobile apps load from hosted Vercel URL
+
+### Safe-Area Support
+- **Viewport**: Added `viewportFit: cover` for notched devices
+- **CSS Utilities**: `--safe-top/bottom/left/right` custom properties
+- **Sticky Headers**: `sticky-header` and `sticky-tabs` classes with safe-area awareness
+- **Dynamic Heights**: `--header-height-mobile/tablet/desktop` variables
+
+### Admin Security Improvements
+- **Session-Based Auth**: Admin key now entered at runtime, stored in `sessionStorage`
+- **No Public Exposure**: Removed `NEXT_PUBLIC_ADMIN_KEY` - key never bundled in client
+- **Login UI**: Admin pages show authentication prompt
+- **Sign Out**: Clear session button to revoke access
+
+### API Performance
+- **N+1 Query Fixed**: Tournament list now uses batch query for user entries
+- **Map Lookup**: O(1) lookup for user registration status
+
 ### Security Fixes
 - **Admin Endpoint Secured**: Removed hardcoded dev-testing key from `/api/admin/grant-tokens`. Now requires `ADMIN_KEY` environment variable.
 
