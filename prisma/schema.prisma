@@ -79,6 +79,7 @@ model User {
   gameSessions GameSession[]
   leaderboards Leaderboard[]
   recordings   Recording[]
+  checkpoints  GameCheckpoint[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -439,4 +440,38 @@ model TournamentEntry {
 
   @@unique([tournamentId, userId])
   @@index([tournamentId, score])
+}
+
+// ============================================
+// Game Checkpoints (Save/Resume System)
+// ============================================
+
+model GameCheckpoint {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String   @default("Checkpoint")
+  gameMode  GameMode
+  isLive    Boolean  @default(false)
+
+  // Game state
+  score           Int      @default(0)
+  timeRemaining   Int?     // Seconds remaining (for timed modes)
+  timeElapsed     Int      @default(0) // Seconds played
+
+  // Train positions and states
+  trainStates     Json     // { trainId: { track, position, speed, direction } }
+
+  // Track states
+  junctionStates  Json     // { junctionId: { thrown: boolean } }
+  crossingStates  Json     // { crossingId: { active: boolean } }
+
+  // Game mode specific data
+  objectives      Json?    // Completed objectives, targets, etc.
+  metadata        Json?    // Any additional mode-specific state
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, gameMode])
 }
