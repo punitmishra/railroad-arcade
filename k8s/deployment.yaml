@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: railroad-arcade
+  labels:
+    app: railroad-arcade
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: railroad-arcade
+  template:
+    metadata:
+      labels:
+        app: railroad-arcade
+    spec:
+      containers:
+        - name: railroad-arcade
+          image: gcr.io/greplabs/railroad-arcade:latest
+          ports:
+            - containerPort: 3000
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          envFrom:
+            - secretRef:
+                name: railroad-arcade-secrets
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3000"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      # Note: imagePullSecrets not needed when GKE cluster is in same project as GCR
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: railroad-arcade-service
+  labels:
+    app: railroad-arcade
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 3000
+      protocol: TCP
+  selector:
+    app: railroad-arcade
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: railroad-arcade-ingress
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "railroad-arcade-ip"
+    networking.gke.io/managed-certificates: "railroad-arcade-cert"
+    kubernetes.io/ingress.allow-http: "false"
+spec:
+  rules:
+    - host: railroad-arcade.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: railroad-arcade-service
+                port:
+                  number: 80
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: railroad-arcade-cert
+spec:
+  domains:
+    - railroad-arcade.example.com

@@ -1,0 +1,50 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Next.js build output
+.next
+out
+
+# iOS/Android native builds
+ios
+android
+
+# Development files
+.env
+.env.local
+.env.development
+.env.test
+*.log
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+CLAUDE.md
+KNOWN_ISSUES.md
+docs/
+
+# Testing
+coverage
+.jest
+__tests__
+
+# Misc
+.DS_Store
+*.pem
+*.key
+
+# Kubernetes secrets (never include in image)
+k8s/secrets.yaml
+
+# Derived data
+DerivedData/
