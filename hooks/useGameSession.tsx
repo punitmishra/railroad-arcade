@@ -238,7 +238,7 @@ export function useGameSession(): GameSessionContext {
     (train: { id: string; speed: number }) => {
       if (engineRef.current) {
         engineRef.current.onTrainUpdate({
-          trackId: parseInt(train.id) || 0,
+          trackId: train.id,
           name: `Train ${train.id}`,
           speed: train.speed,
           direction: 'forward',

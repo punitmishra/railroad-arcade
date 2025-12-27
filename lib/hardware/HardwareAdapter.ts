@@ -8,7 +8,7 @@
 export type TrainDirection = 'forward' | 'reverse' | 'stopped';
 
 export interface TrainState {
-  trackId: number;
+  trackId: string;  // String ID to match Rust backend ("1", "2", "3")
   name: string;
   speed: number;
   direction: TrainDirection;
@@ -38,6 +38,8 @@ export interface SignalState {
   id: string;
   level: number;
   color: 'green' | 'yellow' | 'red';
+  // Additional field for signal state from distance sensors
+  state?: 'green' | 'yellow' | 'red';
 }
 
 export interface SceneryState {
@@ -66,10 +68,10 @@ export interface HardwareAdapter {
 
   // Train Control
   getTrains(): Promise<TrainState[]>;
-  setTrainSpeed(trackId: number, speed: number): Promise<void>;
-  setTrainDirection(trackId: number, direction: TrainDirection): Promise<void>;
-  stopTrain(trackId: number): Promise<void>;
-  toggleHeadlights(trackId: number): Promise<void>;
+  setTrainSpeed(trackId: string, speed: number): Promise<void>;
+  setTrainDirection(trackId: string, direction: TrainDirection): Promise<void>;
+  stopTrain(trackId: string): Promise<void>;
+  toggleHeadlights(trackId: string): Promise<void>;
 
   // Junction Control
   getJunctions(): Promise<JunctionState[]>;
@@ -114,7 +116,7 @@ export interface LayoutState {
 
 export const DEFAULT_TRAINS: TrainState[] = [
   {
-    trackId: 1,
+    trackId: '1',
     name: 'Valley Runner',
     speed: 45,
     direction: 'forward',
@@ -125,7 +127,7 @@ export const DEFAULT_TRAINS: TrainState[] = [
     color: '#22c55e',
   },
   {
-    trackId: 2,
+    trackId: '2',
     name: 'City Limited',
     speed: 0,
     direction: 'stopped',
@@ -136,7 +138,7 @@ export const DEFAULT_TRAINS: TrainState[] = [
     color: '#3b82f6',
   },
   {
-    trackId: 3,
+    trackId: '3',
     name: 'Mountain Express',
     speed: 55,
     direction: 'forward',

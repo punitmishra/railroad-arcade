@@ -81,7 +81,7 @@ export function useHardware() {
   // ============================================
 
   const setTrainSpeed = useCallback(
-    async (trackId: number, speed: number) => {
+    async (trackId: string, speed: number) => {
       if (mode === 'live' && !canControlHardware) {
         console.warn('Cannot control hardware: not in active live session');
         return;
@@ -92,7 +92,7 @@ export function useHardware() {
   );
 
   const setTrainDirection = useCallback(
-    async (trackId: number, direction: 'forward' | 'reverse' | 'stopped') => {
+    async (trackId: string, direction: 'forward' | 'reverse' | 'stopped') => {
       if (mode === 'live' && !canControlHardware) {
         console.warn('Cannot control hardware: not in active live session');
         return;
@@ -103,7 +103,7 @@ export function useHardware() {
   );
 
   const stopTrain = useCallback(
-    async (trackId: number) => {
+    async (trackId: string) => {
       if (mode === 'live' && !canControlHardware) {
         console.warn('Cannot control hardware: not in active live session');
         return;
@@ -119,7 +119,7 @@ export function useHardware() {
   }, [adapter]);
 
   const toggleHeadlights = useCallback(
-    async (trackId: number) => {
+    async (trackId: string) => {
       if (mode === 'live' && !canControlHardware) {
         console.warn('Cannot control hardware: not in active live session');
         return;
@@ -211,7 +211,7 @@ export function useHardware() {
 // ============================================
 // Convenience hook for controlling a single train.
 
-export function useTrain(trackId: number) {
+export function useTrain(trackId: string) {
   const hardware = useHardware();
   const train = hardware.trains.find((t) => t.trackId === trackId);
 

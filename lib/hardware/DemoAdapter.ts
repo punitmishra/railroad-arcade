@@ -78,7 +78,7 @@ export class DemoAdapter implements HardwareAdapter {
     return [...this.trains];
   }
 
-  async setTrainSpeed(trackId: number, speed: number): Promise<void> {
+  async setTrainSpeed(trackId: string, speed: number): Promise<void> {
     const clampedSpeed = Math.max(0, Math.min(100, speed));
     this.trains = this.trains.map((train) =>
       train.trackId === trackId
@@ -92,19 +92,19 @@ export class DemoAdapter implements HardwareAdapter {
     this.notifySubscribers();
   }
 
-  async setTrainDirection(trackId: number, direction: TrainDirection): Promise<void> {
+  async setTrainDirection(trackId: string, direction: TrainDirection): Promise<void> {
     this.trains = this.trains.map((train) =>
       train.trackId === trackId ? { ...train, direction } : train
     );
     this.notifySubscribers();
   }
 
-  async stopTrain(trackId: number): Promise<void> {
+  async stopTrain(trackId: string): Promise<void> {
     await this.setTrainSpeed(trackId, 0);
     await this.setTrainDirection(trackId, 'stopped');
   }
 
-  async toggleHeadlights(trackId: number): Promise<void> {
+  async toggleHeadlights(trackId: string): Promise<void> {
     this.trains = this.trains.map((train) =>
       train.trackId === trackId ? { ...train, headlights: !train.headlights } : train
     );

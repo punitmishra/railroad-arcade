@@ -3,7 +3,7 @@
  */
 
 import { DemoAdapter, getDemoAdapter, resetDemoAdapter } from '@/lib/hardware/DemoAdapter';
-import { HardwareAdapter, TrainState, LayoutState } from '@/lib/hardware/HardwareAdapter';
+import { HardwareAdapter } from '@/lib/hardware/HardwareAdapter';
 
 // Mock requestAnimationFrame for DemoAdapter
 global.requestAnimationFrame = jest.fn((cb) => {
@@ -65,43 +65,43 @@ describe('DemoAdapter', () => {
     });
 
     it('should set train speed', async () => {
-      await adapter.setTrainSpeed(1, 50);
+      await adapter.setTrainSpeed('1', 50);
       const trains = await adapter.getTrains();
-      const train = trains.find(t => t.trackId === 1);
+      const train = trains.find(t => t.trackId === '1');
       expect(train?.speed).toBe(50);
     });
 
     it('should clamp speed to valid range (0-100)', async () => {
-      await adapter.setTrainSpeed(1, 150);
+      await adapter.setTrainSpeed('1', 150);
       let trains = await adapter.getTrains();
-      let train = trains.find(t => t.trackId === 1);
+      let train = trains.find(t => t.trackId === '1');
       expect(train?.speed).toBeLessThanOrEqual(100);
 
-      await adapter.setTrainSpeed(1, -50);
+      await adapter.setTrainSpeed('1', -50);
       trains = await adapter.getTrains();
-      train = trains.find(t => t.trackId === 1);
+      train = trains.find(t => t.trackId === '1');
       expect(train?.speed).toBeGreaterThanOrEqual(0);
     });
 
     it('should set train direction', async () => {
-      await adapter.setTrainDirection(1, 'reverse');
+      await adapter.setTrainDirection('1', 'reverse');
       const trains = await adapter.getTrains();
-      const train = trains.find(t => t.trackId === 1);
+      const train = trains.find(t => t.trackId === '1');
       expect(train?.direction).toBe('reverse');
     });
 
     it('should stop train', async () => {
-      await adapter.setTrainSpeed(1, 50);
-      await adapter.stopTrain(1);
+      await adapter.setTrainSpeed('1', 50);
+      await adapter.stopTrain('1');
       const trains = await adapter.getTrains();
-      const train = trains.find(t => t.trackId === 1);
+      const train = trains.find(t => t.trackId === '1');
       expect(train?.speed).toBe(0);
       expect(train?.direction).toBe('stopped');
     });
 
     it('should handle emergency stop', async () => {
-      await adapter.setTrainSpeed(1, 50);
-      await adapter.setTrainSpeed(2, 75);
+      await adapter.setTrainSpeed('1', 50);
+      await adapter.setTrainSpeed('2', 75);
       await adapter.emergencyStop();
 
       const trains = await adapter.getTrains();
@@ -112,12 +112,12 @@ describe('DemoAdapter', () => {
 
     it('should toggle headlights', async () => {
       const trainsBefore = await adapter.getTrains();
-      const headlightsBefore = trainsBefore.find(t => t.trackId === 1)?.headlights;
+      const headlightsBefore = trainsBefore.find(t => t.trackId === '1')?.headlights;
 
-      await adapter.toggleHeadlights(1);
+      await adapter.toggleHeadlights('1');
 
       const trainsAfter = await adapter.getTrains();
-      const headlightsAfter = trainsAfter.find(t => t.trackId === 1)?.headlights;
+      const headlightsAfter = trainsAfter.find(t => t.trackId === '1')?.headlights;
 
       expect(headlightsAfter).toBe(!headlightsBefore);
     });
@@ -247,7 +247,7 @@ describe('DemoAdapter', () => {
       adapter.subscribe(callback);
 
       callback.mockClear();
-      await adapter.setTrainSpeed(1, 75);
+      await adapter.setTrainSpeed('1', 75);
 
       expect(callback).toHaveBeenCalled();
     });
@@ -258,7 +258,7 @@ describe('DemoAdapter', () => {
 
       callback.mockClear();
       unsubscribe();
-      await adapter.setTrainSpeed(1, 50);
+      await adapter.setTrainSpeed('1', 50);
 
       expect(callback).not.toHaveBeenCalled();
     });

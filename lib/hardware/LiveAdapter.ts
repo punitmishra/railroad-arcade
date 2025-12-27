@@ -2,7 +2,7 @@
 // Live Adapter - Raspberry Pi Hardware Control
 // ============================================
 // This adapter connects to the real Raspberry Pi
-// hardware and sends commands to control trains.
+// Rust backend and sends commands to control trains.
 
 import {
   HardwareAdapter,
@@ -23,7 +23,6 @@ import {
 import * as api from '../api';
 
 export class LiveAdapter implements HardwareAdapter {
-  private apiBase: string;
   private trains: TrainState[];
   private junctions: JunctionState[];
   private crossings: CrossingState[];
@@ -32,10 +31,10 @@ export class LiveAdapter implements HardwareAdapter {
   private subscribers: Set<(state: LayoutState) => void>;
   private pollInterval: NodeJS.Timeout | null;
   private lastSystemStatus: SystemStatus;
+  private cpxStatus: api.CpxStatus | null;
+  private distanceReadings: api.DistanceReading[];
 
   constructor() {
-    this.apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-
     // Initialize with default state (will be updated from hardware)
     this.trains = JSON.parse(JSON.stringify(DEFAULT_TRAINS));
     this.junctions = JSON.parse(JSON.stringify(DEFAULT_JUNCTIONS));
@@ -44,6 +43,8 @@ export class LiveAdapter implements HardwareAdapter {
     this.scenery = { ...DEFAULT_SCENERY };
     this.subscribers = new Set();
     this.pollInterval = null;
+    this.cpxStatus = null;
+    this.distanceReadings = [];
     this.lastSystemStatus = {
       connected: false,
       tracksOnline: 0,
@@ -63,11 +64,22 @@ export class LiveAdapter implements HardwareAdapter {
   async getStatus(): Promise<SystemStatus> {
     try {
       const status = await api.getStatus();
+
+      // Update CPX status if available
+      if (status.cpx_status) {
+        this.cpxStatus = status.cpx_status;
+      }
+
+      // Update distance readings
+      if (status.distances) {
+        this.distanceReadings = status.distances;
+      }
+
       this.lastSystemStatus = {
         connected: true,
-        tracksOnline: status.tracks?.filter((t) => t.active).length ?? 0,
-        cameraOnline: status.camera_active ?? false,
-        cpxOnline: status.cpx_connected ?? false,
+        tracksOnline: status.tracks?.filter((t) => t.running).length ?? 0,
+        cameraOnline: status.camera ?? false,
+        cpxOnline: status.cpx ?? false,
         lastUpdate: Date.now(),
       };
       return this.lastSystemStatus;
@@ -108,7 +120,7 @@ export class LiveAdapter implements HardwareAdapter {
           return {
             ...train,
             speed: trackData.speed,
-            direction: trackData.direction,
+            direction: this.mapDirection(trackData.direction),
           };
         }
         return train;
@@ -120,7 +132,19 @@ export class LiveAdapter implements HardwareAdapter {
     }
   }
 
-  async setTrainSpeed(trackId: number, speed: number): Promise<void> {
+  private mapDirection(dir: api.Direction): TrainDirection {
+    switch (dir) {
+      case 'forward':
+        return 'forward';
+      case 'reverse':
+        return 'reverse';
+      case 'stop':
+      default:
+        return 'stopped';
+    }
+  }
+
+  async setTrainSpeed(trackId: string, speed: number): Promise<void> {
     const clampedSpeed = Math.max(0, Math.min(100, speed));
     await api.setTrackSpeed(trackId, clampedSpeed);
 
@@ -130,16 +154,19 @@ export class LiveAdapter implements HardwareAdapter {
         ? {
             ...train,
             speed: clampedSpeed,
-            direction: clampedSpeed > 0
-              ? (train.direction === 'stopped' ? 'forward' : train.direction)
-              : 'stopped',
+            direction:
+              clampedSpeed > 0
+                ? train.direction === 'stopped'
+                  ? 'forward'
+                  : train.direction
+                : 'stopped',
           }
         : train
     );
     this.notifySubscribers();
   }
 
-  async setTrainDirection(trackId: number, direction: TrainDirection): Promise<void> {
+  async setTrainDirection(trackId: string, direction: TrainDirection): Promise<void> {
     if (direction === 'forward') {
       await api.setTrackForward(trackId);
     } else if (direction === 'reverse') {
@@ -155,7 +182,7 @@ export class LiveAdapter implements HardwareAdapter {
     this.notifySubscribers();
   }
 
-  async stopTrain(trackId: number): Promise<void> {
+  async stopTrain(trackId: string): Promise<void> {
     await api.stopTrack(trackId);
 
     // Update local state
@@ -167,13 +194,20 @@ export class LiveAdapter implements HardwareAdapter {
     this.notifySubscribers();
   }
 
-  async toggleHeadlights(trackId: number): Promise<void> {
-    // Headlights might be controlled via LED API or separate endpoint
-    // For now, just update local state
-    this.trains = this.trains.map((train) =>
-      train.trackId === trackId ? { ...train, headlights: !train.headlights } : train
-    );
-    this.notifySubscribers();
+  async toggleHeadlights(trackId: string): Promise<void> {
+    // Headlights controlled via LED API
+    const train = this.trains.find((t) => t.trackId === trackId);
+    if (train) {
+      const newState = !train.headlights;
+      // Map train to LED color (green for on, off for off)
+      if (newState) {
+        await api.setLed('white').catch(() => {});
+      }
+      this.trains = this.trains.map((t) =>
+        t.trackId === trackId ? { ...t, headlights: newState } : t
+      );
+      this.notifySubscribers();
+    }
   }
 
   // ============================================
@@ -181,12 +215,20 @@ export class LiveAdapter implements HardwareAdapter {
   // ============================================
 
   async getJunctions(): Promise<JunctionState[]> {
-    // API may not have junction state, return local state
+    // Update junction state from CPX servo positions if available
+    if (this.cpxStatus) {
+      this.junctions = this.junctions.map((junction, idx) => {
+        const servoAngle = this.cpxStatus!.servos[idx + 1]; // Servos 2-4 for junctions
+        return {
+          ...junction,
+          position: servoAngle > 20 ? 'diverge' : 'straight',
+        };
+      });
+    }
     return [...this.junctions];
   }
 
   async toggleJunction(id: string): Promise<void> {
-    // Junctions are controlled via servo API
     const junction = this.junctions.find((j) => j.id === id);
     if (junction) {
       const newPosition = junction.position === 'straight' ? 'diverge' : 'straight';
@@ -215,13 +257,13 @@ export class LiveAdapter implements HardwareAdapter {
   }
 
   private getServoForJunction(id: string): number {
-    // Map junction IDs to servo numbers
+    // Map junction IDs to servo numbers (servos 2-4)
     const mapping: Record<string, number> = {
-      'J1': 1,
-      'J2': 2,
-      'J3': 3,
+      J1: 2,
+      J2: 3,
+      J3: 4,
     };
-    return mapping[id] ?? 1;
+    return mapping[id] ?? 2;
   }
 
   // ============================================
@@ -229,6 +271,20 @@ export class LiveAdapter implements HardwareAdapter {
   // ============================================
 
   async getCrossings(): Promise<CrossingState[]> {
+    // Update crossing state from CPX gate position
+    if (this.cpxStatus) {
+      this.crossings = this.crossings.map((crossing) => {
+        if (crossing.id === 'X1') {
+          // Main crossing uses servo 1 / gate
+          return {
+            ...crossing,
+            gatePosition: this.cpxStatus!.gate,
+            isOpen: this.cpxStatus!.gate === 'up',
+          };
+        }
+        return crossing;
+      });
+    }
     return [...this.crossings];
   }
 
@@ -261,8 +317,36 @@ export class LiveAdapter implements HardwareAdapter {
   // ============================================
 
   async getSignals(): Promise<SignalState[]> {
-    // Signals are typically read-only, computed based on train positions
+    // Signals are computed based on train positions and distance sensors
+    if (this.distanceReadings.length > 0) {
+      this.signals = this.signals.map((signal) => {
+        const sensor = this.distanceReadings.find(
+          (d) => d.name === `signal_${signal.id.toLowerCase()}`
+        );
+        if (sensor) {
+          return {
+            ...signal,
+            state: sensor.blocked ? 'red' : 'green',
+          };
+        }
+        return signal;
+      });
+    }
     return [...this.signals];
+  }
+
+  // ============================================
+  // Distance Sensors
+  // ============================================
+
+  async getDistanceReadings(): Promise<api.DistanceReading[]> {
+    try {
+      this.distanceReadings = await api.getDistances();
+      return this.distanceReadings;
+    } catch (error) {
+      console.error('Failed to get distance readings:', error);
+      return this.distanceReadings;
+    }
   }
 
   // ============================================
@@ -272,15 +356,14 @@ export class LiveAdapter implements HardwareAdapter {
   async getScenery(): Promise<SceneryState> {
     try {
       const sceneryData = await api.getScenery();
-      // Map API response to our format
       this.scenery = {
-        timeOfDay: sceneryData.time_of_day === 'day' ? 'day'
-          : sceneryData.time_of_day === 'sunset' ? 'sunset'
-          : sceneryData.time_of_day === 'night' ? 'night'
-          : 'day',
-        weather: 'clear', // API may not have weather
-        season: 'summer', // API may not have season
-        lightsOn: Object.values(sceneryData.lights || {}).some((v) => v),
+        timeOfDay: sceneryData.time_of_day,
+        weather: 'clear',
+        season: 'summer',
+        lightsOn:
+          sceneryData.lighting.residential ||
+          sceneryData.lighting.entertainment ||
+          sceneryData.lighting.streets,
       };
       return { ...this.scenery };
     } catch (error) {
@@ -290,11 +373,23 @@ export class LiveAdapter implements HardwareAdapter {
   }
 
   async setScenery(scenery: Partial<SceneryState>): Promise<void> {
-    // Map our format to API format
     const apiScenery: Partial<api.SceneryState> = {};
 
     if (scenery.timeOfDay) {
-      apiScenery.time_of_day = scenery.timeOfDay === 'sunrise' ? 'day' : scenery.timeOfDay as 'day' | 'sunset' | 'night';
+      apiScenery.time_of_day =
+        scenery.timeOfDay === 'sunrise' ? 'day' : (scenery.timeOfDay as 'day' | 'sunset' | 'night');
+    }
+
+    if (scenery.lightsOn !== undefined) {
+      apiScenery.lighting = {
+        residential: scenery.lightsOn,
+        entertainment: scenery.lightsOn,
+        station1: scenery.lightsOn,
+        station2: scenery.lightsOn,
+        parking: scenery.lightsOn,
+        tunnels: scenery.lightsOn,
+        streets: scenery.lightsOn,
+      };
     }
 
     await api.setScenery(apiScenery);
@@ -309,6 +404,75 @@ export class LiveAdapter implements HardwareAdapter {
 
   async playSound(name: string): Promise<void> {
     await api.playSound(name);
+  }
+
+  // ============================================
+  // Camera
+  // ============================================
+
+  async startCamera(): Promise<api.CameraStatus> {
+    return api.startCamera();
+  }
+
+  async stopCamera(): Promise<api.CameraStatus> {
+    return api.stopCamera();
+  }
+
+  async getCameraStatus(): Promise<api.CameraStatus> {
+    return api.getCameraStatus();
+  }
+
+  // ============================================
+  // CPX
+  // ============================================
+
+  async getCpxStatus(): Promise<api.CpxStatus | null> {
+    try {
+      this.cpxStatus = await api.getCpxStatus();
+      return this.cpxStatus;
+    } catch {
+      return null;
+    }
+  }
+
+  async calibrateServos(): Promise<void> {
+    await api.calibrateServos();
+  }
+
+  async getCpxTemperature(): Promise<number | null> {
+    try {
+      return await api.getCpxTemperature();
+    } catch {
+      return null;
+    }
+  }
+
+  // ============================================
+  // Automation
+  // ============================================
+
+  async getSequences(): Promise<api.AutomationSequence[]> {
+    return api.getSequences();
+  }
+
+  async runSequence(id: string): Promise<void> {
+    await api.runSequence(id);
+  }
+
+  // ============================================
+  // Schedules
+  // ============================================
+
+  async getSchedules(): Promise<api.Schedule[]> {
+    return api.getSchedules();
+  }
+
+  async createSchedule(schedule: Omit<api.Schedule, 'id'>): Promise<api.Schedule> {
+    return api.createSchedule(schedule);
+  }
+
+  async deleteSchedule(id: number): Promise<void> {
+    await api.deleteSchedule(id);
   }
 
   // ============================================
@@ -345,23 +509,26 @@ export class LiveAdapter implements HardwareAdapter {
   // ============================================
 
   private startPolling(): void {
-    // Poll for updates every 500ms when there are subscribers
+    // Poll for updates every 1000ms when there are subscribers
     this.pollInterval = setInterval(async () => {
       if (this.subscribers.size > 0) {
         await this.refreshState();
       }
-    }, 500);
+    }, 1000);
   }
 
   private async refreshState(): Promise<void> {
     try {
-      await Promise.all([
-        this.getStatus(),
-        this.getTrains(),
-      ]);
+      await Promise.all([this.getStatus(), this.getTrains()]);
       this.notifySubscribers();
     } catch (error) {
-      console.error('Failed to refresh state:', error);
+      // Connection failed, update status
+      this.lastSystemStatus = {
+        ...this.lastSystemStatus,
+        connected: false,
+        lastUpdate: Date.now(),
+      };
+      this.notifySubscribers();
     }
   }
 

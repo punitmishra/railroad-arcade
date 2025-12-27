@@ -48,10 +48,10 @@ export interface HardwareAdapterState {
 
 export interface HardwareAdapterActions {
   // Train actions
-  setTrainSpeed: (trackId: number, speed: number) => Promise<boolean>;
-  setTrainDirection: (trackId: number, direction: TrainDirection) => Promise<boolean>;
-  stopTrain: (trackId: number) => Promise<boolean>;
-  toggleHeadlights: (trackId: number) => Promise<boolean>;
+  setTrainSpeed: (trackId: string, speed: number) => Promise<boolean>;
+  setTrainDirection: (trackId: string, direction: TrainDirection) => Promise<boolean>;
+  stopTrain: (trackId: string) => Promise<boolean>;
+  toggleHeadlights: (trackId: string) => Promise<boolean>;
   emergencyStop: () => Promise<boolean>;
 
   // Junction actions
@@ -255,7 +255,7 @@ export function useHardwareAdapter(options: UseHardwareAdapterOptions): UseHardw
   // ============================================
 
   const setTrainSpeed = useCallback(
-    async (trackId: number, speed: number): Promise<boolean> => {
+    async (trackId: string, speed: number): Promise<boolean> => {
       const adapter = adapterRef.current;
       if (!adapter) return false;
 
@@ -282,7 +282,7 @@ export function useHardwareAdapter(options: UseHardwareAdapterOptions): UseHardw
   );
 
   const setTrainDirection = useCallback(
-    async (trackId: number, direction: TrainDirection): Promise<boolean> => {
+    async (trackId: string, direction: TrainDirection): Promise<boolean> => {
       const adapter = adapterRef.current;
       if (!adapter) return false;
 
@@ -298,7 +298,7 @@ export function useHardwareAdapter(options: UseHardwareAdapterOptions): UseHardw
   );
 
   const stopTrain = useCallback(
-    async (trackId: number): Promise<boolean> => {
+    async (trackId: string): Promise<boolean> => {
       const adapter = adapterRef.current;
       if (!adapter) return false;
 
@@ -315,7 +315,7 @@ export function useHardwareAdapter(options: UseHardwareAdapterOptions): UseHardw
   );
 
   const toggleHeadlights = useCallback(
-    async (trackId: number): Promise<boolean> => {
+    async (trackId: string): Promise<boolean> => {
       const adapter = adapterRef.current;
       if (!adapter) return false;
 

@@ -491,8 +491,8 @@ export function LiveTrackLayout({
     const isStopping = train && train.speed > 0 && speed === 0;
 
     if (mode === 'live' && train) {
-      // Map trainId to trackId (T1->1, T2->2, T3->3)
-      const trackId = parseInt(trainId.replace('T', ''));
+      // Map trainId to trackId (T1->"1", T2->"2", T3->"3")
+      const trackId = trainId.replace('T', '');
       const success = await adapterActions.setTrainSpeed(trackId, speed);
       if (!success && isStarting) return; // Only block if starting (costs tokens)
     }
