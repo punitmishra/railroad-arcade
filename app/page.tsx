@@ -16,7 +16,7 @@ import {
   TrainIcon, EmergencyIcon, GearIcon, GridIcon, MenuIcon, CloseIcon,
   MapIcon, LayersIcon, TreeIcon, SunIcon, CameraIcon, CalendarIcon,
   ActivityIcon, PowerIcon, WifiIcon, BatteryIcon, SensorIcon, CoinsIcon,
-  HistoryIcon, ImageIcon
+  HistoryIcon, ImageIcon, BookmarkIcon
 } from '@/components/icons';
 import { UserMenu } from '@/components/auth/UserMenu';
 import { TrainTrackingModule } from '@/components/TrainTrackingModule';
@@ -37,6 +37,7 @@ import { SessionHistory } from '@/components/SessionHistory';
 import { StreamingPanel } from '@/components/StreamingPanel';
 import { MultiCameraGrid } from '@/components/MultiCameraGrid';
 import { TournamentBanner } from '@/components/TournamentBanner';
+import { CheckpointList, CheckpointButton } from '@/components/CheckpointList';
 import { ModeToggle, ViewOnlyBadge } from '@/components/ModeToggle';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { useGameMode } from '@/lib/contexts/ModeContext';
@@ -107,6 +108,7 @@ function RailroadArcade() {
   const [showEmergencyConfirm, setShowEmergencyConfirm] = useState(false);
   const [showGameModeSelector, setShowGameModeSelector] = useState(false);
   const [showGameOver, setShowGameOver] = useState(false);
+  const [showCheckpoints, setShowCheckpoints] = useState(false);
   const [gameOverResult, setGameOverResult] = useState<{
     isNewHighScore: boolean;
     previousHighScore: number;
@@ -647,6 +649,61 @@ function RailroadArcade() {
                     compact={false}
                   />
                 </ErrorBoundary>
+
+                {/* Checkpoints Panel */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                  {/* Checkpoint Toggle Button */}
+                  <button
+                    onClick={() => setShowCheckpoints(!showCheckpoints)}
+                    className={`
+                      flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all min-h-[48px]
+                      ${showCheckpoints
+                        ? 'bg-cyan-500/20 border-cyan-500/30 text-cyan-400'
+                        : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
+                      }
+                    `}
+                    aria-expanded={showCheckpoints}
+                    aria-label={showCheckpoints ? 'Hide checkpoints' : 'Show checkpoints'}
+                  >
+                    <BookmarkIcon size={18} />
+                    <span className="font-medium text-sm">Checkpoints</span>
+                    <svg
+                      className={`w-4 h-4 transition-transform ${showCheckpoints ? 'rotate-180' : ''}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Checkpoint List (collapsible) */}
+                {showCheckpoints && (
+                  <ErrorBoundary variant="inline">
+                    <CheckpointList
+                      gameMode={currentMode || undefined}
+                      onLoad={(checkpoint) => {
+                        playSound('success');
+                        addToast('success', `Loaded checkpoint: ${checkpoint.name}`);
+                        // TODO: Restore game state from checkpoint
+                      }}
+                      onSave={isGameActive ? () => {
+                        if (!gameState || !currentMode) return null;
+                        return {
+                          gameMode: currentMode,
+                          score: gameState.score,
+                          timeRemaining: gameState.remainingTime ?? undefined,
+                          timeElapsed: gameState.elapsedTime,
+                          trainStates: {},
+                          junctionStates: {},
+                          crossingStates: {},
+                        };
+                      } : undefined}
+                      className="animate-[tab-enter_0.2s_ease-out]"
+                    />
+                  </ErrorBoundary>
+                )}
 
                 {/* Quick Access Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4">

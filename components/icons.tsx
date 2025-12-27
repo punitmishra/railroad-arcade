@@ -578,3 +578,6 @@ export const MinimizeIcon = ({ size = 24, ...p }: IconProps) => (
 export const FocusIcon = ({ size = 24, ...p }: IconProps) => (
   <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><circle cx="12" cy="12" r="3"/><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/></svg>
 );
+export const BookmarkIcon = ({ size = 24, ...p }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+);

@@ -107,30 +107,32 @@ export function SensorManagement() {
   return (
     <div className="bg-[#0c0c14] rounded-2xl border border-white/10 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-5 bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border-b border-white/10">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center">
-            <SensorIcon size={24} className="text-emerald-400" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-4 sm:px-6 py-4 sm:py-5 bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border-b border-white/10">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center flex-shrink-0">
+            <SensorIcon size={20} className="sm:hidden text-emerald-400" />
+            <SensorIcon size={24} className="hidden sm:block text-emerald-400" />
           </div>
           <div>
-            <h2 
-              className="text-lg font-bold tracking-wide"
+            <h2
+              className="text-base sm:text-lg font-bold tracking-wide"
               style={{ fontFamily: 'Orbitron, system-ui, sans-serif' }}
             >
               Sensor Management
             </h2>
-            <p className="text-sm text-gray-400">Real-time hardware monitoring</p>
+            <p className="text-xs sm:text-sm text-gray-400">Real-time hardware monitoring</p>
           </div>
         </div>
-        
-        <div className="flex items-center gap-3">
+
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Refresh Rate */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10 min-h-[44px]">
             <RefreshIcon size={14} className="text-gray-400" />
             <select
               value={refreshRate}
               onChange={(e) => setRefreshRate(Number(e.target.value))}
               className="bg-transparent text-sm text-gray-300 outline-none"
+              aria-label="Refresh rate"
             >
               <option value={100}>100ms</option>
               <option value={250}>250ms</option>
@@ -138,17 +140,19 @@ export function SensorManagement() {
               <option value={1000}>1s</option>
             </select>
           </div>
-          
+
           {/* Auto Refresh Toggle */}
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
             className={`
-              flex items-center gap-2 px-4 py-2 rounded-xl border transition-all
-              ${autoRefresh 
-                ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' 
+              flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl border transition-all min-h-[44px] active:scale-95
+              ${autoRefresh
+                ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
                 : 'bg-white/5 border-white/10 text-gray-400'
               }
             `}
+            aria-label="Toggle live updates"
+            aria-pressed={autoRefresh}
           >
             <ActivityIcon size={16} />
             <span className="text-sm font-medium">Live</span>
@@ -157,42 +161,45 @@ export function SensorManagement() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 px-6 py-3 bg-black/20 border-b border-white/5 overflow-x-auto">
+      <div className="flex gap-1 px-4 sm:px-6 py-3 bg-black/20 border-b border-white/5 overflow-x-auto scrollbar-hide">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`
-              flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap
-              ${activeTab === tab.id 
-                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' 
-                : 'text-gray-400 hover:bg-white/5 hover:text-white border border-transparent'
+              flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap min-h-[44px] active:scale-95
+              ${activeTab === tab.id
+                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                : 'text-gray-400 hover:bg-white/5 hover:text-white active:bg-white/10 border border-transparent'
               }
             `}
           >
             {tab.icon}
-            {tab.label}
+            <span className="hidden sm:inline">{tab.label}</span>
           </button>
         ))}
       </div>
 
       {/* Content */}
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {/* Overview */}
         {activeTab === 'overview' && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Status Summary */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
               {[
-                { label: 'Total Sensors', value: sensors.length, color: '#00f0ff' },
-                { label: 'Online', value: sensors.filter(s => s.status === 'online').length, color: '#22c55e' },
-                { label: 'Warnings', value: sensors.filter(s => s.status === 'warning').length, color: '#f59e0b' },
-                { label: 'Errors', value: sensors.filter(s => s.status === 'error').length, color: '#ef4444' },
+                { label: 'Total', labelFull: 'Total Sensors', value: sensors.length, color: '#00f0ff' },
+                { label: 'Online', labelFull: 'Online', value: sensors.filter(s => s.status === 'online').length, color: '#22c55e' },
+                { label: 'Warn', labelFull: 'Warnings', value: sensors.filter(s => s.status === 'warning').length, color: '#f59e0b' },
+                { label: 'Error', labelFull: 'Errors', value: sensors.filter(s => s.status === 'error').length, color: '#ef4444' },
               ].map((stat, i) => (
-                <div key={i} className="p-4 rounded-xl bg-white/[0.02] border border-white/10">
-                  <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">{stat.label}</div>
-                  <div 
-                    className="text-3xl font-bold"
+                <div key={i} className="p-3 sm:p-4 rounded-xl bg-white/[0.02] border border-white/10">
+                  <div className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider mb-1">
+                    <span className="sm:hidden">{stat.label}</span>
+                    <span className="hidden sm:inline">{stat.labelFull}</span>
+                  </div>
+                  <div
+                    className="text-2xl sm:text-3xl font-bold"
                     style={{ color: stat.color, fontFamily: 'JetBrains Mono, monospace' }}
                   >
                     {stat.value}
@@ -202,52 +209,52 @@ export function SensorManagement() {
             </div>
 
             {/* All Sensors Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {sensors.map(sensor => (
-                <div 
+                <div
                   key={sensor.id}
-                  className="p-4 rounded-xl bg-white/[0.02] border border-white/10 hover:bg-white/[0.04] transition-all"
+                  className="p-3 sm:p-4 rounded-xl bg-white/[0.02] border border-white/10 hover:bg-white/[0.04] active:bg-white/[0.06] transition-all"
                 >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div 
-                        className="w-10 h-10 rounded-xl flex items-center justify-center"
-                        style={{ 
+                  <div className="flex items-center justify-between mb-2 sm:mb-3">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                      <div
+                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{
                           backgroundColor: `${getStatusColor(sensor.status)}15`,
                           color: getStatusColor(sensor.status)
                         }}
                       >
                         {getSensorIcon(sensor.type)}
                       </div>
-                      <div>
-                        <div className="font-medium text-sm">{sensor.name}</div>
-                        <div className="text-xs text-gray-500">{sensor.pin}</div>
+                      <div className="min-w-0">
+                        <div className="font-medium text-xs sm:text-sm truncate">{sensor.name}</div>
+                        <div className="text-[10px] sm:text-xs text-gray-500 truncate">{sensor.pin}</div>
                       </div>
                     </div>
-                    <div 
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ 
+                    <div
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0 ml-2"
+                      style={{
                         backgroundColor: getStatusColor(sensor.status),
                         boxShadow: `0 0 8px ${getStatusColor(sensor.status)}`
                       }}
                     />
                   </div>
-                  
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <div 
-                        className="text-2xl font-bold"
+
+                  <div className="flex items-end justify-between gap-3">
+                    <div className="flex-shrink-0">
+                      <div
+                        className="text-xl sm:text-2xl font-bold"
                         style={{ fontFamily: 'JetBrains Mono, monospace' }}
                       >
                         {sensor.value.toFixed(1)}
                       </div>
-                      <div className="text-xs text-gray-500">{sensor.unit}</div>
+                      <div className="text-[10px] sm:text-xs text-gray-500">{sensor.unit}</div>
                     </div>
-                    <div className="flex-1 ml-4">
+                    <div className="flex-1">
                       <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className="h-full rounded-full transition-all duration-300"
-                          style={{ 
+                          style={{
                             width: `${((sensor.value - sensor.min) / (sensor.max - sensor.min)) * 100}%`,
                             backgroundColor: getStatusColor(sensor.status)
                           }}
@@ -394,21 +401,21 @@ export function SensorManagement() {
             </div>
             
             {/* Detection Status */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               {sensors.filter(s => s.type === 'light').map(sensor => (
-                <div 
+                <div
                   key={sensor.id}
                   className={`
-                    p-4 rounded-xl border text-center
-                    ${sensor.value < 300 
-                      ? 'bg-purple-500/10 border-purple-500/30' 
+                    p-3 sm:p-4 rounded-xl border text-center
+                    ${sensor.value < 300
+                      ? 'bg-purple-500/10 border-purple-500/30'
                       : 'bg-yellow-500/10 border-yellow-500/30'
                     }
                   `}
                 >
-                  <div className="text-2xl mb-1">{sensor.value < 300 ? '🚂' : '☀️'}</div>
-                  <div className="text-sm font-medium">{sensor.name}</div>
-                  <div className={`text-xs mt-1 ${sensor.value < 300 ? 'text-purple-400' : 'text-yellow-400'}`}>
+                  <div className="text-xl sm:text-2xl mb-1">{sensor.value < 300 ? '🚂' : '☀️'}</div>
+                  <div className="text-xs sm:text-sm font-medium">{sensor.name}</div>
+                  <div className={`text-[10px] sm:text-xs mt-1 ${sensor.value < 300 ? 'text-purple-400' : 'text-yellow-400'}`}>
                     {sensor.value < 300 ? 'Train Detected' : 'Clear'}
                   </div>
                 </div>
@@ -454,17 +461,18 @@ export function SensorManagement() {
             </div>
             
             {/* NeoPixel Control */}
-            <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/10">
-              <h4 className="font-semibold mb-4">NeoPixel Ring (10 LEDs)</h4>
-              <div className="flex justify-center gap-2">
+            <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.02] border border-white/10">
+              <h4 className="font-semibold mb-4 text-sm sm:text-base">NeoPixel Ring (10 LEDs)</h4>
+              <div className="flex justify-center flex-wrap gap-2 sm:gap-3">
                 {[...Array(10)].map((_, i) => (
-                  <div 
+                  <button
                     key={i}
-                    className="w-8 h-8 rounded-full cursor-pointer transition-all hover:scale-110"
-                    style={{ 
+                    className="w-10 h-10 sm:w-11 sm:h-11 rounded-full cursor-pointer transition-all hover:scale-110 active:scale-95 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                    style={{
                       background: `hsl(${i * 36}, 100%, 50%)`,
                       boxShadow: `0 0 12px hsl(${i * 36}, 100%, 50%)`
                     }}
+                    aria-label={`LED ${i + 1}`}
                   />
                 ))}
               </div>
@@ -474,18 +482,18 @@ export function SensorManagement() {
 
         {/* GPIO */}
         {activeTab === 'gpio' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          <div className="space-y-4 sm:space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
               {gpioPins.map(pin => (
-                <div 
+                <button
                   key={pin.pin}
                   className={`
-                    p-3 rounded-xl border transition-all cursor-pointer
-                    ${pin.mode === 'input' 
-                      ? 'bg-blue-500/10 border-blue-500/30' 
+                    p-3 rounded-xl border transition-all cursor-pointer text-left active:scale-[0.98] min-h-[80px]
+                    ${pin.mode === 'input'
+                      ? 'bg-blue-500/10 border-blue-500/30 active:bg-blue-500/20'
                       : pin.mode === 'pwm'
-                        ? 'bg-purple-500/10 border-purple-500/30'
-                        : 'bg-emerald-500/10 border-emerald-500/30'
+                        ? 'bg-purple-500/10 border-purple-500/30 active:bg-purple-500/20'
+                        : 'bg-emerald-500/10 border-emerald-500/30 active:bg-emerald-500/20'
                     }
                   `}
                 >
@@ -493,25 +501,25 @@ export function SensorManagement() {
                     <span className="text-xs font-mono text-gray-400">{pin.name}</span>
                     <span className={`
                       text-[10px] px-1.5 py-0.5 rounded uppercase font-medium
-                      ${pin.mode === 'input' ? 'bg-blue-500/30 text-blue-400' : 
-                        pin.mode === 'pwm' ? 'bg-purple-500/30 text-purple-400' : 
+                      ${pin.mode === 'input' ? 'bg-blue-500/30 text-blue-400' :
+                        pin.mode === 'pwm' ? 'bg-purple-500/30 text-purple-400' :
                         'bg-emerald-500/30 text-emerald-400'
                       }
                     `}>
                       {pin.mode}
                     </span>
                   </div>
-                  <div className="text-sm font-medium truncate mb-1">{pin.label}</div>
+                  <div className="text-xs sm:text-sm font-medium truncate mb-1">{pin.label}</div>
                   <div className="flex items-center gap-2">
                     {pin.mode === 'pwm' ? (
                       <div className="flex-1 h-1.5 bg-white/10 rounded-full">
-                        <div 
+                        <div
                           className="h-full bg-purple-500 rounded-full transition-all"
                           style={{ width: `${pin.state}%` }}
                         />
                       </div>
                     ) : (
-                      <div 
+                      <div
                         className={`w-3 h-3 rounded-full ${
                           pin.state ? 'bg-emerald-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-gray-600'
                         }`}
@@ -521,23 +529,23 @@ export function SensorManagement() {
                       {pin.mode === 'pwm' ? `${pin.state}%` : (pin.state ? 'HIGH' : 'LOW')}
                     </span>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
-            
+
             {/* GPIO Legend */}
-            <div className="flex flex-wrap gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/10">
+            <div className="flex flex-wrap gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl bg-white/[0.02] border border-white/10">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-blue-500" />
-                <span className="text-sm text-gray-400">Input</span>
+                <span className="text-xs sm:text-sm text-gray-400">Input</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                <span className="text-sm text-gray-400">Output</span>
+                <span className="text-xs sm:text-sm text-gray-400">Output</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-purple-500" />
-                <span className="text-sm text-gray-400">PWM</span>
+                <span className="text-xs sm:text-sm text-gray-400">PWM</span>
               </div>
             </div>
           </div>
@@ -545,90 +553,91 @@ export function SensorManagement() {
 
         {/* Calibration */}
         {activeTab === 'calibration' && (
-          <div className="space-y-6">
-            <div className="p-5 rounded-2xl bg-amber-500/5 border border-amber-500/20">
+          <div className="space-y-4 sm:space-y-6">
+            <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/5 border border-amber-500/20">
               <div className="flex items-start gap-3">
-                <AlertCircleIcon size={24} className="text-amber-400 flex-shrink-0" />
+                <AlertCircleIcon size={20} className="sm:hidden text-amber-400 flex-shrink-0 mt-0.5" />
+                <AlertCircleIcon size={24} className="hidden sm:block text-amber-400 flex-shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-amber-400">Calibration Mode</h4>
-                  <p className="text-sm text-gray-400 mt-1">
+                  <h4 className="font-semibold text-amber-400 text-sm sm:text-base">Calibration Mode</h4>
+                  <p className="text-xs sm:text-sm text-gray-400 mt-1">
                     Place trains in known positions before calibrating. Ensure consistent lighting conditions for light sensors.
                   </p>
                 </div>
               </div>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {/* Distance Calibration */}
-              <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/10">
-                <h4 className="font-semibold mb-4 flex items-center gap-2">
+              <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.02] border border-white/10">
+                <h4 className="font-semibold mb-4 flex items-center gap-2 text-sm sm:text-base">
                   <DistanceSensorIcon size={18} />
                   Distance Sensor Calibration
                 </h4>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm text-gray-400 block mb-2">Detection Threshold (cm)</label>
-                    <input 
-                      type="range" 
-                      min="5" 
-                      max="50" 
+                    <label className="text-xs sm:text-sm text-gray-400 block mb-2">Detection Threshold (cm)</label>
+                    <input
+                      type="range"
+                      min="5"
+                      max="50"
                       defaultValue="15"
-                      className="w-full"
+                      className="w-full h-2 rounded-lg appearance-none cursor-pointer"
                     />
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <div className="flex justify-between text-[10px] sm:text-xs text-gray-500 mt-1">
                       <span>5 cm</span>
                       <span>50 cm</span>
                     </div>
                   </div>
-                  <button className="w-full py-2.5 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-medium hover:bg-cyan-500/30 transition-all">
+                  <button className="w-full py-3 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-medium hover:bg-cyan-500/30 active:bg-cyan-500/40 transition-all min-h-[44px] active:scale-[0.98]">
                     Run Calibration
                   </button>
                 </div>
               </div>
-              
+
               {/* Light Calibration */}
-              <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/10">
-                <h4 className="font-semibold mb-4 flex items-center gap-2">
+              <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.02] border border-white/10">
+                <h4 className="font-semibold mb-4 flex items-center gap-2 text-sm sm:text-base">
                   <LightSensorIcon size={18} />
                   Light Sensor Calibration
                 </h4>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm text-gray-400 block mb-2">Dark Threshold (train present)</label>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="500" 
+                    <label className="text-xs sm:text-sm text-gray-400 block mb-2">Dark Threshold (train present)</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="500"
                       defaultValue="300"
-                      className="w-full"
+                      className="w-full h-2 rounded-lg appearance-none cursor-pointer"
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-gray-400 block mb-2">Ambient Light Level</label>
-                    <input 
-                      type="range" 
-                      min="500" 
-                      max="1023" 
+                    <label className="text-xs sm:text-sm text-gray-400 block mb-2">Ambient Light Level</label>
+                    <input
+                      type="range"
+                      min="500"
+                      max="1023"
                       defaultValue="800"
-                      className="w-full"
+                      className="w-full h-2 rounded-lg appearance-none cursor-pointer"
                     />
                   </div>
-                  <button className="w-full py-2.5 rounded-xl bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 font-medium hover:bg-yellow-500/30 transition-all">
+                  <button className="w-full py-3 rounded-xl bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 font-medium hover:bg-yellow-500/30 active:bg-yellow-500/40 transition-all min-h-[44px] active:scale-[0.98]">
                     Calibrate Ambient
                   </button>
                 </div>
               </div>
             </div>
-            
+
             {/* Save/Export */}
-            <div className="flex gap-3">
-              <button className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-medium hover:bg-emerald-500/30 transition-all">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <button className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-medium hover:bg-emerald-500/30 active:bg-emerald-500/40 transition-all min-h-[44px] active:scale-[0.98]">
                 <CheckCircleIcon size={18} />
                 Save Calibration
               </button>
-              <button className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 transition-all">
+              <button className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 active:bg-white/15 transition-all min-h-[44px] active:scale-[0.98]">
                 <DownloadIcon size={18} />
-                Export Config
+                <span className="sm:inline">Export Config</span>
               </button>
             </div>
           </div>
