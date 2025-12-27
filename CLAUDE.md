@@ -391,6 +391,13 @@ QSTASH_NEXT_SIGNING_KEY
 
 ## Recent Changes (December 2025)
 
+### v1.3.0 - Performance & Cleanup
+- **Removed Fake Features**: Eliminated simulated chat, viewer counts, donations from StreamingPanel
+- **CPU Optimization**: Removed spinning track animations, reduced trail rendering complexity
+- **Sensor Cleanup**: Disabled auto-refresh of simulated sensor data by default
+- **Starfield Simplification**: Reduced from 21 animated stars to 9 static elements
+- **Ready for Backend**: Frontend now waits for real Raspberry Pi connection
+
 ### Capacitor Mobile Integration (v1.2.0+)
 - **Native App Support**: iOS and Android platforms via Capacitor
 - **Haptic Feedback**: Integrated with sound system - all sounds trigger matching haptics
@@ -540,6 +547,8 @@ See `KNOWN_ISSUES.md` for a comprehensive list of bugs and technical debt.
 
 | Version | Date | Key Changes |
 |---------|------|-------------|
+| v1.3.0 | Dec 2025 | Removed fake features, CPU performance optimization, ready for Pi backend |
+| v1.2.2 | Dec 2025 | Version sync and cleanup |
 | v1.2.1 | Dec 2025 | Removed GKE infrastructure, Vercel-only deployment |
 | v1.2.0 | Dec 2025 | Capacitor mobile integration, mobile responsiveness |
 | v1.1.0 | Dec 2025 | Full Tournament API with automation and admin UI |
