@@ -357,9 +357,9 @@ export function LiveTrackLayout({
             }
           }
 
-          // Update history for trail
+          // Update history for trail (reduced from 30 to 15 for performance)
           const pos = getEllipsePoint(level.cx, level.cy, level.rx, level.ry, newPosition);
-          const newHistory = [...train.history, { x: pos.x, y: pos.y }].slice(-30);
+          const newHistory = [...train.history, { x: pos.x, y: pos.y }].slice(-15);
 
           return {
             ...train,
@@ -743,29 +743,15 @@ export function LiveTrackLayout({
               </radialGradient>
             </defs>
 
-            {/* Starfield for night mode */}
+            {/* Starfield for night mode - static for performance */}
             {nightMode && (
-              <g className="animate-[twinkle_3s_ease-in-out_infinite]">
-                {/* Generate deterministic star positions */}
+              <g opacity="0.4">
                 {[
-                  { x: 45, y: 25, r: 1.2 }, { x: 120, y: 50, r: 0.8 }, { x: 200, y: 35, r: 1 },
-                  { x: 280, y: 60, r: 0.7 }, { x: 350, y: 20, r: 1.1 }, { x: 420, y: 45, r: 0.9 },
-                  { x: 500, y: 30, r: 1 }, { x: 580, y: 55, r: 0.8 }, { x: 650, y: 40, r: 1.2 },
-                  { x: 70, y: 380, r: 0.9 }, { x: 150, y: 400, r: 1.1 }, { x: 230, y: 420, r: 0.7 },
-                  { x: 310, y: 395, r: 1 }, { x: 400, y: 410, r: 0.8 }, { x: 480, y: 385, r: 1.2 },
-                  { x: 560, y: 415, r: 0.9 }, { x: 630, y: 390, r: 1 },
-                  { x: 30, y: 200, r: 0.6 }, { x: 670, y: 180, r: 0.7 }, { x: 25, y: 280, r: 0.8 },
-                  { x: 680, y: 260, r: 0.6 },
+                  { x: 45, y: 25 }, { x: 120, y: 50 }, { x: 200, y: 35 },
+                  { x: 350, y: 20 }, { x: 500, y: 30 }, { x: 650, y: 40 },
+                  { x: 70, y: 380 }, { x: 310, y: 395 }, { x: 560, y: 415 },
                 ].map((star, i) => (
-                  <circle
-                    key={`star-${i}`}
-                    cx={star.x}
-                    cy={star.y}
-                    r={star.r}
-                    fill="white"
-                    opacity={0.3 + (i % 3) * 0.2}
-                    className={i % 2 === 0 ? 'animate-pulse' : ''}
-                  />
+                  <circle key={`star-${i}`} cx={star.x} cy={star.y} r={1} fill="white" />
                 ))}
               </g>
             )}
@@ -785,9 +771,7 @@ export function LiveTrackLayout({
                 <ellipse cx={LEVEL2.cx} cy={LEVEL2.cy} rx={LEVEL2.rx} ry={LEVEL2.ry} fill="none" stroke="#1a1a24" strokeWidth="26" />
                 <ellipse cx={LEVEL2.cx} cy={LEVEL2.cy} rx={LEVEL2.rx} ry={LEVEL2.ry} fill="none" stroke="#2a2a36" strokeWidth="18" />
                 <ellipse cx={LEVEL2.cx} cy={LEVEL2.cy} rx={LEVEL2.rx} ry={LEVEL2.ry} fill="none" stroke="#3a3a46" strokeWidth="10" />
-                {!nightMode && (
-                  <ellipse cx={LEVEL2.cx} cy={LEVEL2.cy} rx={LEVEL2.rx} ry={LEVEL2.ry} fill="none" stroke="url(#gradL2)" strokeWidth="2" strokeDasharray="15 25" className="animate-[spin_30s_linear_infinite]" style={{ transformOrigin: `${LEVEL2.cx}px ${LEVEL2.cy}px` }} />
-                )}
+                {/* Removed spinning animation for performance */}
                 
                 {/* Grand Central Station */}
                 <g transform={`translate(${LEVEL2.cx}, ${LEVEL2.cy - LEVEL2.ry - 20})`}>
@@ -816,9 +800,7 @@ export function LiveTrackLayout({
                 <ellipse cx={LEVEL1.cx} cy={LEVEL1.cy} rx={LEVEL1.rx} ry={LEVEL1.ry} fill="none" stroke="#1a1a24" strokeWidth="26" />
                 <ellipse cx={LEVEL1.cx} cy={LEVEL1.cy} rx={LEVEL1.rx} ry={LEVEL1.ry} fill="none" stroke="#2a2a36" strokeWidth="18" />
                 <ellipse cx={LEVEL1.cx} cy={LEVEL1.cy} rx={LEVEL1.rx} ry={LEVEL1.ry} fill="none" stroke="#3a3a46" strokeWidth="10" />
-                {!nightMode && (
-                  <ellipse cx={LEVEL1.cx} cy={LEVEL1.cy} rx={LEVEL1.rx} ry={LEVEL1.ry} fill="none" stroke="url(#gradL1)" strokeWidth="2" strokeDasharray="15 25" className="animate-[spin_35s_linear_infinite_reverse]" style={{ transformOrigin: `${LEVEL1.cx}px ${LEVEL1.cy}px` }} />
-                )}
+                {/* Removed spinning animation for performance */}
 
                 {/* Tunnels */}
                 {[{ x: LEVEL1.cx - LEVEL1.rx + 15 }, { x: LEVEL1.cx + LEVEL1.rx - 15 }].map((t, i) => (
@@ -886,53 +868,19 @@ export function LiveTrackLayout({
               </g>
             ))}
 
-            {/* Train Trails - Enhanced with gradient effect */}
-            {showTrails && trains.filter(t => isLevelVisible(t.level) && t.history.length > 1).map(train => {
-              // Trail length varies with speed (more history points shown at higher speeds)
-              const trailLength = Math.min(train.history.length, Math.floor(10 + (train.speed / 100) * 20));
-              const visibleHistory = train.history.slice(-trailLength);
-
-              return (
-                <g key={`trail-${train.id}`}>
-                  {/* Glow trail (only visible when moving fast) */}
-                  {train.speed > 30 && (
-                    <polyline
-                      points={visibleHistory.map(p => `${p.x},${p.y}`).join(' ')}
-                      fill="none"
-                      stroke={train.color}
-                      strokeWidth="8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      opacity="0.1"
-                      filter="url(#trainGlow)"
-                      className="animate-[trail-fade_0.5s_ease-out]"
-                    />
-                  )}
-                  {/* Main trail with segments for gradient effect */}
-                  {visibleHistory.map((point, i) => {
-                    if (i === 0) return null;
-                    const prev = visibleHistory[i - 1];
-                    const progress = i / visibleHistory.length;
-                    const opacity = progress * 0.5; // Fade from transparent to semi-opaque
-                    const width = 2 + progress * 3; // Width increases toward train
-
-                    return (
-                      <line
-                        key={`trail-seg-${train.id}-${i}`}
-                        x1={prev.x}
-                        y1={prev.y}
-                        x2={point.x}
-                        y2={point.y}
-                        stroke={train.color}
-                        strokeWidth={width}
-                        strokeLinecap="round"
-                        opacity={opacity}
-                      />
-                    );
-                  })}
-                </g>
-              );
-            })}
+            {/* Train Trails - Simplified for performance */}
+            {showTrails && trains.filter(t => isLevelVisible(t.level) && t.history.length > 1 && t.speed > 0).map(train => (
+              <polyline
+                key={`trail-${train.id}`}
+                points={train.history.map(p => `${p.x},${p.y}`).join(' ')}
+                fill="none"
+                stroke={train.color}
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity="0.3"
+              />
+            ))}
 
             {/* Trains */}
             {trains.filter(t => isLevelVisible(t.level)).map(train => {

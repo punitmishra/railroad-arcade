@@ -32,8 +32,8 @@ interface GPIOPin {
 
 export function SensorManagement() {
   const [activeTab, setActiveTab] = useState<'overview' | 'distance' | 'light' | 'cpx' | 'gpio' | 'calibration'>('overview');
-  const [refreshRate, setRefreshRate] = useState(500);
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [refreshRate, setRefreshRate] = useState(2000);
+  const [autoRefresh, setAutoRefresh] = useState(false); // Disabled by default - enable when connected to real hardware
 
   const [sensors, setSensors] = useState<Sensor[]>([
     { id: 'dist-1', name: 'Station Entry', type: 'distance', value: 45.2, unit: 'cm', min: 0, max: 400, threshold: { low: 10, high: 50 }, status: 'online', lastUpdate: new Date(), pin: 'GPIO 17/27' },
