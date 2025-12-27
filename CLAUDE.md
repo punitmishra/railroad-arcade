@@ -353,31 +353,41 @@ QSTASH_CURRENT_SIGNING_KEY
 QSTASH_NEXT_SIGNING_KEY
 ```
 
-## Next Steps / Roadmap
+## Current Status
 
-### High Priority
-1. ~~**Real Camera Integration**~~ - ✅ MJPEG stream support added with auto-retry
-2. ~~**WebSocket Real-time Updates**~~ - ✅ SSE events for queue and session updates
-3. ~~**Recording System**~~ - ✅ Snapshot gallery with full API integration
-4. **Queue System Testing** - Full testing of live mode queue with multiple users
+### Completed Features ✅
+- **Real Camera Integration** - MJPEG stream support with auto-retry
+- **Real-time Updates** - SSE events for queue and session updates
+- **Snapshot Gallery** - Full API integration with capture, filter, share
+- **Multi-camera Grid** - PiP, grid layouts, camera swap functionality
+- **Achievement System** - Notifications, sounds, and badge count
+- **Social Features** - Share scores on leaderboards and snapshots
+- **Sound Effects** - 17 synthesized arcade sounds
+- **Tournament Mode** - Full API with automation, prizes, and admin UI
+- **Mobile Responsiveness** - Optimized layouts for all screen sizes
+- **Capacitor Integration** - Native iOS/Android app support
 
-### Medium Priority
-5. ~~**Multi-camera Grid**~~ - ✅ PiP, grid layouts, camera swap functionality
-6. ~~**Achievement System**~~ - ✅ Notifications, sounds, and badge count
-7. ~~**Social Features**~~ - ✅ Share scores on leaderboards and snapshots
-8. ~~**Sound Effects**~~ - ✅ 17 synthesized arcade sounds
+### In Progress
+- **Backend for Raspberry Pi** - Hardware control API (discussed next)
 
-### Low Priority / Nice-to-Have
-9. **Mobile App** - React Native version for mobile control
-10. **Replay System** - Record and replay train sessions
-11. **Custom Track Layouts** - Allow users to design track configurations
-12. ~~**Tournament Mode**~~ - ✅ Full API with automation, prizes, and admin UI
+### Backlog
+- **Queue System Testing** - Full testing of live mode queue with multiple users
+- **Replay System** - Record and replay train sessions
+- **Custom Track Layouts** - Allow users to design track configurations
 
 ### Technical Debt
 - Replace `<img>` with Next.js `<Image />` for optimization
 - Add comprehensive test coverage
 - Implement proper error boundaries
 - Add request/response logging for debugging
+
+## Deployment
+
+**Platform**: Vercel (free tier)
+- Frontend and API routes hosted on Vercel
+- Database: Neon PostgreSQL (serverless)
+- Cache/Queue: Upstash Redis + QStash
+- No Docker/Kubernetes infrastructure (removed for cost reasons)
 
 ## Recent Changes (December 2025)
 
@@ -530,5 +540,7 @@ See `KNOWN_ISSUES.md` for a comprehensive list of bugs and technical debt.
 
 | Version | Date | Key Changes |
 |---------|------|-------------|
+| v1.2.1 | Dec 2025 | Removed GKE infrastructure, Vercel-only deployment |
+| v1.2.0 | Dec 2025 | Capacitor mobile integration, mobile responsiveness |
 | v1.1.0 | Dec 2025 | Full Tournament API with automation and admin UI |
 | v1.0.0 | Dec 2025 | Initial release with core features |
