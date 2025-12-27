@@ -1,42 +1,89 @@
 # Hardware Setup Guide
 
-This guide covers setting up the Raspberry Pi and hardware components for running Railroad Arcade in **Live Mode**.
+Complete guide for setting up the Raspberry Pi and hardware components for **Live Mode** operation.
 
 ## Table of Contents
 
-- [Requirements](#requirements)
+- [System Overview](#system-overview)
+- [Hardware Requirements](#hardware-requirements)
 - [Raspberry Pi Setup](#raspberry-pi-setup)
-- [GPIO Pin Mapping](#gpio-pin-mapping)
-- [PWM Train Control](#pwm-train-control)
+- [Rust Backend Installation](#rust-backend-installation)
+- [Hardware Connections](#hardware-connections)
 - [Camera Setup](#camera-setup)
-- [Sensor Integration](#sensor-integration)
 - [Network Configuration](#network-configuration)
-- [API Server Setup](#api-server-setup)
+- [Systemd Service](#systemd-service)
+- [Testing](#testing)
 - [Troubleshooting](#troubleshooting)
 
 ---
 
-## Requirements
+## System Overview
 
-### Hardware
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Raspberry Pi 4                            │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │              Rust Backend (Actix-web)                  │  │
+│  │              Port 5000 - REST API                      │  │
+│  │              Port 8080 - MJPEG Stream                  │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                                                              │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │   I2C Bus   │  │   Serial    │  │      USB            │  │
+│  │   (PWM)     │  │   (CPX)     │  │    Camera           │  │
+│  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘  │
+│         │                │                     │             │
+└─────────┼────────────────┼─────────────────────┼─────────────┘
+          │                │                     │
+          ▼                ▼                     ▼
+   ┌──────────────┐ ┌──────────────┐     ┌──────────────┐
+   │   PCA9685    │ │     CPX      │     │   Webcam     │
+   │  PWM Driver  │ │ (Adafruit)   │     │  (Logitech)  │
+   │              │ │              │     │              │
+   │  • Motor 1   │ │  • Servo 1-4 │     │  • 640x480   │
+   │  • Motor 2   │ │  • Gate      │     │  • 30 FPS    │
+   │  • Motor 3   │ │  • LEDs      │     │  • MJPEG     │
+   │              │ │  • Buzzer    │     │              │
+   └──────────────┘ └──────────────┘     └──────────────┘
+```
 
-| Component | Recommended | Purpose |
-|-----------|-------------|---------|
-| Raspberry Pi | Pi 4 Model B (4GB+) | Main controller |
-| MicroSD Card | 32GB+ Class 10 | OS and storage |
-| Power Supply | 5V 3A USB-C | Pi power |
-| PWM HAT | Adafruit 16-Channel PWM | Train speed control |
-| Relay Board | 8-Channel 5V Relay | Building/scenery control |
-| Camera | Pi Camera Module 3 | Live streaming |
-| IR Sensors | TCRT5000 modules | Train detection |
-| Level Shifter | 3.3V to 5V Bi-directional | Signal conversion |
+---
 
-### Software
+## Hardware Requirements
 
-- Raspberry Pi OS (64-bit recommended)
-- Node.js 20.x LTS
-- Python 3.11+
-- FFmpeg (for camera streaming)
+### Core Components
+
+| Component | Model | Purpose | Est. Cost |
+|-----------|-------|---------|-----------|
+| Single Board Computer | Raspberry Pi 4 (4GB) | Main controller | $55 |
+| Power Supply | USB-C 5V 3A | Pi power | $10 |
+| MicroSD Card | 32GB+ Class 10 | OS and storage | $10 |
+| PWM Driver | PCA9685 16-Channel | Motor speed control | $10 |
+| Microcontroller | Circuit Playground Express | Servo/LED/Sound | $25 |
+| Distance Sensors | HC-SR04 (x6) | Train detection | $12 |
+| USB Camera | Logitech C270/C920 | Video streaming | $30-80 |
+
+### Model Railroad Components
+
+| Component | Qty | Purpose |
+|-----------|-----|---------|
+| DC Motor Trains | 3 | Level 1 and 2 trains |
+| Track Segments | - | HO scale track layout |
+| Track Feeders | 3 | Power delivery points |
+| Motor Driver | 1 | L298N or similar |
+| Servo Motors | 4 | Junction switches |
+| Gate Servo | 1 | Crossing gate |
+| LEDs | - | Scenery lighting |
+
+### Power Supply
+
+| Component | Voltage | Current | Purpose |
+|-----------|---------|---------|---------|
+| Pi Power | 5V | 3A | Raspberry Pi |
+| Track Power | 12V | 5A | DC train motors |
+| Servo Power | 5V | 2A | CPX and servos |
 
 ---
 
@@ -45,9 +92,14 @@ This guide covers setting up the Raspberry Pi and hardware components for runnin
 ### 1. Flash Raspberry Pi OS
 
 ```bash
-# Download Raspberry Pi Imager from https://www.raspberrypi.com/software/
-# Flash Raspberry Pi OS (64-bit) to your SD card
-# Enable SSH in the imager settings
+# Download Raspberry Pi Imager
+# https://www.raspberrypi.com/software/
+
+# Flash Raspberry Pi OS (64-bit Lite) to SD card
+# In Imager settings:
+# - Enable SSH
+# - Set username/password
+# - Configure WiFi (optional)
 ```
 
 ### 2. Initial Configuration
@@ -60,421 +112,478 @@ ssh pi@raspberrypi.local
 sudo apt update && sudo apt upgrade -y
 
 # Install required packages
-sudo apt install -y git nodejs npm python3-pip ffmpeg
+sudo apt install -y \
+    git \
+    curl \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    libudev-dev \
+    v4l-utils \
+    ffmpeg
 
-# Enable I2C, SPI, and Camera
+# Enable I2C and Serial
 sudo raspi-config
-# Navigate to Interface Options and enable:
-# - I2C
-# - SPI
-# - Camera (Legacy)
-# - SSH
+# Interface Options → Enable:
+#   - I2C
+#   - Serial Port (disable login shell, enable hardware)
 
 # Reboot
 sudo reboot
 ```
 
-### 3. Install Node.js 20.x
+### 3. Install Rust
 
 ```bash
-# Install Node.js via nvm
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-source ~/.bashrc
-nvm install 20
-nvm use 20
-nvm alias default 20
+# Install Rust via rustup
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# Verify
-node --version  # Should show v20.x.x
-npm --version
+# Add to PATH
+source $HOME/.cargo/env
+
+# Verify installation
+rustc --version
+cargo --version
 ```
 
 ---
 
-## GPIO Pin Mapping
+## Rust Backend Installation
 
-### Train Control (PWM)
+### 1. Clone Repository
 
-Using Adafruit PCA9685 16-Channel PWM HAT:
+```bash
+# Create application directory
+sudo mkdir -p /opt/railroad
+sudo chown pi:pi /opt/railroad
+cd /opt/railroad
 
-| Channel | Function | Description |
-|---------|----------|-------------|
-| 0 | Track 1 Speed | Level 2 - Express Line |
-| 1 | Track 1 Direction | Forward/Reverse relay |
-| 2 | Track 2 Speed | Level 2 - Second train |
-| 3 | Track 2 Direction | Forward/Reverse relay |
-| 4 | Track 3 Speed | Level 1 - Local Line |
-| 5 | Track 3 Direction | Forward/Reverse relay |
-| 6-9 | Reserved | Future expansion |
-| 10-15 | Lighting | Station/building lights |
+# Clone the backend repository
+git clone https://github.com/punitmishra/pi-railroad-controller.git
+cd pi-railroad-controller
+```
 
-### Relay Board Mapping
+### 2. Build the Application
 
-| Relay | GPIO | Function |
-|-------|------|----------|
-| 1 | GPIO 17 | Police Station Lights |
-| 2 | GPIO 27 | Fire Station Lights |
-| 3 | GPIO 22 | Cafe Lights |
-| 4 | GPIO 23 | Smart Home |
-| 5 | GPIO 24 | Construction Zone |
-| 6 | GPIO 25 | Crossing Gate |
-| 7 | GPIO 5 | Junction 1 Servo |
-| 8 | GPIO 6 | Junction 2 Servo |
+```bash
+# Build release version (optimized)
+cargo build --release
 
-### Sensor Inputs
+# Binary will be at: target/release/pi-railroad-controller
+```
 
-| Sensor | GPIO | Function |
-|--------|------|----------|
-| IR 1 | GPIO 12 | Track 1 Detection |
-| IR 2 | GPIO 13 | Track 2 Detection |
-| IR 3 | GPIO 16 | Track 3 Detection |
-| IR 4 | GPIO 19 | Station 1 Arrival |
-| IR 5 | GPIO 20 | Station 2 Arrival |
-| IR 6 | GPIO 26 | Crossing Detection |
+### 3. Configuration
+
+Create `/opt/railroad/pi-railroad-controller/config.toml`:
+
+```toml
+[server]
+host = "0.0.0.0"
+port = 5000
+
+[hardware]
+# PCA9685 PWM driver address
+pwm_address = 0x40
+pwm_frequency = 1000
+
+# Circuit Playground Express serial port
+cpx_port = "/dev/ttyACM0"
+cpx_baud = 115200
+
+# Track configuration
+[tracks]
+track1_channel = 0
+track2_channel = 1
+track3_channel = 2
+
+[camera]
+device = "/dev/video0"
+width = 640
+height = 480
+fps = 30
+stream_port = 8080
+
+[sensors]
+# HC-SR04 trigger/echo GPIO pins
+sensor1_trigger = 23
+sensor1_echo = 24
+sensor2_trigger = 25
+sensor2_echo = 8
+# ... additional sensors
+```
+
+### 4. Run Manually (Testing)
+
+```bash
+cd /opt/railroad/pi-railroad-controller
+./target/release/pi-railroad-controller
+```
 
 ---
 
-## PWM Train Control
+## Hardware Connections
 
-### Wiring Diagram
+### PCA9685 PWM Driver (I2C)
 
 ```
-Raspberry Pi         PCA9685 PWM HAT        Motor Driver
-  3.3V ─────────────── VCC
-  GND ──────────────── GND ────────────────── GND
-  SDA (GPIO 2) ─────── SDA
-  SCL (GPIO 3) ─────── SCL
-                       PWM 0 ─────────────── Track 1 Speed
-                       PWM 1 ─────────────── Track 1 Dir
-                       ...
+Raspberry Pi              PCA9685
+─────────────────────────────────
+3.3V (Pin 1)    ───────   VCC
+GND  (Pin 6)    ───────   GND
+SDA  (Pin 3)    ───────   SDA
+SCL  (Pin 5)    ───────   SCL
+
+                          PWM 0  ───→  Track 1 Motor Driver
+                          PWM 1  ───→  Track 2 Motor Driver
+                          PWM 2  ───→  Track 3 Motor Driver
 ```
 
-### Python Control Script
+### Circuit Playground Express (USB Serial)
 
-```python
-# /opt/railroad-arcade/train_control.py
-import board
-import busio
-from adafruit_pca9685 import PCA9685
+```
+Raspberry Pi              CPX
+─────────────────────────────────
+USB Port        ───────   USB Cable
 
-# Initialize I2C and PWM
-i2c = busio.I2C(board.SCL, board.SDA)
-pca = PCA9685(i2c)
-pca.frequency = 1000  # 1kHz for motor control
+CPX Pin Mapping:
+  A1 → Servo 1 (Junction 1)
+  A2 → Servo 2 (Junction 2)
+  A3 → Servo 3 (Junction 3)
+  A4 → Servo 4 (Gate)
+```
 
-def set_train_speed(track_id: int, speed: int):
-    """Set train speed (0-100)"""
-    channel = (track_id - 1) * 2
-    # Convert 0-100 to 0-65535 PWM duty cycle
-    duty_cycle = int((speed / 100) * 65535)
-    pca.channels[channel].duty_cycle = duty_cycle
+### HC-SR04 Distance Sensors (GPIO)
 
-def set_train_direction(track_id: int, forward: bool):
-    """Set train direction"""
-    channel = (track_id - 1) * 2 + 1
-    pca.channels[channel].duty_cycle = 65535 if forward else 0
+```
+Raspberry Pi              HC-SR04
+─────────────────────────────────
+5V   (Pin 2)    ───────   VCC
+GND  (Pin 6)    ───────   GND
+GPIO 23         ───────   TRIG
+GPIO 24 ──┬──── ECHO ──── 1kΩ ──┐
+          │                     │
+          └───── 2kΩ ───────────┴── GND
+          (Voltage divider: 5V → 3.3V)
+```
 
-def emergency_stop():
-    """Stop all trains immediately"""
-    for i in range(6):
-        pca.channels[i].duty_cycle = 0
+### Motor Driver (L298N)
+
+```
+PCA9685 PWM Output        L298N
+─────────────────────────────────
+PWM 0           ───────   ENA (Enable A)
+                          IN1 ─── Direction control
+                          IN2 ─── Direction control
+                          OUT1 ──┬── Track 1 Feeder (+)
+                          OUT2 ──┴── Track 1 Feeder (-)
+
+12V Supply      ───────   +12V
+GND             ───────   GND
 ```
 
 ---
 
 ## Camera Setup
 
-### Single Camera (Pi Camera Module)
+### USB Camera Configuration
 
 ```bash
-# Install camera tools
-sudo apt install -y libcamera-apps
+# List video devices
+v4l2-ctl --list-devices
 
-# Test camera
-libcamera-hello
+# Check camera capabilities
+v4l2-ctl -d /dev/video0 --list-formats-ext
 
-# Start MJPEG stream
-libcamera-vid -t 0 --width 1280 --height 720 --framerate 30 \
-  --codec mjpeg -o - | \
-  ffmpeg -i - -c:v copy -f mjpeg http://localhost:8081/stream.mjpg
+# Test camera (display on console)
+ffmpeg -f v4l2 -video_size 640x480 -i /dev/video0 -f null -
 ```
 
-### Multi-Camera Setup (USB Cameras)
+### Camera Stream URL
 
-```bash
-# Install motion for multi-camera support
-sudo apt install -y motion
+When the Rust backend is running:
+- API: `http://raspberry-pi:5000/api/...`
+- Stream: `http://raspberry-pi:8080/stream`
 
-# Configure /etc/motion/motion.conf
-# Set up multiple camera threads
+The MJPEG stream can be viewed directly in a browser or embedded in an `<img>` tag:
 
-# Start motion daemon
-sudo systemctl enable motion
-sudo systemctl start motion
-```
-
-### Camera Stream URLs
-
-| Camera | URL | Description |
-|--------|-----|-------------|
-| Main | `http://pi:8081/stream.mjpg` | Overview camera |
-| Station 1 | `http://pi:8082/stream.mjpg` | Grand Central |
-| Station 2 | `http://pi:8083/stream.mjpg` | Valley Station |
-| Action | `http://pi:8084/stream.mjpg` | Track action cam |
-
----
-
-## Sensor Integration
-
-### IR Train Detection
-
-```python
-# /opt/railroad-arcade/sensors.py
-import RPi.GPIO as GPIO
-import time
-
-GPIO.setmode(GPIO.BCM)
-
-# Sensor pins
-SENSORS = {
-    'track1': 12,
-    'track2': 13,
-    'track3': 16,
-    'station1': 19,
-    'station2': 20,
-    'crossing': 26,
-}
-
-# Setup inputs with pull-up resistors
-for pin in SENSORS.values():
-    GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-def on_train_detected(channel):
-    """Callback when train detected"""
-    sensor_name = [k for k, v in SENSORS.items() if v == channel][0]
-    timestamp = time.time()
-    # Send event to API server
-    print(f"Train detected at {sensor_name} at {timestamp}")
-
-# Add event detection
-for pin in SENSORS.values():
-    GPIO.add_event_detect(pin, GPIO.FALLING,
-                          callback=on_train_detected,
-                          bouncetime=200)
+```html
+<img src="http://raspberry-pi:8080/stream" />
 ```
 
 ---
 
 ## Network Configuration
 
-### Static IP Setup
+### Static IP (Recommended)
 
 ```bash
-# Edit dhcpcd.conf
+# Edit dhcpcd configuration
 sudo nano /etc/dhcpcd.conf
 
-# Add static IP configuration
+# Add static IP
 interface eth0
 static ip_address=192.168.1.100/24
 static routers=192.168.1.1
 static domain_name_servers=192.168.1.1 8.8.8.8
 ```
 
-### Firewall Rules
+### mDNS Hostname
+
+The Pi is accessible at `raspberrypi.local` by default. To change:
 
 ```bash
-# Allow API server port
-sudo ufw allow 3001/tcp
+sudo hostnamectl set-hostname railroad-pi
+# Now accessible at railroad-pi.local
+```
 
-# Allow camera streams
-sudo ufw allow 8081:8084/tcp
+### Firewall (UFW)
+
+```bash
+# Install UFW
+sudo apt install -y ufw
+
+# Allow SSH
+sudo ufw allow 22/tcp
+
+# Allow API server
+sudo ufw allow 5000/tcp
+
+# Allow camera stream
+sudo ufw allow 8080/tcp
 
 # Enable firewall
 sudo ufw enable
 ```
 
+### Remote Access Options
+
+1. **Local Network**: Direct IP access
+2. **Cloudflare Tunnel**: Secure public access without port forwarding
+3. **Tailscale/ZeroTier**: VPN mesh network
+
 ---
 
-## API Server Setup
+## Systemd Service
 
-### Install and Run
-
-```bash
-# Clone the API server
-git clone https://github.com/yourusername/railroad-api.git /opt/railroad-api
-cd /opt/railroad-api
-
-# Install dependencies
-npm install
-
-# Create environment file
-cp .env.example .env
-nano .env
-
-# Start the server
-npm start
-```
-
-### Environment Variables
-
-```env
-# /opt/railroad-api/.env
-PORT=3001
-HOST=0.0.0.0
-
-# PWM Configuration
-PWM_I2C_ADDRESS=0x40
-PWM_FREQUENCY=1000
-
-# Camera URLs
-CAMERA_MAIN=http://localhost:8081/stream.mjpg
-CAMERA_STATION1=http://localhost:8082/stream.mjpg
-CAMERA_STATION2=http://localhost:8083/stream.mjpg
-CAMERA_ACTION=http://localhost:8084/stream.mjpg
-
-# Security
-API_KEY=your-secret-api-key
-CORS_ORIGINS=https://railroad-arcade-v5.vercel.app
-```
-
-### Systemd Service
+### Create Service File
 
 ```bash
-# Create service file
-sudo nano /etc/systemd/system/railroad-api.service
+sudo nano /etc/systemd/system/railroad.service
 ```
 
 ```ini
 [Unit]
-Description=Railroad Arcade API Server
+Description=Railroad Arcade - Rust Backend
 After=network.target
 
 [Service]
 Type=simple
 User=pi
-WorkingDirectory=/opt/railroad-api
-ExecStart=/usr/bin/node server.js
+Group=pi
+WorkingDirectory=/opt/railroad/pi-railroad-controller
+ExecStart=/opt/railroad/pi-railroad-controller/target/release/pi-railroad-controller
 Restart=always
-RestartSec=10
-Environment=NODE_ENV=production
+RestartSec=5
+Environment=RUST_LOG=info
+
+# Hardware access
+SupplementaryGroups=gpio i2c dialout video
 
 [Install]
 WantedBy=multi-user.target
 ```
 
+### Enable and Start
+
 ```bash
-# Enable and start service
+# Reload systemd
 sudo systemctl daemon-reload
-sudo systemctl enable railroad-api
-sudo systemctl start railroad-api
+
+# Enable on boot
+sudo systemctl enable railroad
+
+# Start service
+sudo systemctl start railroad
 
 # Check status
-sudo systemctl status railroad-api
-```
+sudo systemctl status railroad
 
----
-
-## Troubleshooting
-
-### Common Issues
-
-#### PWM HAT Not Detected
-
-```bash
-# Check I2C devices
-sudo i2cdetect -y 1
-
-# Should show device at 0x40
-# If not shown, check wiring and enable I2C in raspi-config
-```
-
-#### Camera Not Working
-
-```bash
-# Check if camera is detected
-libcamera-hello --list-cameras
-
-# Check camera cable connection
-# Ensure camera is enabled in raspi-config
-```
-
-#### API Server Not Starting
-
-```bash
-# Check logs
-sudo journalctl -u railroad-api -f
-
-# Common fixes:
-# - Ensure Node.js is installed
-# - Check port availability: sudo lsof -i :3001
-# - Verify environment variables
-```
-
-#### GPIO Permission Denied
-
-```bash
-# Add user to gpio group
-sudo usermod -aG gpio pi
-
-# Or run with sudo (not recommended for production)
-```
-
-### Performance Optimization
-
-```bash
-# Increase GPU memory for camera
-sudo nano /boot/config.txt
-# Add: gpu_mem=256
-
-# Disable unnecessary services
-sudo systemctl disable bluetooth
-sudo systemctl disable avahi-daemon
-
-# Set CPU governor to performance
-echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+# View logs
+sudo journalctl -u railroad -f
 ```
 
 ---
 
 ## Testing
 
-### Test Train Control
+### Test I2C Connection
 
 ```bash
-curl -X POST http://localhost:3001/api/trains/1/speed \
+# Detect PCA9685 (should show 0x40)
+sudo i2cdetect -y 1
+```
+
+### Test Serial Connection
+
+```bash
+# List USB devices
+ls -la /dev/ttyACM*
+
+# Test CPX communication
+screen /dev/ttyACM0 115200
+# Type: STATUS
+# Should receive JSON response
+```
+
+### Test API Endpoints
+
+```bash
+# System status
+curl http://localhost:5000/api/status
+
+# Get tracks
+curl http://localhost:5000/api/tracks
+
+# Set track speed
+curl -X POST http://localhost:5000/api/tracks/1/speed \
   -H "Content-Type: application/json" \
   -d '{"speed": 50}'
+
+# Emergency stop
+curl -X POST http://localhost:5000/api/emergency-stop
+
+# Get CPX status
+curl http://localhost:5000/api/cpx/status
+
+# Set servo angle
+curl -X POST http://localhost:5000/api/cpx/servo/1/45
+
+# Set gate
+curl -X POST http://localhost:5000/api/cpx/gate/down
 ```
 
 ### Test Camera Stream
 
 ```bash
-# Open in browser or use curl
-curl -I http://localhost:8081/stream.mjpg
-```
+# Check camera status
+curl http://localhost:5000/api/camera/status
 
-### Test Sensors
+# Start camera
+curl -X POST http://localhost:5000/api/camera/start
 
-```bash
-# Run sensor test script
-python3 /opt/railroad-arcade/test_sensors.py
+# Open in browser
+# http://raspberry-pi:8080/stream
 ```
 
 ---
 
-## Support
+## Troubleshooting
 
-For hardware-related issues:
-- Check the [GitHub Discussions](https://github.com/yourusername/railroad-arcade/discussions)
-- Open an issue with the `hardware` label
-- Include your Pi model, OS version, and error logs
+### PCA9685 Not Detected
+
+```bash
+# Check I2C is enabled
+sudo raspi-config
+# Interface Options → I2C → Enable
+
+# Check connections
+sudo i2cdetect -y 1
+# Should show device at 0x40
+```
+
+### CPX Not Responding
+
+```bash
+# Check USB connection
+lsusb | grep Adafruit
+
+# Check serial port
+ls -la /dev/ttyACM*
+
+# Verify permissions
+sudo usermod -aG dialout pi
+# Logout and login again
+```
+
+### Camera Not Working
+
+```bash
+# Check device exists
+ls -la /dev/video*
+
+# Check permissions
+sudo usermod -aG video pi
+
+# Test with v4l2
+v4l2-ctl -d /dev/video0 --all
+```
+
+### Service Won't Start
+
+```bash
+# Check logs
+sudo journalctl -u railroad -n 50
+
+# Run manually to see errors
+cd /opt/railroad/pi-railroad-controller
+RUST_LOG=debug ./target/release/pi-railroad-controller
+```
+
+### High CPU Usage
+
+```bash
+# Check which process
+htop
+
+# Reduce camera FPS in config.toml
+[camera]
+fps = 15  # Lower from 30
+```
+
+---
+
+## Performance Optimization
+
+### GPU Memory
+
+```bash
+# Increase GPU memory for camera
+sudo nano /boot/config.txt
+
+# Add line:
+gpu_mem=256
+```
+
+### Disable Unused Services
+
+```bash
+sudo systemctl disable bluetooth
+sudo systemctl disable avahi-daemon
+sudo systemctl disable triggerhappy
+```
+
+### CPU Governor
+
+```bash
+# Set to performance mode
+echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+```
 
 ---
 
 ## Safety Notes
 
-- Always use appropriate fuses for track power
-- Never exceed motor driver current ratings
-- Keep high-voltage track power isolated from Pi GPIO
-- Use optocouplers for sensor isolation
-- Ensure proper grounding throughout the system
+- **Power Isolation**: Keep 12V track power isolated from Pi 3.3V/5V
+- **Fuses**: Use appropriate fuses on track power (1-2A per track)
+- **Heat Dissipation**: Use heatsinks on Pi and motor drivers
+- **Emergency Stop**: Always test emergency stop functionality
+- **Grounding**: Ensure common ground between all components
+- **Current Limits**: Don't exceed motor driver ratings (typically 2A per channel)
+
+---
+
+## Support
+
+- [GitHub Issues](https://github.com/punitmishra/railroad-arcade/issues) - Bug reports
+- [GitHub Discussions](https://github.com/punitmishra/railroad-arcade/discussions) - Questions
+- [Rust Backend Repo](https://github.com/punitmishra/pi-railroad-controller) - Hardware-specific issues

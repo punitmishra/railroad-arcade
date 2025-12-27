@@ -1,5 +1,18 @@
 # Railroad Arcade API Reference
 
+> Complete API reference for Cloud (Next.js) and Hardware (Rust) backends.
+
+## API Endpoints
+
+| API | Base URL | Purpose |
+|-----|----------|---------|
+| **Cloud API** | `https://railroad-arcade-v5.vercel.app/api` | User data, games, tournaments, payments |
+| **Hardware API** | `http://raspberry-pi:5000/api` | Train control, camera, sensors |
+
+---
+
+## Cloud API
+
 Base URL: `https://railroad-arcade-v5.vercel.app/api`
 
 ## Authentication
@@ -490,3 +503,267 @@ Verifies webhook ID and signature.
 Endpoint: `POST /api/payments/coinbase/webhook`
 
 Verifies signature using `COINBASE_WEBHOOK_SECRET`.
+
+---
+
+## Hardware API (Rust Backend)
+
+The Rust backend runs on Raspberry Pi and controls physical hardware.
+
+**Base URL:** `http://raspberry-pi.local:5000/api`
+
+### Response Format
+
+All endpoints return:
+```json
+{
+  "success": true,
+  "data": { ... },
+  "error": null
+}
+```
+
+---
+
+### System
+
+#### GET /api/status
+
+Get complete system status.
+
+```json
+{
+  "success": true,
+  "data": {
+    "uptime": 86400,
+    "camera": true,
+    "cpx": true,
+    "tracks": [
+      { "id": "1", "name": "Valley Runner", "speed": 45, "direction": "forward", "running": true },
+      { "id": "2", "name": "City Limited", "speed": 0, "direction": "stop", "running": false },
+      { "id": "3", "name": "Mountain Express", "speed": 55, "direction": "forward", "running": true }
+    ],
+    "distances": [
+      { "name": "station_a", "distance_mm": 250, "blocked": false }
+    ],
+    "cpx_status": {
+      "servos": [0, 45, 0, 90],
+      "gate": "up",
+      "temperature": 25.5
+    }
+  }
+}
+```
+
+#### POST /api/emergency-stop
+
+Emergency stop all trains.
+
+---
+
+### Track Control
+
+#### GET /api/tracks
+
+Get all track states.
+
+```json
+{
+  "success": true,
+  "data": [
+    { "id": "1", "name": "Valley Runner", "speed": 45, "direction": "forward", "running": true },
+    { "id": "2", "name": "City Limited", "speed": 0, "direction": "stop", "running": false },
+    { "id": "3", "name": "Mountain Express", "speed": 55, "direction": "forward", "running": true }
+  ]
+}
+```
+
+#### POST /api/tracks/:id/speed
+
+Set track speed (0-100).
+
+**Request:** `{ "speed": 75 }`
+
+#### POST /api/tracks/:id/forward
+
+Set track direction to forward.
+
+#### POST /api/tracks/:id/reverse
+
+Set track direction to reverse.
+
+#### POST /api/tracks/:id/stop
+
+Stop a specific track.
+
+---
+
+### CPX (Circuit Playground Express)
+
+#### GET /api/cpx/status
+
+Get CPX status (servos, gate, temperature).
+
+```json
+{
+  "success": true,
+  "data": {
+    "connected": true,
+    "servos": [0, 45, 0, 90],
+    "gate": "up",
+    "temperature": 25.5
+  }
+}
+```
+
+#### POST /api/cpx/servo/:num/:angle
+
+Set servo angle (num: 1-4, angle: 0-180).
+
+#### POST /api/cpx/gate/:position
+
+Set crossing gate ("up" or "down").
+
+#### POST /api/cpx/led/:color
+
+Set CPX LED (red, green, blue, white, off).
+
+#### POST /api/cpx/sound/:name
+
+Play sound (whistle, bell, horn, chime).
+
+#### POST /api/cpx/calibrate
+
+Calibrate all servos to center position.
+
+#### GET /api/cpx/temperature
+
+Get CPX temperature reading.
+
+---
+
+### Camera
+
+#### GET /api/camera/status
+
+Get camera status (running, resolution, fps).
+
+#### POST /api/camera/start
+
+Start camera stream at `http://raspberry-pi:8080/stream`.
+
+#### POST /api/camera/stop
+
+Stop camera stream.
+
+---
+
+### Distance Sensors
+
+#### GET /api/distances
+
+Get all HC-SR04 sensor readings.
+
+```json
+{
+  "success": true,
+  "data": [
+    { "name": "station_a", "distance_mm": 250, "blocked": false },
+    { "name": "station_b", "distance_mm": 85, "blocked": true }
+  ]
+}
+```
+
+---
+
+### Scenery
+
+#### GET /api/scenery
+
+Get scenery state (time of day, lighting zones).
+
+#### POST /api/scenery
+
+Set scenery state.
+
+**Request:**
+```json
+{
+  "time_of_day": "night",
+  "lighting": {
+    "residential": true,
+    "streets": true
+  }
+}
+```
+
+---
+
+### Automation
+
+#### GET /api/sequences
+
+Get available automation sequences.
+
+#### POST /api/sequences/:id/run
+
+Execute an automation sequence.
+
+---
+
+### Schedules
+
+#### GET /api/schedules
+
+Get all automation schedules.
+
+#### POST /api/schedules
+
+Create a new schedule.
+
+**Request:**
+```json
+{
+  "name": "Morning Start",
+  "cron": "0 8 * * *",
+  "sequence_id": "morning_routine",
+  "enabled": true
+}
+```
+
+#### DELETE /api/schedules/:id
+
+Delete a schedule.
+
+---
+
+## TypeScript Types
+
+Frontend types for the Hardware API:
+
+```typescript
+// lib/api.ts
+
+export type Direction = 'forward' | 'reverse' | 'stop';
+
+export interface TrackStatus {
+  id: string;           // "1", "2", "3"
+  name: string;
+  speed: number;        // 0-100
+  direction: Direction;
+  running: boolean;
+}
+
+export interface CpxStatus {
+  connected: boolean;
+  servos: number[];     // [servo1, servo2, servo3, servo4]
+  gate: 'up' | 'down';
+  temperature: number;
+}
+
+export interface DistanceReading {
+  name: string;
+  distance_mm: number;
+  blocked: boolean;     // true if < 150mm
+}
+```

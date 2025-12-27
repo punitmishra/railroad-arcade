@@ -15,16 +15,17 @@
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-a855f7?style=for-the-badge" alt="MIT License">
   </a>
-  <img src="https://img.shields.io/badge/version-1.2.0-ffd700?style=for-the-badge" alt="Version 1.2.0">
+  <img src="https://img.shields.io/badge/version-1.4.0-ffd700?style=for-the-badge" alt="Version 1.4.0">
   <img src="https://img.shields.io/badge/next.js-14-black?style=for-the-badge&logo=next.js" alt="Next.js 14">
+  <img src="https://img.shields.io/badge/rust-backend-orange?style=for-the-badge&logo=rust" alt="Rust Backend">
 </p>
 
 <p align="center">
   <a href="#features">Features</a> •
+  <a href="#architecture">Architecture</a> •
   <a href="#quick-start">Quick Start</a> •
-  <a href="#tech-stack">Tech Stack</a> •
-  <a href="#screenshots">Screenshots</a> •
-  <a href="#api">API</a> •
+  <a href="#hardware-backend">Hardware Backend</a> •
+  <a href="#api-reference">API Reference</a> •
   <a href="#contributing">Contributing</a>
 </p>
 
@@ -32,21 +33,78 @@
 
 ## What is Railroad Arcade?
 
-Railroad Arcade is an interactive web and mobile application that lets you control a real model railroad remotely. Play in **Demo Mode** for free simulation, or switch to **Live Mode** to control actual hardware via a Raspberry Pi. Compete in tournaments, unlock achievements, and climb the leaderboards!
+Railroad Arcade is a full-stack IoT application that lets you control a real HO scale model railroad remotely. The system combines a **Next.js 14 frontend** deployed on Vercel with a **Rust-based backend** running on a Raspberry Pi that controls the physical hardware.
 
-### Download
+**Play in Demo Mode** for free simulation, or switch to **Live Mode** to control actual trains, junctions, crossings, and scenery via the internet.
+
+### Live Demo & Downloads
 
 <p align="center">
+  <a href="https://railroad-arcade-v5.vercel.app">
+    <img src="https://img.shields.io/badge/Web_App-Play_Now-00f0ff?style=for-the-badge&logo=pwa" alt="Web App">
+  </a>
   <a href="#">
     <img src="https://img.shields.io/badge/App_Store-Coming_Soon-000000?style=for-the-badge&logo=apple" alt="App Store">
   </a>
   <a href="#">
     <img src="https://img.shields.io/badge/Google_Play-Coming_Soon-414141?style=for-the-badge&logo=google-play" alt="Google Play">
   </a>
-  <a href="https://railroad-arcade-v5.vercel.app">
-    <img src="https://img.shields.io/badge/Web_App-Play_Now-00f0ff?style=for-the-badge&logo=pwa" alt="Web App">
-  </a>
 </p>
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              CLOUD (Vercel)                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────────┐  │
+│  │   Next.js 14    │  │   PostgreSQL    │  │      Upstash Redis          │  │
+│  │   Frontend      │  │   (Neon)        │  │   + QStash Queue            │  │
+│  │   + API Routes  │  │                 │  │                             │  │
+│  └────────┬────────┘  └────────┬────────┘  └──────────────┬──────────────┘  │
+│           │                    │                          │                  │
+│           │  Prisma ORM        │    Cache + Jobs          │                  │
+│           └────────────────────┴──────────────────────────┘                  │
+└─────────────────────────────────────┬───────────────────────────────────────┘
+                                      │
+                                      │ HTTPS (Live Mode)
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         RASPBERRY PI (On-Premise)                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                    Rust Backend (Actix-web)                          │    │
+│  │                    Port 5000 - REST API                              │    │
+│  └───────────┬─────────────────┬─────────────────┬─────────────────────┘    │
+│              │                 │                 │                          │
+│              ▼                 ▼                 ▼                          │
+│  ┌───────────────┐  ┌──────────────────┐  ┌──────────────────┐              │
+│  │  PWM Drivers  │  │ Circuit Playground│  │   USB Camera     │              │
+│  │  (3 Tracks)   │  │ Express (CPX)     │  │  MJPEG Stream    │              │
+│  │              │  │  - 4 Servos       │  │  Port 8080       │              │
+│  │              │  │  - Gate Control   │  │                  │              │
+│  │              │  │  - LEDs/Sound     │  │                  │              │
+│  └───────┬──────┘  └────────┬─────────┘  └────────┬─────────┘              │
+│          │                  │                     │                         │
+└──────────┼──────────────────┼─────────────────────┼─────────────────────────┘
+           │                  │                     │
+           ▼                  ▼                     ▼
+    ┌──────────────────────────────────────────────────────┐
+    │              HO SCALE MODEL RAILROAD                  │
+    │  • 3 Trains (Level 1 & 2)    • 3 Junctions           │
+    │  • 3 Crossings               • 6 Signals             │
+    │  • Distance Sensors (HC-SR04) • Scenery Lighting     │
+    └──────────────────────────────────────────────────────┘
+```
+
+### Repository Structure
+
+| Repository | Description | Stack |
+|------------|-------------|-------|
+| [railroad-arcade](https://github.com/punitmishra/railroad-arcade) | Frontend + Cloud APIs | Next.js, TypeScript, Prisma |
+| [pi-railroad-controller](https://github.com/punitmishra/pi-railroad-controller) | Raspberry Pi Backend | Rust, Actix-web |
 
 ---
 
@@ -54,9 +112,10 @@ Railroad Arcade is an interactive web and mobile application that lets you contr
 
 ### Train Control
 - **Real-time Visualization** — Live SVG track with 3 animated trains across 2 levels
+- **Speed & Direction** — 0-100% speed control with forward/reverse
 - **Junction & Crossing Control** — Toggle switches and railroad crossings
 - **Autopilot Mode** — Automated train operation with station stops
-- **Emergency Stop** — Global safety stop with confirmation
+- **Emergency Stop** — Global safety stop across all trains
 
 ### Game Modes
 | Mode | Description | Token Cost |
@@ -67,60 +126,112 @@ Railroad Arcade is an interactive web and mobile application that lets you contr
 | Survival | Avoid collisions | 5 |
 | Time Attack | Score in time limit | 5 |
 
-### Scenery & Buildings
-- **Time of Day** — Dawn, Day, Sunset, Night with ambient lighting
-- **11+ Lighting Zones** — Individual control for realistic scenes
-- **Water Features** — Waterfalls, lakes, fountains
-- **Animated Elements** — Windmill, smokestacks, boats
-- **Unlockable Modules** — Police, Fire Station, Cafe, Smart Home, and more
+### Hardware Control (Live Mode)
+- **PWM Motor Control** — Precise speed control for 3 train tracks
+- **Servo Junctions** — 4 servo-controlled track switches via CPX
+- **Crossing Gates** — Automated gate up/down with position sensing
+- **Distance Sensors** — HC-SR04 ultrasonic sensors for train detection
+- **LED Signals** — Red/Yellow/Green signal states based on proximity
+- **Scenery Lighting** — 7 independent lighting zones
 
 ### Multi-Camera System
 - **Layout Options** — Single, dual, quad, and picture-in-picture
+- **MJPEG Streaming** — Real-time video with auto-retry
 - **Snapshot Gallery** — Capture, like, download, and share
-- **MJPEG Streaming** — Real-time feeds with auto-retry
 - **Camera Presets** — Overview, stations, action views
 
 ### Progression & Social
 - **10 Achievements** — Unlock badges with toast notifications
-- **Leaderboards** — Global rankings by game mode
+- **Leaderboards** — Global rankings by game mode (Demo & Live)
 - **Session History** — Timeline view with detailed stats
 - **Tournament System** — Daily, weekly, and championship events
-- **Social Sharing** — Share scores and snapshots
+- **Social Sharing** — Share scores and snapshots via Web Share API
 
 ### Platform Features
 - **PWA Support** — Install as app on any device
 - **Kiosk Mode** — Full-screen arcade cabinet support
-- **17 Sound Effects** — Synthesized arcade audio
+- **17 Sound Effects** — Synthesized arcade audio with haptic feedback
 - **Keyboard & Gamepad** — Full control support
-- **Real-time Updates** — SSE for live queue and session state
+- **Mobile Optimized** — Capacitor-ready for iOS/Android
 
 ---
 
 ## Quick Start
 
-### 1. Clone & Install
+### Frontend (Next.js)
 
 ```bash
+# Clone and install
 git clone https://github.com/punitmishra/railroad-arcade.git
 cd railroad-arcade
 npm install
-```
 
-### 2. Configure Environment
-
-```bash
+# Configure environment
 cp .env.example .env
-# Edit .env with your database and API keys
+# Edit .env with your database URL and API keys
+
+# Run development server
+npx prisma db push
+npm run dev
 ```
 
-### 3. Run
+Open http://localhost:3000 — Demo Mode works immediately!
+
+### Backend (Rust on Raspberry Pi)
 
 ```bash
-npx prisma db push    # Create database tables
-npm run dev           # Start at localhost:3000
+# On Raspberry Pi
+git clone https://github.com/punitmishra/pi-railroad-controller.git
+cd pi-railroad-controller
+
+# Build and run
+cargo build --release
+./target/release/pi-railroad-controller
 ```
 
-**That's it!** Open http://localhost:3000 and start playing in Demo Mode.
+The backend runs on port 5000 (API) and port 8080 (camera stream).
+
+---
+
+## Hardware Backend
+
+### Rust API Server
+
+The Raspberry Pi runs a Rust backend built with Actix-web that provides:
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/status` | GET | System status, track states, distances |
+| `/api/tracks` | GET | All track states (speed, direction, running) |
+| `/api/tracks/:id/speed` | POST | Set track speed (0-100) |
+| `/api/tracks/:id/forward` | POST | Set forward direction |
+| `/api/tracks/:id/reverse` | POST | Set reverse direction |
+| `/api/tracks/:id/stop` | POST | Stop track |
+| `/api/emergency-stop` | POST | Emergency stop all tracks |
+| `/api/cpx/status` | GET | CPX status (servos, gate, temp) |
+| `/api/cpx/servo/:num/:angle` | POST | Set servo angle |
+| `/api/cpx/gate/:position` | POST | Set gate up/down |
+| `/api/cpx/led/:color` | POST | Set CPX LED color |
+| `/api/cpx/sound/:name` | POST | Play sound on CPX |
+| `/api/camera/start` | POST | Start camera stream |
+| `/api/camera/stop` | POST | Stop camera stream |
+| `/api/camera/status` | GET | Camera status |
+| `/api/distances` | GET | HC-SR04 sensor readings |
+| `/api/scenery` | GET/POST | Scenery state (time, lighting) |
+| `/api/schedules` | GET/POST/DELETE | Automation schedules |
+| `/api/sequences` | GET | Available automation sequences |
+| `/api/sequences/:id/run` | POST | Execute automation sequence |
+
+### Hardware Components
+
+| Component | Model | Purpose |
+|-----------|-------|---------|
+| SBC | Raspberry Pi 4 | Main controller |
+| Motor Driver | PCA9685 PWM | 3-channel train speed control |
+| Servo Controller | Circuit Playground Express | 4 junction servos + gate |
+| Distance Sensors | HC-SR04 (x6) | Train position detection |
+| Camera | USB Webcam | MJPEG streaming |
+| Power | 12V 5A + 5V 3A | Motors + Pi power |
 
 ---
 
@@ -135,6 +246,10 @@ npm run dev           # Start at localhost:3000
     <td align="center" width="96">
       <img src="https://skillicons.dev/icons?i=ts" width="48" height="48" alt="TypeScript" />
       <br>TypeScript
+    </td>
+    <td align="center" width="96">
+      <img src="https://skillicons.dev/icons?i=rust" width="48" height="48" alt="Rust" />
+      <br>Rust
     </td>
     <td align="center" width="96">
       <img src="https://skillicons.dev/icons?i=tailwind" width="48" height="48" alt="Tailwind" />
@@ -152,13 +267,18 @@ npm run dev           # Start at localhost:3000
       <img src="https://skillicons.dev/icons?i=redis" width="48" height="48" alt="Redis" />
       <br>Redis
     </td>
+    <td align="center" width="96">
+      <img src="https://skillicons.dev/icons?i=raspberrypi" width="48" height="48" alt="Raspberry Pi" />
+      <br>Pi 4
+    </td>
   </tr>
 </table>
 
+### Frontend Stack
 | Category | Technology |
 |----------|------------|
 | **Framework** | Next.js 14 (App Router) |
-| **Language** | TypeScript |
+| **Language** | TypeScript 5 |
 | **Database** | PostgreSQL (Neon) + Prisma ORM |
 | **Auth** | NextAuth.js v4 (JWT) |
 | **Styling** | Tailwind CSS |
@@ -167,136 +287,118 @@ npm run dev           # Start at localhost:3000
 | **Payments** | Stripe, PayPal, Coinbase Commerce |
 | **Real-time** | Server-Sent Events (SSE) |
 | **PWA** | next-pwa with Service Worker |
-| **Deployment** | Vercel |
+| **Deployment** | Vercel (Edge + Serverless) |
+
+### Backend Stack (Raspberry Pi)
+| Category | Technology |
+|----------|------------|
+| **Language** | Rust 1.75+ |
+| **Framework** | Actix-web 4 |
+| **Hardware** | rppal (GPIO), serialport |
+| **Async** | Tokio runtime |
+| **Camera** | v4l2 + MJPEG |
+| **Config** | TOML |
 
 ---
 
-## Screenshots
+## API Reference
 
-<table>
-  <tr>
-    <td align="center"><b>Main Control Panel</b></td>
-    <td align="center"><b>Game Mode Selection</b></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/control-panel.png" alt="Control Panel" width="400"></td>
-    <td><img src="docs/screenshots/game-modes.png" alt="Game Modes" width="400"></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Multi-Camera View</b></td>
-    <td align="center"><b>Leaderboards</b></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/multi-camera.png" alt="Multi-Camera" width="400"></td>
-    <td><img src="docs/screenshots/leaderboards.png" alt="Leaderboards" width="400"></td>
-  </tr>
-</table>
+### Cloud API (Next.js)
+
+#### Public Endpoints
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/leaderboards` | GET | Fetch high scores by game mode |
+| `/api/tournaments` | GET | List active tournaments |
+| `/api/tournaments/[id]/leaderboard` | GET | Tournament rankings |
+| `/api/health` | GET | System health check |
+
+#### Authenticated Endpoints
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/user` | GET | Current user data + token balance |
+| `/api/user/modules` | POST | Unlock building module |
+| `/api/user/stats` | GET | Play statistics |
+| `/api/sessions` | GET/POST | Session history / Start session |
+| `/api/games` | POST/PUT | Start/end game session |
+| `/api/tournaments/[id]/register` | POST | Join tournament |
+| `/api/tournaments/[id]/submit` | POST | Submit score |
+| `/api/snapshots` | GET/POST | Snapshot gallery |
+
+#### Admin Endpoints
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/admin/grant-tokens` | POST | Grant tokens to user |
+| `/api/admin/tournaments/[id]` | PATCH/DELETE | Manage tournament |
+
+### Hardware API (Raspberry Pi)
+
+See [docs/API.md](docs/API.md) for complete Rust backend API documentation.
 
 ---
 
 ## Environment Variables
 
-Create a `.env` file based on `.env.example`:
+### Frontend (.env)
 
 ```bash
 # Required
-DATABASE_URL="postgresql://..."      # Neon PostgreSQL
+DATABASE_URL="postgresql://..."           # Neon PostgreSQL
 NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="openssl rand -base64 32"
+NEXTAUTH_SECRET="your-secret-here"
 
 # Caching & Queue
 UPSTASH_REDIS_REST_URL="https://..."
 UPSTASH_REDIS_REST_TOKEN="..."
+QSTASH_URL="https://qstash.upstash.io"
+QSTASH_TOKEN="..."
 
-# Hardware (for Live Mode)
-NEXT_PUBLIC_API_URL="http://raspberry-pi:5000"
+# Hardware Connection (Live Mode)
+NEXT_PUBLIC_API_URL="http://raspberry-pi.local:5000"
 
 # Payments (optional)
 STRIPE_SECRET_KEY="sk_..."
 PAYPAL_CLIENT_ID="..."
 COINBASE_COMMERCE_API_KEY="..."
+
+# Admin
+ADMIN_KEY="your-admin-key"
+ADMIN_USER_IDS="user-id-1,user-id-2"
 ```
 
-See [.env.example](.env.example) for all options.
+### Backend (config.toml on Pi)
 
----
+```toml
+[server]
+host = "0.0.0.0"
+port = 5000
 
-## API
+[hardware]
+pwm_address = 0x40
+cpx_port = "/dev/ttyACM0"
 
-### Public Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/leaderboards` | GET | Fetch high scores |
-| `/api/tournaments` | GET | List tournaments |
-| `/api/tournaments/[id]/leaderboard` | GET | Tournament rankings |
-
-### Authenticated Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/user` | GET | Current user data |
-| `/api/user/modules` | POST | Unlock module |
-| `/api/sessions` | POST | Start/end session |
-| `/api/tournaments/[id]/register` | POST | Join tournament |
-| `/api/tournaments/[id]/submit` | POST | Submit score |
-
-### Hardware API (Raspberry Pi)
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/status` | GET | System status |
-| `/api/emergency-stop` | POST | Stop all trains |
-| `/api/tracks/:id/speed` | POST | Set train speed |
-| `/api/cpx/gate/:position` | POST | Control crossings |
-
-Full API documentation: [docs/API.md](docs/API.md)
-
----
-
-## Project Structure
-
-```
-railroad-arcade/
-├── app/                    # Next.js App Router
-│   ├── api/                # API routes
-│   │   ├── auth/           # NextAuth
-│   │   ├── payments/       # Stripe, PayPal, Coinbase
-│   │   ├── tournaments/    # Tournament system
-│   │   └── user/           # User endpoints
-│   ├── kiosk/              # Arcade cabinet mode
-│   └── page.tsx            # Main app
-├── components/             # React components
-│   ├── LiveTrackLayout.tsx # Track visualization
-│   ├── GameModeSelector.tsx
-│   ├── MultiCameraGrid.tsx
-│   └── TournamentBanner.tsx
-├── hooks/                  # React hooks
-│   ├── useHardwareAdapter.ts
-│   ├── useTournament.ts
-│   └── useSounds.tsx
-├── lib/                    # Utilities
-│   ├── hardware/           # Demo/Live adapters
-│   ├── game-modes/         # Game engines
-│   ├── auth.ts             # NextAuth config
-│   └── db.ts               # Prisma client
-└── prisma/
-    └── schema.prisma       # Database schema
+[camera]
+device = "/dev/video0"
+width = 640
+height = 480
+fps = 30
 ```
 
 ---
 
 ## Development
 
+### Frontend Commands
+
 ```bash
 npm run dev          # Development server
 npm run build        # Production build
 npm run start        # Production server
 npm run lint         # ESLint
-npm run test         # Jest tests
+npm run test         # Jest tests (298 tests)
 ```
 
-### Database
+### Database Commands
 
 ```bash
 npx prisma generate  # Generate client
@@ -305,31 +407,79 @@ npx prisma studio    # GUI browser
 npx prisma migrate dev  # Create migration
 ```
 
-### Mobile (Capacitor)
+### Backend Commands (Rust)
 
 ```bash
-npm run build:mobile  # Build for mobile
-npm run ios          # Open Xcode
-npm run android      # Open Android Studio
+cargo build          # Debug build
+cargo build --release # Production build
+cargo test           # Run tests
+cargo run            # Run server
+```
+
+---
+
+## Testing
+
+```bash
+# Run all tests
+npm test
+
+# Current test coverage
+# - 12 test suites
+# - 298 tests passing
+# - API client tests
+# - Hardware adapter tests
+# - Game mode tests
+# - Token guard tests
 ```
 
 ---
 
 ## Deployment
 
-### Vercel (Recommended)
+### Frontend (Vercel)
 
 1. Push to GitHub
 2. Import in [Vercel](https://vercel.com)
 3. Add environment variables
-4. Deploy
+4. Deploy (automatic on push)
 
-### Docker
+### Backend (Raspberry Pi)
 
 ```bash
-docker build -t railroad-arcade .
-docker run -p 3000:3000 --env-file .env railroad-arcade
+# Build release binary
+cargo build --release
+
+# Create systemd service
+sudo nano /etc/systemd/system/railroad.service
+
+# Enable and start
+sudo systemctl enable railroad
+sudo systemctl start railroad
 ```
+
+See [docs/HARDWARE.md](docs/HARDWARE.md) for complete Pi setup guide.
+
+---
+
+## Roadmap
+
+### Completed (v1.4.0)
+- [x] Rust backend API integration
+- [x] String trackId alignment with backend
+- [x] Camera control endpoints
+- [x] CPX servo/gate control
+- [x] Distance sensor readings
+- [x] Automation sequences
+- [x] Comprehensive API tests
+
+### Next Steps
+- [ ] WebSocket real-time updates (replace polling)
+- [ ] Queue system for live mode sessions
+- [ ] Multi-user concurrent control
+- [ ] Recording and replay system
+- [ ] Mobile app release (iOS/Android)
+- [ ] Voice control integration
 
 ---
 
@@ -362,11 +512,12 @@ Found a vulnerability? Please see [SECURITY.md](SECURITY.md) for our responsible
 - Train icons by [Lucide](https://lucide.dev)
 - Fonts: Orbitron, Space Grotesk, JetBrains Mono
 - Deployed on [Vercel](https://vercel.com)
+- Rust async runtime by [Tokio](https://tokio.rs)
 
 ---
 
 <p align="center">
-  Made with <span style="color: #00f0ff;">♥</span> for model railroad enthusiasts
+  Made with <span style="color: #00f0ff;">&#9829;</span> for model railroad enthusiasts
 </p>
 
 <p align="center">
