@@ -10,7 +10,11 @@ npm run build    # Production build (runs prisma generate first)
 npm run start    # Run production server
 npm run lint     # Run ESLint
 npm test         # Run Jest tests (298 tests)
+npm run test:unit       # Unit tests only (no server needed)
+npm run test:integration # Integration tests (requires dev server)
 ```
+
+See [TESTING.md](./TESTING.md) for comprehensive test documentation.
 
 ## Setup Instructions
 
@@ -702,7 +706,7 @@ See `KNOWN_ISSUES.md` for a comprehensive list of bugs and technical debt.
 
 | Version | Date | Key Changes |
 |---------|------|-------------|
-| v1.4.1 | Dec 2025 | Queue/session management (phases 1-4): hardware health, session lifecycle, real-time SSE, recording, spectator, priority queue |
+| v1.4.1 | Dec 2025 | Queue/session management (phases 1-4): hardware health, session lifecycle, real-time SSE, recording, spectator, priority queue. Added TESTING.md with comprehensive test documentation (12 suites, 298 tests). |
 | v1.4.0 | Dec 2025 | Rust backend API integration, string trackIds, comprehensive API tests |
 | v1.3.0 | Dec 2025 | Removed fake features, CPU performance optimization, ready for Pi backend |
 | v1.2.2 | Dec 2025 | Version sync and cleanup |
