@@ -9,6 +9,82 @@ npm run dev      # Start development server at localhost:3000
 npm run build    # Production build (runs prisma generate first)
 npm run start    # Run production server
 npm run lint     # Run ESLint
+npm test         # Run Jest tests (298 tests)
+```
+
+## Setup Instructions
+
+### 1. Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. Environment Variables
+
+Copy `.env.example` to `.env` and configure:
+
+```bash
+# Required - Database
+DATABASE_URL="postgresql://user:pass@host/db"
+
+# Required - Auth
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-secret-key"
+
+# Required - Redis (Upstash)
+UPSTASH_REDIS_REST_URL="https://your-redis.upstash.io"
+UPSTASH_REDIS_REST_TOKEN="your-token"
+
+# Optional - Raspberry Pi Hardware
+NEXT_PUBLIC_API_URL="http://raspberry-pi-ip:5000"
+
+# Optional - QStash (for background jobs)
+QSTASH_TOKEN="your-qstash-token"
+QSTASH_CURRENT_SIGNING_KEY="..."
+QSTASH_NEXT_SIGNING_KEY="..."
+
+# Optional - Payments
+STRIPE_SECRET_KEY="sk_..."
+PAYPAL_CLIENT_ID="..."
+COINBASE_COMMERCE_API_KEY="..."
+
+# Optional - Admin
+ADMIN_KEY="your-admin-api-key"
+ADMIN_USER_IDS="user-id-1,user-id-2"
+ADMIN_EMAILS="admin@example.com"
+```
+
+### 3. Database Setup
+
+```bash
+# Generate Prisma client
+npx prisma generate
+
+# Push schema to database (development)
+npx prisma db push
+
+# Or run migrations (production)
+npx prisma migrate deploy
+
+# View database in browser
+npx prisma studio
+```
+
+### 4. Run Development Server
+
+```bash
+npm run dev
+```
+
+Visit http://localhost:3000
+
+### 5. Run Tests
+
+```bash
+npm test              # Run all tests
+npm test -- --watch   # Watch mode
+npm test -- --coverage # With coverage
 ```
 
 ## Project Overview
@@ -64,6 +140,8 @@ hooks/
 ├── useUser.ts                # User state, tokens, modules
 ├── useLeaderboard.ts         # Leaderboard data fetching
 ├── useHardwareAdapter.ts     # Hardware abstraction layer
+├── useHardwareSession.ts     # Session lifecycle with heartbeat
+├── useHardwareRealtime.ts    # Real-time hardware state via SSE
 ├── useArcadeInput.ts         # Keyboard/gamepad input
 ├── useSnapshots.ts           # Snapshot gallery data
 ├── useSessionHistory.ts      # Session history with pagination
@@ -83,11 +161,15 @@ lib/
 ├── auth.ts                   # NextAuth configuration
 ├── db.ts                     # Prisma client singleton
 ├── queue.ts                  # QStash job queue (tournament automation)
+├── queue-manager.ts          # Live queue with priority support
 ├── realtime.ts               # SSE event emitters
 ├── redis.ts                  # Upstash Redis + rate limiters
 ├── pricing.ts                # Token costs for actions
 ├── kiosk-config.ts           # Arcade cabinet settings
 ├── camera-config.ts          # Camera streams and layouts
+├── hardware-polling.ts       # Polls Rust backend for state changes
+├── session-recording.ts      # Records session events for playback
+├── spectator.ts              # Spectator mode for watching sessions
 └── tournament.ts             # Tournament types, helpers, and prize tiers
 
 prisma/
@@ -620,6 +702,7 @@ See `KNOWN_ISSUES.md` for a comprehensive list of bugs and technical debt.
 
 | Version | Date | Key Changes |
 |---------|------|-------------|
+| v1.4.1 | Dec 2025 | Queue/session management (phases 1-4): hardware health, session lifecycle, real-time SSE, recording, spectator, priority queue |
 | v1.4.0 | Dec 2025 | Rust backend API integration, string trackIds, comprehensive API tests |
 | v1.3.0 | Dec 2025 | Removed fake features, CPU performance optimization, ready for Pi backend |
 | v1.2.2 | Dec 2025 | Version sync and cleanup |
