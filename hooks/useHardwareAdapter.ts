@@ -97,6 +97,9 @@ export interface HardwareAdapterState {
   isConnected: boolean;
   isLoading: boolean;
   error: string | null;
+  // Session info (live mode only)
+  sessionActive: boolean;
+  sessionRemainingSeconds: number;
 }
 
 export interface HardwareAdapterActions {
@@ -159,6 +162,8 @@ const DEFAULT_STATE: HardwareAdapterState = {
   isConnected: false,
   isLoading: true,
   error: null,
+  sessionActive: false,
+  sessionRemainingSeconds: 0,
 };
 
 // ============================================
@@ -204,7 +209,8 @@ export function useHardwareAdapter(options: UseHardwareAdapterOptions): UseHardw
     // Subscribe to state updates
     if (adapter.subscribe) {
       unsubscribeRef.current = adapter.subscribe((layoutState: LayoutState) => {
-        setState({
+        setState((prev) => ({
+          ...prev,
           trains: layoutState.trains,
           junctions: layoutState.junctions,
           crossings: layoutState.crossings,
@@ -214,7 +220,7 @@ export function useHardwareAdapter(options: UseHardwareAdapterOptions): UseHardw
           isConnected: layoutState.system.connected,
           isLoading: false,
           error: null,
-        });
+        }));
       });
     } else {
       // Adapter doesn't support subscriptions - poll for state
@@ -229,7 +235,8 @@ export function useHardwareAdapter(options: UseHardwareAdapterOptions): UseHardw
             adapter.getStatus(),
           ]);
 
-          setState({
+          setState((prev) => ({
+            ...prev,
             trains,
             junctions,
             crossings,
@@ -239,7 +246,7 @@ export function useHardwareAdapter(options: UseHardwareAdapterOptions): UseHardw
             isConnected: system.connected,
             isLoading: false,
             error: null,
-          });
+          }));
         } catch (error) {
           setState((prev) => ({
             ...prev,
@@ -275,6 +282,13 @@ export function useHardwareAdapter(options: UseHardwareAdapterOptions): UseHardw
       // In live mode, validate session first
       if (mode === 'live') {
         const validation = await validateSession();
+
+        // Update session state
+        setState((prev) => ({
+          ...prev,
+          sessionActive: validation.hasControl,
+          sessionRemainingSeconds: validation.remainingSeconds,
+        }));
 
         if (!validation.valid || !validation.hasControl) {
           onError?.(validation.error || 'No active session - join the queue to control hardware');
@@ -523,7 +537,8 @@ export function useHardwareAdapter(options: UseHardwareAdapterOptions): UseHardw
         adapter.getStatus(),
       ]);
 
-      setState({
+      setState((prev) => ({
+        ...prev,
         trains,
         junctions,
         crossings,
@@ -533,7 +548,7 @@ export function useHardwareAdapter(options: UseHardwareAdapterOptions): UseHardw
         isConnected: system.connected,
         isLoading: false,
         error: null,
-      });
+      }));
     } catch (error) {
       setState((prev) => ({
         ...prev,

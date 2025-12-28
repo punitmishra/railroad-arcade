@@ -69,6 +69,14 @@ export async function POST(request: NextRequest) {
         await handleTournamentDistributePrizes(job.payload as TournamentDistributePrizesPayload);
         break;
 
+      case 'SESSION_CLEANUP':
+        await handleSessionCleanup(job.payload as SessionCleanupPayload);
+        break;
+
+      case 'SESSION_TIMEOUT_CHECK':
+        await handleSessionTimeoutCheck();
+        break;
+
       default:
         console.warn(`Unknown job type: ${job.type}`);
     }
@@ -593,4 +601,158 @@ async function handleTournamentDistributePrizes(payload: TournamentDistributePri
   }
 
   console.log(`Prizes distributed for tournament ${tournamentId}: ${result.prizesAwarded} awards`);
+}
+
+// ============================================
+// Session Handlers
+// ============================================
+
+interface SessionCleanupPayload {
+  sessionId: string;
+  userId: string;
+  reason: 'timeout' | 'expired' | 'manual';
+}
+
+async function handleSessionCleanup(payload: SessionCleanupPayload) {
+  const { sessionId, userId, reason } = payload;
+  const { redis, playSessionCache } = await import('@/lib/redis');
+  const { tryActivateNextUser } = await import('@/lib/queue-manager');
+  const { emitSessionUpdate } = await import('@/lib/realtime');
+
+  // Update queue entry status
+  const entry = await db.liveQueue.findUnique({
+    where: { id: sessionId },
+  });
+
+  if (!entry) {
+    console.warn(`Session not found for cleanup: ${sessionId}`);
+    return;
+  }
+
+  if (entry.status !== 'ACTIVE') {
+    console.log(`Session ${sessionId} already ${entry.status}, skipping cleanup`);
+    return;
+  }
+
+  // Mark session as completed
+  await db.liveQueue.update({
+    where: { id: sessionId },
+    data: { status: 'COMPLETED' },
+  });
+
+  // Clear all session caches
+  await playSessionCache.clearUserActiveSession(userId);
+  await redis.del(`session:${sessionId}:hardware_notified`);
+  await redis.del(`session:${sessionId}:last_heartbeat`);
+  await redis.del('live:queue:state');
+
+  // Notify hardware of session end
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (apiUrl) {
+    try {
+      await fetch(`${apiUrl}/api/session/end`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId, user_id: userId, reason }),
+      });
+    } catch (error) {
+      console.error('Failed to notify hardware of session cleanup:', error);
+    }
+  }
+
+  // Emit session end event
+  emitSessionUpdate({
+    sessionId,
+    status: 'ended',
+    remainingTime: 0,
+  });
+
+  // Activate next user
+  await tryActivateNextUser();
+
+  console.log(`Session ${sessionId} cleaned up (reason: ${reason})`);
+}
+
+async function handleSessionTimeoutCheck() {
+  const { redis, playSessionCache } = await import('@/lib/redis');
+  const { tryActivateNextUser } = await import('@/lib/queue-manager');
+  const { emitSessionUpdate } = await import('@/lib/realtime');
+
+  const HEARTBEAT_TIMEOUT_MS = 60000; // 60 seconds without heartbeat
+  const now = Date.now();
+
+  // Find all active sessions
+  const activeSessions = await db.liveQueue.findMany({
+    where: { status: 'ACTIVE' },
+  });
+
+  for (const session of activeSessions) {
+    // Check if session has expired by time
+    if (session.controlEndsAt && session.controlEndsAt < new Date()) {
+      console.log(`Session ${session.id} expired by time`);
+
+      await db.liveQueue.update({
+        where: { id: session.id },
+        data: { status: 'COMPLETED' },
+      });
+
+      await playSessionCache.clearUserActiveSession(session.userId);
+      await redis.del(`session:${session.id}:hardware_notified`);
+      await redis.del(`session:${session.id}:last_heartbeat`);
+
+      emitSessionUpdate({
+        sessionId: session.id,
+        status: 'ended',
+        remainingTime: 0,
+      });
+
+      continue;
+    }
+
+    // Check for heartbeat timeout
+    const lastHeartbeat = await redis.get<number>(`session:${session.id}:last_heartbeat`);
+
+    if (lastHeartbeat && now - lastHeartbeat > HEARTBEAT_TIMEOUT_MS) {
+      console.log(`Session ${session.id} timed out (no heartbeat for ${Math.floor((now - lastHeartbeat) / 1000)}s)`);
+
+      await db.liveQueue.update({
+        where: { id: session.id },
+        data: { status: 'EXPIRED' },
+      });
+
+      await playSessionCache.clearUserActiveSession(session.userId);
+      await redis.del(`session:${session.id}:hardware_notified`);
+      await redis.del(`session:${session.id}:last_heartbeat`);
+
+      // Notify hardware
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      if (apiUrl) {
+        try {
+          await fetch(`${apiUrl}/api/session/end`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              session_id: session.id,
+              user_id: session.userId,
+              reason: 'timeout',
+            }),
+          });
+        } catch (error) {
+          console.error('Failed to notify hardware of session timeout:', error);
+        }
+      }
+
+      emitSessionUpdate({
+        sessionId: session.id,
+        status: 'timeout',
+        remainingTime: 0,
+      });
+    }
+  }
+
+  // Clear queue cache and activate next users
+  await redis.del('live:queue:state');
+  await tryActivateNextUser();
+
+  console.log(`Session timeout check completed, checked ${activeSessions.length} sessions`);
 }

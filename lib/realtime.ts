@@ -58,7 +58,7 @@ export interface AchievementData {
 
 export interface SessionUpdateData {
   sessionId: string;
-  status: 'started' | 'extended' | 'ending' | 'ended';
+  status: 'started' | 'extended' | 'ending' | 'ended' | 'timeout';
   remainingTime?: number;
 }
 

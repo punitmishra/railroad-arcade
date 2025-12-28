@@ -25,7 +25,9 @@ export type JobType =
   | 'AGGREGATE_STATS'
   | 'TOURNAMENT_STATUS_CHECK'
   | 'TOURNAMENT_FINALIZE'
-  | 'TOURNAMENT_DISTRIBUTE_PRIZES';
+  | 'TOURNAMENT_DISTRIBUTE_PRIZES'
+  | 'SESSION_CLEANUP'
+  | 'SESSION_TIMEOUT_CHECK';
 
 export interface QueueJob<T = unknown> {
   type: JobType;
@@ -87,6 +89,12 @@ export interface TournamentFinalizePayload {
 
 export interface TournamentDistributePrizesPayload {
   tournamentId: string;
+}
+
+export interface SessionCleanupPayload {
+  sessionId: string;
+  userId: string;
+  reason: 'timeout' | 'expired' | 'manual';
 }
 
 // ============================================
@@ -207,6 +215,25 @@ export const queue = {
     const delaySeconds = Math.max(0, Math.floor((targetTime - now) / 1000));
 
     return enqueueJob('TOURNAMENT_STATUS_CHECK', payload, {
+      delay: delaySeconds,
+    });
+  },
+
+  // Session: Cleanup an expired/timed out session
+  cleanupSession: async (payload: SessionCleanupPayload) => {
+    return enqueueJob('SESSION_CLEANUP', payload, {
+      userId: payload.userId,
+    });
+  },
+
+  // Session: Check all sessions for timeout (scheduled job)
+  checkSessionTimeouts: async () => {
+    return enqueueJob('SESSION_TIMEOUT_CHECK', {});
+  },
+
+  // Session: Schedule timeout check (run periodically)
+  scheduleSessionTimeoutCheck: async (delaySeconds: number = 30) => {
+    return enqueueJob('SESSION_TIMEOUT_CHECK', {}, {
       delay: delaySeconds,
     });
   },
