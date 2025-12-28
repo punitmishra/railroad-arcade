@@ -107,6 +107,8 @@ export interface QueueEntry {
   tokensPaid: number;
   status: QueueStatus;
   estimatedWaitTime: number; // seconds
+  priority: number; // 0 = normal, 1+ = priority (higher = more priority)
+  isPriority: boolean;
 }
 
 export interface QueueState {
@@ -161,7 +163,8 @@ export async function getQueueState(): Promise<QueueState> {
     },
     orderBy: [
       { status: 'desc' }, // ACTIVE first
-      { joinedAt: 'asc' },
+      { priority: 'desc' }, // Higher priority first
+      { joinedAt: 'asc' }, // Earlier joins first within same priority
     ],
   });
 
@@ -186,6 +189,8 @@ export async function getQueueState(): Promise<QueueState> {
       tokensPaid: entry.tokensPaid,
       status: entry.status,
       estimatedWaitTime: Math.round(waitTime),
+      priority: entry.priority,
+      isPriority: entry.priority > 0,
     };
   });
 
@@ -201,6 +206,8 @@ export async function getQueueState(): Promise<QueueState> {
           tokensPaid: activeEntry.tokensPaid,
           status: activeEntry.status,
           estimatedWaitTime: 0,
+          priority: activeEntry.priority,
+          isPriority: activeEntry.priority > 0,
         }
       : null,
     waitingUsers: waitingWithEstimates,
@@ -243,7 +250,7 @@ export async function getUserQueuePosition(userId: string): Promise<QueueEntry |
 export async function joinQueue(
   userId: string,
   timePackageId: string,
-  options?: { skipHealthCheck?: boolean }
+  options?: { skipHealthCheck?: boolean; priority?: number }
 ): Promise<{ success: boolean; entry?: QueueEntry; error?: string; hardwareOffline?: boolean }> {
   // Check hardware health first (unless skipped for testing)
   if (!options?.skipHealthCheck) {
@@ -283,12 +290,14 @@ export async function joinQueue(
   }
 
   // Deduct tokens and create queue entry
+  const priority = options?.priority ?? 0;
   const [entry] = await db.$transaction([
     db.liveQueue.create({
       data: {
         userId,
         tokensPaid: timePackage.tokens,
         status: 'WAITING',
+        priority,
       },
     }),
     db.user.update({
@@ -521,7 +530,54 @@ export async function tryActivateNextUser(): Promise<QueueEntry | null> {
     tokensPaid: updatedEntry.tokensPaid,
     status: updatedEntry.status,
     estimatedWaitTime: 0,
+    priority: updatedEntry.priority,
+    isPriority: updatedEntry.priority > 0,
   };
+}
+
+/**
+ * Join queue with priority (skip ahead of normal queue)
+ * Costs additional tokens based on priority level
+ */
+export async function joinPriorityQueue(
+  userId: string,
+  timePackageId: string,
+  priorityLevel: 1 | 2 | 3 = 1
+): Promise<{ success: boolean; entry?: QueueEntry; error?: string; hardwareOffline?: boolean }> {
+  // Priority costs: Level 1 = 2x tokens, Level 2 = 3x, Level 3 = 5x
+  const priorityMultiplier = priorityLevel === 3 ? 5 : priorityLevel === 2 ? 3 : 2;
+  const timePackage = getTimePricingById(timePackageId) ?? QUEUE_TIME_PACKAGES[1];
+  const priorityCost = timePackage.tokens * (priorityMultiplier - 1);
+
+  // Check user has enough tokens for priority fee
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { tokenBalance: true },
+  });
+
+  if (!user || user.tokenBalance < timePackage.tokens + priorityCost) {
+    return { success: false, error: `Insufficient tokens for priority (need ${timePackage.tokens + priorityCost})` };
+  }
+
+  // Deduct priority fee first
+  await db.$transaction([
+    db.user.update({
+      where: { id: userId },
+      data: { tokenBalance: { decrement: priorityCost } },
+    }),
+    db.transaction.create({
+      data: {
+        userId,
+        type: 'SPEND',
+        amount: -priorityCost,
+        status: 'COMPLETED',
+        metadata: { reason: 'priority_queue_fee', level: priorityLevel },
+      },
+    }),
+  ]);
+
+  // Join with priority
+  return joinQueue(userId, timePackageId, { priority: priorityLevel });
 }
 
 /**

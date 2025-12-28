@@ -29,6 +29,9 @@ export const redis = {
       : getRedis().set(key, value),
   del: async (...keys: string[]) => getRedis().del(...keys),
   keys: async (pattern: string) => getRedis().keys(pattern),
+  incr: async (key: string) => getRedis().incr(key),
+  decr: async (key: string) => getRedis().decr(key),
+  expire: async (key: string, seconds: number) => getRedis().expire(key, seconds),
 };
 
 // ============================================

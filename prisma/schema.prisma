@@ -246,8 +246,9 @@ model LiveQueue {
   controlEndsAt  DateTime?
   tokensPaid     Int
   position       Int?
+  priority       Int         @default(0) // 0 = normal, 1+ = priority (higher skips ahead)
 
-  @@index([status, joinedAt])
+  @@index([status, priority, joinedAt])
 }
 
 enum QueueStatus {
