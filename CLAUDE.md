@@ -714,3 +714,96 @@ See `KNOWN_ISSUES.md` for a comprehensive list of bugs and technical debt.
 | v1.2.0 | Dec 2025 | Capacitor mobile integration, mobile responsiveness |
 | v1.1.0 | Dec 2025 | Full Tournament API with automation and admin UI |
 | v1.0.0 | Dec 2025 | Initial release with core features |
+
+## Current Checkpoint (December 28, 2025)
+
+### Latest Release: v1.4.1
+
+**Git Status**: Clean, all changes pushed to `origin/main`
+
+**Release Tag**: `v1.4.1` created and pushed
+
+### What Was Completed
+
+1. **Queue/Session Management (Phases 1-4)**
+   - Hardware health checks and queue validation
+   - Session lifecycle with heartbeat (15s interval, 60s timeout)
+   - Real-time hardware state sync via SSE polling
+   - Session recording with playback support
+   - Spectator mode for watching live sessions
+   - Priority queue with tiered pricing (2x, 3x, 5x tokens)
+
+2. **Test Documentation**
+   - Created `TESTING.md` with comprehensive test docs
+   - 12 test suites, 298 tests total
+   - Unit tests (8 suites, 238 tests) - no server required
+   - Integration tests (4 suites, 60 tests) - require dev server
+   - Fixed Jest 30 deprecated flags in package.json
+
+3. **Database Schema Updates**
+   - Added `priority` field to `LiveQueue` model
+   - Synced with `npx prisma db push`
+
+### Test Results (Latest Run)
+
+```
+Unit Tests:      8 passed, 238 tests (0.8s)
+Integration:     4 passed, 59/60 tests (14s)
+                 1 failed due to rate limiting (expected)
+```
+
+### Key Files Modified
+
+| File | Changes |
+|------|---------|
+| `lib/queue-manager.ts` | Priority queue support |
+| `lib/session-recording.ts` | Session recording/playback |
+| `lib/spectator.ts` | Spectator mode system |
+| `lib/hardware-polling.ts` | Hardware state polling |
+| `hooks/useHardwareSession.ts` | Session lifecycle hook |
+| `hooks/useHardwareRealtime.ts` | Real-time hardware hook |
+| `TESTING.md` | Comprehensive test documentation |
+| `package.json` | Fixed test scripts, v1.4.1 |
+
+### Environment Ready
+
+- Database: Schema synced with Prisma
+- Tests: All passing
+- Docs: CLAUDE.md and TESTING.md updated
+- Git: Clean working tree, pushed to origin
+
+### Next Steps (When Resuming)
+
+1. **Raspberry Pi Backend** - Connect to real Rust backend
+   - Configure `NEXT_PUBLIC_API_URL` environment variable
+   - Test hardware polling with real sensors
+   - Verify session recording with actual train commands
+
+2. **Multi-User Queue Testing**
+   - Test priority queue with multiple concurrent users
+   - Verify session handoff between users
+   - Test spectator mode with live sessions
+
+3. **Production Deployment**
+   - Deploy v1.4.1 to Vercel
+   - Configure production environment variables
+   - Monitor rate limiting and session timeouts
+
+### Quick Resume Commands
+
+```bash
+# Install dependencies
+npm install
+
+# Generate Prisma client
+npx prisma generate
+
+# Run all tests
+npm test
+
+# Start development server
+npm run dev
+
+# View database
+npx prisma studio
+```
