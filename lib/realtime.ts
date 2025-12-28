@@ -19,6 +19,10 @@ export type RealtimeEventType =
   | 'tournament_update'
   | 'tournament_leaderboard'
   | 'tournament_prizes'
+  | 'hardware_state'
+  | 'sensor_update'
+  | 'cpx_update'
+  | 'camera_update'
   | 'ping'
   | 'connected';
 
@@ -102,6 +106,43 @@ export interface TournamentPrizesData {
   tournamentName: string;
   winnersCount: number;
   prizePool: number;
+}
+
+// Hardware event data types
+export interface HardwareStateData {
+  controllerOnline: boolean;
+  cpxConnected: boolean;
+  cameraRunning: boolean;
+  tracks: Array<{
+    id: string;
+    speed: number;
+    direction: 'forward' | 'reverse' | 'stop';
+    running: boolean;
+  }>;
+  lastUpdated: number;
+}
+
+export interface SensorUpdateData {
+  type: 'distance' | 'ldr';
+  sensors: Array<{
+    name: string;
+    value: number;
+    blocked: boolean;
+  }>;
+}
+
+export interface CpxUpdateData {
+  connected: boolean;
+  servos: [number, number, number, number];
+  ldrRaw: [number, number, number];
+  ldrBlocked: [boolean, boolean, boolean];
+  gate: 'up' | 'down';
+  autoGate: boolean;
+}
+
+export interface CameraUpdateData {
+  running: boolean;
+  streamUrl?: string;
 }
 
 // ============================================
@@ -227,6 +268,22 @@ export function emitTournamentLeaderboard(data: TournamentLeaderboardData): void
 
 export function emitTournamentPrizes(data: TournamentPrizesData): void {
   realtimeEmitter.emit('tournament_prizes', data);
+}
+
+export function emitHardwareState(data: HardwareStateData): void {
+  realtimeEmitter.emit('hardware_state', data);
+}
+
+export function emitSensorUpdate(data: SensorUpdateData): void {
+  realtimeEmitter.emit('sensor_update', data);
+}
+
+export function emitCpxUpdate(data: CpxUpdateData): void {
+  realtimeEmitter.emit('cpx_update', data);
+}
+
+export function emitCameraUpdate(data: CameraUpdateData): void {
+  realtimeEmitter.emit('camera_update', data);
 }
 
 // ============================================
