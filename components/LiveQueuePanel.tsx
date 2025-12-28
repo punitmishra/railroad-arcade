@@ -20,6 +20,12 @@ interface QueueState {
   averageWaitTime: number;
 }
 
+interface HardwareStatus {
+  online: boolean;
+  latency?: number;
+  lastChecked: number;
+}
+
 interface UserPosition {
   id: string;
   position: number;
@@ -38,6 +44,7 @@ export function LiveQueuePanel() {
 
   const [queueState, setQueueState] = useState<QueueState | null>(null);
   const [userPosition, setUserPosition] = useState<UserPosition | null>(null);
+  const [hardwareStatus, setHardwareStatus] = useState<HardwareStatus | null>(null);
   const [selectedPackage, setSelectedPackage] = useState(QUEUE_TIME_PACKAGES[1].id);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +59,7 @@ export function LiveQueuePanel() {
       if (data.success) {
         setQueueState(data.data.queue);
         setUserPosition(data.data.userPosition);
+        setHardwareStatus(data.data.hardware);
 
         // Update context
         if (data.data.userPosition) {
@@ -108,6 +116,12 @@ export function LiveQueuePanel() {
   const handleJoinQueue = async () => {
     if (!session) return;
 
+    // Check hardware status first
+    if (!hardwareStatus?.online) {
+      setError('Hardware is offline - cannot join queue at this time');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -123,7 +137,14 @@ export function LiveQueuePanel() {
       if (data.success) {
         await fetchQueueState();
       } else {
-        setError(data.error || 'Failed to join queue');
+        // Handle hardware offline error specially
+        if (data.hardwareOffline) {
+          setError('Hardware is currently offline. Please try again later.');
+          // Force refresh hardware status
+          await fetchQueueState();
+        } else {
+          setError(data.error || 'Failed to join queue');
+        }
       }
     } catch (err) {
       setError('Failed to join queue');
@@ -207,16 +228,41 @@ export function LiveQueuePanel() {
       <div className="px-4 py-3 bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border-b border-white/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className={`w-2 h-2 rounded-full ${hardwareStatus?.online ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
             <h3 className="font-semibold text-white" style={{ fontFamily: 'Orbitron, sans-serif' }}>
               Live Control Queue
             </h3>
           </div>
-          <div className="text-sm text-gray-400">
-            {queueState?.totalInQueue ?? 0} in queue
+          <div className="flex items-center gap-3 text-sm">
+            {/* Hardware status badge */}
+            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded ${hardwareStatus?.online ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${hardwareStatus?.online ? 'bg-emerald-400' : 'bg-red-400'}`} />
+              <span className="text-xs">{hardwareStatus?.online ? 'Online' : 'Offline'}</span>
+              {hardwareStatus?.online && hardwareStatus.latency && (
+                <span className="text-xs text-gray-500">{hardwareStatus.latency}ms</span>
+              )}
+            </div>
+            <div className="text-gray-400">
+              {queueState?.totalInQueue ?? 0} in queue
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Hardware offline banner */}
+      {hardwareStatus && !hardwareStatus.online && (
+        <div className="px-4 py-3 bg-red-500/10 border-b border-red-500/30">
+          <div className="flex items-center gap-2 text-red-400">
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <p className="font-medium">Hardware Offline</p>
+              <p className="text-sm text-red-400/70">The railroad control system is currently unavailable. Please try again later.</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="p-4">
         {/* Error message */}
@@ -286,9 +332,9 @@ export function LiveQueuePanel() {
               variant="primary"
               className="w-full"
               onClick={handleJoinQueue}
-              disabled={isLoading}
+              disabled={isLoading || !hardwareStatus?.online}
             >
-              {isLoading ? 'Joining...' : 'Join Queue'}
+              {isLoading ? 'Joining...' : !hardwareStatus?.online ? 'Hardware Offline' : 'Join Queue'}
             </ArcadeButton>
           </div>
         )}

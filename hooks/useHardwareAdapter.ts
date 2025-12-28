@@ -24,6 +24,59 @@ import { TokenGuard, formatActionCost, getActionDescription } from '@/lib/token-
 import { getActionCost } from '@/lib/pricing';
 
 // ============================================
+// Session Validation
+// ============================================
+
+interface SessionValidation {
+  valid: boolean;
+  hasControl: boolean;
+  remainingSeconds: number;
+  error?: string;
+}
+
+// Cache session validation to avoid excessive API calls
+let sessionValidationCache: {
+  data: SessionValidation | null;
+  timestamp: number;
+} = { data: null, timestamp: 0 };
+
+const SESSION_VALIDATION_CACHE_TTL = 5000; // 5 seconds
+
+async function validateSession(): Promise<SessionValidation> {
+  // Check cache
+  if (
+    sessionValidationCache.data &&
+    Date.now() - sessionValidationCache.timestamp < SESSION_VALIDATION_CACHE_TTL
+  ) {
+    return sessionValidationCache.data;
+  }
+
+  try {
+    const response = await fetch('/api/session/validate');
+    const data = await response.json();
+
+    sessionValidationCache = {
+      data,
+      timestamp: Date.now(),
+    };
+
+    return data;
+  } catch (error) {
+    return {
+      valid: false,
+      hasControl: false,
+      remainingSeconds: 0,
+      error: 'Failed to validate session',
+    };
+  }
+}
+
+// Clear session cache (call when session state changes)
+export function clearSessionValidationCache() {
+  sessionValidationCache = { data: null, timestamp: 0 };
+}
+
+// ============================================
 // Types
 // ============================================
 
@@ -219,8 +272,17 @@ export function useHardwareAdapter(options: UseHardwareAdapterOptions): UseHardw
         return false;
       }
 
-      // Check if action needs confirmation in live mode
+      // In live mode, validate session first
       if (mode === 'live') {
+        const validation = await validateSession();
+
+        if (!validation.valid || !validation.hasControl) {
+          onError?.(validation.error || 'No active session - join the queue to control hardware');
+          // Clear cache so next check is fresh
+          clearSessionValidationCache();
+          return false;
+        }
+
         const cost = getActionCost(actionName);
 
         if (cost > 0 && onActionConfirmRequired) {

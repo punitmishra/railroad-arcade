@@ -7,6 +7,7 @@ import {
   getUserQueuePosition,
   joinQueue,
   leaveQueue,
+  checkHardwareHealth,
 } from '@/lib/queue-manager';
 
 // ============================================
@@ -29,8 +30,11 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
 
-    // Get queue state
-    const queueState = await getQueueState();
+    // Get queue state and hardware health in parallel
+    const [queueState, hardwareHealth] = await Promise.all([
+      getQueueState(),
+      checkHardwareHealth(),
+    ]);
 
     // Get user's position if logged in
     let userPosition = null;
@@ -54,6 +58,11 @@ export async function GET(request: NextRequest) {
           averageWaitTime: queueState.averageSessionDuration,
         },
         userPosition,
+        hardware: {
+          online: hardwareHealth.online,
+          latency: hardwareHealth.latency,
+          lastChecked: hardwareHealth.lastChecked,
+        },
       },
     });
   } catch (error) {
@@ -103,9 +112,14 @@ export async function POST(request: NextRequest) {
     const result = await joinQueue(session.user.id, timePackageId);
 
     if (!result.success) {
+      // Return 503 Service Unavailable if hardware is offline
+      const status = result.hardwareOffline ? 503 : 400;
       return NextResponse.json(
-        { error: result.error },
-        { status: 400 }
+        {
+          error: result.error,
+          hardwareOffline: result.hardwareOffline ?? false,
+        },
+        { status }
       );
     }
 

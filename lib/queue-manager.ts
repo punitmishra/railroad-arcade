@@ -10,6 +10,90 @@ import { getTimePricingById, QUEUE_TIME_PACKAGES } from './pricing';
 import { emitQueueUpdate, emitSessionUpdate } from './realtime';
 
 // ============================================
+// Hardware Health Check
+// ============================================
+
+const HEALTH_CACHE_KEY = 'hardware:health';
+const HEALTH_CHECK_TIMEOUT = 5000;
+
+export interface HardwareHealthStatus {
+  online: boolean;
+  lastChecked: number;
+  latency?: number;
+  error?: string;
+}
+
+/**
+ * Check if the Raspberry Pi hardware is online
+ */
+export async function checkHardwareHealth(): Promise<HardwareHealthStatus> {
+  // Check cache first (10 second TTL)
+  const cached = await redis.get<HardwareHealthStatus>(HEALTH_CACHE_KEY);
+  if (cached) {
+    return cached;
+  }
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  if (!apiUrl) {
+    const status: HardwareHealthStatus = {
+      online: false,
+      lastChecked: Date.now(),
+      error: 'Hardware API URL not configured',
+    };
+    await redis.set(HEALTH_CACHE_KEY, status, { ex: 10 });
+    return status;
+  }
+
+  const startTime = Date.now();
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT);
+
+    const response = await fetch(`${apiUrl}/api/status`, {
+      method: 'GET',
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    const latency = Date.now() - startTime;
+
+    if (!response.ok) {
+      const status: HardwareHealthStatus = {
+        online: false,
+        lastChecked: Date.now(),
+        latency,
+        error: `HTTP ${response.status}`,
+      };
+      await redis.set(HEALTH_CACHE_KEY, status, { ex: 10 });
+      return status;
+    }
+
+    const data = await response.json();
+
+    const status: HardwareHealthStatus = {
+      online: data.success === true,
+      lastChecked: Date.now(),
+      latency,
+      error: data.success ? undefined : (data.error || 'Unknown error'),
+    };
+    await redis.set(HEALTH_CACHE_KEY, status, { ex: 10 });
+    return status;
+  } catch (error) {
+    const status: HardwareHealthStatus = {
+      online: false,
+      lastChecked: Date.now(),
+      latency: Date.now() - startTime,
+      error: error instanceof Error ? error.message : 'Connection failed',
+    };
+    await redis.set(HEALTH_CACHE_KEY, status, { ex: 10 });
+    return status;
+  }
+}
+
+// ============================================
 // Types
 // ============================================
 
@@ -158,8 +242,21 @@ export async function getUserQueuePosition(userId: string): Promise<QueueEntry |
  */
 export async function joinQueue(
   userId: string,
-  timePackageId: string
-): Promise<{ success: boolean; entry?: QueueEntry; error?: string }> {
+  timePackageId: string,
+  options?: { skipHealthCheck?: boolean }
+): Promise<{ success: boolean; entry?: QueueEntry; error?: string; hardwareOffline?: boolean }> {
+  // Check hardware health first (unless skipped for testing)
+  if (!options?.skipHealthCheck) {
+    const health = await checkHardwareHealth();
+    if (!health.online) {
+      return {
+        success: false,
+        error: `Hardware is offline: ${health.error || 'Connection failed'}`,
+        hardwareOffline: true,
+      };
+    }
+  }
+
   // Check if user already in queue
   const existing = await db.liveQueue.findFirst({
     where: {
