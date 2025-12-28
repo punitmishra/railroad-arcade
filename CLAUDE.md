@@ -412,6 +412,47 @@ QSTASH_NEXT_SIGNING_KEY
 - **Hardware Adapter State**: Added `sessionActive` and `sessionRemainingSeconds` fields
 - **Real-time Events**: Added `timeout` status to session update events
 
+#### Phase 3: Real-time Hardware State Sync
+- **Hardware Polling Service**: `lib/hardware-polling.ts` polls Rust backend for state changes
+  - Status polling (1s interval), sensor polling (500ms), camera polling (5s)
+  - Only emits events when state actually changes (diff detection)
+- **Hardware Events SSE**: New `/api/hardware/events` endpoint streams hardware updates
+  - Auto-starts polling when first client connects, stops when last disconnects
+  - Supports filter parameter: `?filter=hardware_state,sensor_update`
+- **New Event Types**: Added to `lib/realtime.ts`:
+  - `hardware_state`: Controller online, CPX connected, camera running, tracks
+  - `sensor_update`: Distance sensors and LDR readings
+  - `cpx_update`: Servo positions, gate state, auto-gate mode
+  - `camera_update`: Camera running status and stream URL
+- **useHardwareRealtime Hook**: Client-side hook for consuming hardware events
+  - Auto-reconnect with exponential backoff
+  - Typed state for tracks, sensors, CPX, camera
+  - Convenience hooks: `useSensorRealtime`, `useTrackRealtime`
+
+#### Phase 4: Advanced Features
+- **Session Recording System** (`lib/session-recording.ts`):
+  - Records hardware events during sessions to Redis (7-day TTL)
+  - Event types: track_command, junction_switch, crossing_activate, emergency_stop
+  - Metadata tracking: tracks used, peak speed, event count
+  - Playback support with speed control (0.25x-4x), pause/resume
+  - `/api/recordings/session` endpoint for recording management
+  - Reconstructs from SessionEvents if not in cache
+- **Spectator Mode** (`lib/spectator.ts`):
+  - Watch live sessions without joining the queue
+  - Real-time spectator count per session
+  - `/api/spectator` endpoint: GET active session, POST join/leave
+  - Automatic cleanup of stale spectator connections (30 min timeout)
+  - Emits spectator_update events via SSE
+- **Priority Queue**:
+  - Added `priority` field to LiveQueue schema (0=normal, 1+=priority)
+  - Queue ordering: priority DESC, joinedAt ASC
+  - `joinPriorityQueue()` with tiered pricing:
+    - Level 1 (Priority): 2x tokens
+    - Level 2 (Express): 3x tokens
+    - Level 3 (VIP): 5x tokens
+  - `/api/queue/priority` endpoint for priority queue access
+  - Added `isPriority` field to QueueEntry for UI badges
+
 ### v1.4.0 - Rust Backend Integration
 - **API Type Alignment**: Complete rewrite of `lib/api.ts` to match Rust backend `models.rs`
 - **String Track IDs**: Changed `trackId` from number to string ("1", "2", "3") across all adapters
