@@ -391,6 +391,27 @@ QSTASH_NEXT_SIGNING_KEY
 
 ## Recent Changes (December 2025)
 
+### Queue & Session Management (v1.4.1)
+
+#### Phase 1: Hardware Health & Queue Validation
+- **Hardware Health Check**: New `/api/hardware/health` endpoint checks Raspberry Pi status
+- **Queue Join Validation**: Blocks queue join when hardware is offline (503 response)
+- **Session Validation**: `useHardwareAdapter` validates active session before each live action
+- **LiveQueuePanel**: Shows hardware online/offline status with latency indicator
+- **Graceful Degradation**: Disabled join button with "Hardware Offline" message when Pi unreachable
+
+#### Phase 2: Session Lifecycle Management
+- **Session API**: New `/api/session` endpoint for session info, start, end, heartbeat actions
+- **Heartbeat Endpoint**: Lightweight `/api/session/heartbeat` for keep-alive (every 15s)
+- **Timeout Handling**: 60-second heartbeat timeout auto-releases stale sessions
+- **Session Cleanup Jobs**: `SESSION_CLEANUP` and `SESSION_TIMEOUT_CHECK` QStash jobs
+- **useHardwareSession Hook**: Client-side session management with auto-heartbeat
+  - Local countdown timer with server sync
+  - Session expiring notifications (< 60s remaining)
+  - Automatic cache invalidation on session changes
+- **Hardware Adapter State**: Added `sessionActive` and `sessionRemainingSeconds` fields
+- **Real-time Events**: Added `timeout` status to session update events
+
 ### v1.4.0 - Rust Backend Integration
 - **API Type Alignment**: Complete rewrite of `lib/api.ts` to match Rust backend `models.rs`
 - **String Track IDs**: Changed `trackId` from number to string ("1", "2", "3") across all adapters
