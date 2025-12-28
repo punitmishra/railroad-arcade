@@ -15,7 +15,7 @@
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-a855f7?style=for-the-badge" alt="MIT License">
   </a>
-  <img src="https://img.shields.io/badge/version-1.4.0-ffd700?style=for-the-badge" alt="Version 1.4.0">
+  <img src="https://img.shields.io/badge/version-1.4.1-ffd700?style=for-the-badge" alt="Version 1.4.1">
   <img src="https://img.shields.io/badge/next.js-14-black?style=for-the-badge&logo=next.js" alt="Next.js 14">
   <img src="https://img.shields.io/badge/rust-backend-orange?style=for-the-badge&logo=rust" alt="Rust Backend">
 </p>
@@ -154,6 +154,14 @@ Railroad Arcade is a full-stack IoT application that lets you control a real HO 
 - **Keyboard & Gamepad** — Full control support
 - **Mobile Optimized** — Capacitor-ready for iOS/Android
 
+### New in v1.4.1: Queue & Session Management
+- **Hardware Health Check** — Real-time Pi status with latency monitoring
+- **Session Lifecycle** — Heartbeat keep-alive with 60s timeout
+- **Real-time SSE** — Live hardware state from Rust backend (tracks, sensors, camera)
+- **Session Recording** — Record and playback with speed control (0.25x-4x)
+- **Spectator Mode** — Watch live sessions without joining queue
+- **Priority Queue** — Skip ahead with Priority (2x), Express (3x), or VIP (5x) tokens
+
 ---
 
 ## Quick Start
@@ -168,11 +176,59 @@ npm install
 
 # Configure environment
 cp .env.example .env
-# Edit .env with your database URL and API keys
+```
+
+#### Required Environment Variables
+
+```bash
+# Database (PostgreSQL - recommend Neon for free tier)
+DATABASE_URL="postgresql://user:password@host/database?sslmode=require"
+
+# Auth (generate secret with: openssl rand -base64 32)
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-generated-secret"
+
+# Redis (Upstash - free tier available)
+UPSTASH_REDIS_REST_URL="https://your-redis.upstash.io"
+UPSTASH_REDIS_REST_TOKEN="your-token"
+```
+
+#### Optional Environment Variables
+
+```bash
+# Raspberry Pi Hardware (for Live Mode)
+NEXT_PUBLIC_API_URL="http://raspberry-pi-ip:5000"
+
+# Background Jobs (QStash)
+QSTASH_TOKEN="your-qstash-token"
+QSTASH_CURRENT_SIGNING_KEY="..."
+QSTASH_NEXT_SIGNING_KEY="..."
+
+# Payments
+STRIPE_SECRET_KEY="sk_..."
+PAYPAL_CLIENT_ID="..."
+COINBASE_COMMERCE_API_KEY="..."
+
+# Admin Access
+ADMIN_KEY="your-admin-api-key"
+ADMIN_USER_IDS="user-id-1,user-id-2"
+ADMIN_EMAILS="admin@example.com"
+```
+
+#### Database Setup & Run
+
+```bash
+# Generate Prisma client
+npx prisma generate
+
+# Push schema to database
+npx prisma db push
 
 # Run development server
-npx prisma db push
 npm run dev
+
+# Run tests (298 tests)
+npm test
 ```
 
 Open http://localhost:3000 — Demo Mode works immediately!
@@ -464,22 +520,29 @@ See [docs/HARDWARE.md](docs/HARDWARE.md) for complete Pi setup guide.
 
 ## Roadmap
 
-### Completed (v1.4.0)
+### Completed (v1.4.1)
 - [x] Rust backend API integration
 - [x] String trackId alignment with backend
 - [x] Camera control endpoints
 - [x] CPX servo/gate control
 - [x] Distance sensor readings
 - [x] Automation sequences
-- [x] Comprehensive API tests
+- [x] Comprehensive API tests (298 tests)
+- [x] Hardware health check system
+- [x] Queue system for live mode sessions
+- [x] Session lifecycle with heartbeat/timeout
+- [x] Real-time SSE from Rust backend
+- [x] Session recording and playback
+- [x] Spectator mode (watch live sessions)
+- [x] Priority queue (3 tiers: Priority/Express/VIP)
 
 ### Next Steps
-- [ ] WebSocket real-time updates (replace polling)
-- [ ] Queue system for live mode sessions
+- [ ] WebSocket upgrade (replace SSE polling)
 - [ ] Multi-user concurrent control
-- [ ] Recording and replay system
 - [ ] Mobile app release (iOS/Android)
 - [ ] Voice control integration
+- [ ] Train collision detection
+- [ ] Automated scheduling system
 
 ---
 
